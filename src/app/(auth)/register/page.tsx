@@ -96,7 +96,7 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <Link href="/" className="text-center block">
-            <h1 className="text-3xl font-bold text-primary-600">WorkFinder</h1>
+            <h1 className="text-3xl font-bold text-primary-600">Tara</h1>
           </Link>
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
             Create your account

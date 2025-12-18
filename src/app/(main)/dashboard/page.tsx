@@ -61,7 +61,7 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary-600">WorkFinder</h1>
+          <h1 className="text-2xl font-bold text-primary-600">Tara</h1>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">
               {profile?.first_name} {profile?.last_name}
