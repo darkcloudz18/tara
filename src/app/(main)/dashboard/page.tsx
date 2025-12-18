@@ -19,6 +19,12 @@ interface DashboardData {
   }
 }
 
+interface UpgradeModalProps {
+  type: 'creator' | 'supplier'
+  onClose: () => void
+  onSuccess: () => void
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [data, setData] = useState<DashboardData>({
@@ -28,6 +34,14 @@ export default function DashboardPage() {
     stats: { itinerariesCount: 0, bookingsCount: 0, savedPlaces: 0 }
   })
   const [loading, setLoading] = useState(true)
+  const [upgrading, setUpgrading] = useState<'creator' | 'supplier' | null>(null)
+  const [upgradeError, setUpgradeError] = useState('')
+  const [showSupplierForm, setShowSupplierForm] = useState(false)
+  const [supplierForm, setSupplierForm] = useState({
+    businessName: '',
+    businessType: 'hotel' as 'hotel' | 'resort' | 'hostel' | 'tour' | 'activity' | 'transport',
+    location: ''
+  })
 
   useEffect(() => {
     loadDashboard()
@@ -96,6 +110,54 @@ export default function DashboardPage() {
     router.push('/')
   }
 
+  const handleBecomeCreator = async () => {
+    setUpgrading('creator')
+    setUpgradeError('')
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase.from('creators').insert({ id: user.id })
+      if (error) throw error
+
+      await loadDashboard()
+    } catch (err: any) {
+      console.error('Error becoming creator:', err)
+      setUpgradeError(err.message || 'Failed to become creator')
+    } finally {
+      setUpgrading(null)
+    }
+  }
+
+  const handleBecomeSupplier = async () => {
+    if (!supplierForm.businessName) {
+      setUpgradeError('Business name is required')
+      return
+    }
+    setUpgrading('supplier')
+    setUpgradeError('')
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase.from('suppliers').insert({
+        id: user.id,
+        business_name: supplierForm.businessName,
+        business_type: supplierForm.businessType,
+        location: supplierForm.location || 'Philippines'
+      })
+      if (error) throw error
+
+      setShowSupplierForm(false)
+      await loadDashboard()
+    } catch (err: any) {
+      console.error('Error becoming supplier:', err)
+      setUpgradeError(err.message || 'Failed to become supplier')
+    } finally {
+      setUpgrading(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -150,6 +212,81 @@ export default function DashboardPage() {
               </span>
             )}
           </div>
+
+          {/* Upgrade Account Options */}
+          {(!creator || !supplier) && (
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+              <p className="text-sm text-gray-600 mb-3">Expand your account:</p>
+              {upgradeError && (
+                <p className="text-sm text-red-600 mb-2">{upgradeError}</p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {!creator && (
+                  <button
+                    onClick={handleBecomeCreator}
+                    disabled={upgrading === 'creator'}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
+                  >
+                    {upgrading === 'creator' ? 'Processing...' : 'Become a Creator'}
+                  </button>
+                )}
+                {!supplier && !showSupplierForm && (
+                  <button
+                    onClick={() => setShowSupplierForm(true)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
+                  >
+                    Become a Supplier
+                  </button>
+                )}
+              </div>
+              {showSupplierForm && (
+                <div className="mt-4 p-4 bg-white rounded-lg space-y-3">
+                  <h4 className="font-medium">Business Information</h4>
+                  <input
+                    type="text"
+                    placeholder="Business Name *"
+                    value={supplierForm.businessName}
+                    onChange={(e) => setSupplierForm({ ...supplierForm, businessName: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                  <select
+                    value={supplierForm.businessType}
+                    onChange={(e) => setSupplierForm({ ...supplierForm, businessType: e.target.value as any })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="hotel">Hotel</option>
+                    <option value="resort">Resort</option>
+                    <option value="hostel">Hostel</option>
+                    <option value="tour">Tour Operator</option>
+                    <option value="activity">Activity Provider</option>
+                    <option value="transport">Transport Service</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Location (e.g., Boracay)"
+                    value={supplierForm.location}
+                    onChange={(e) => setSupplierForm({ ...supplierForm, location: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleBecomeSupplier}
+                      disabled={upgrading === 'supplier'}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {upgrading === 'supplier' ? 'Processing...' : 'Submit'}
+                    </button>
+                    <button
+                      onClick={() => setShowSupplierForm(false)}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Quick Stats */}

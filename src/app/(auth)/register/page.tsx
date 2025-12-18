@@ -80,6 +80,23 @@ export default function RegisterPage() {
       if (authError) throw authError
 
       if (authData.user) {
+        // Wait for session to be established (important for RLS policies)
+        // This ensures auth.uid() is available for subsequent queries
+        let session = authData.session
+        if (!session) {
+          // If no session returned (email confirmation might be pending),
+          // try to get the current session
+          const { data: sessionData } = await supabase.auth.getSession()
+          session = sessionData.session
+        }
+
+        // If still no session, user might need to confirm email first
+        if (!session) {
+          setError('Please check your email to confirm your account, then log in.')
+          setLoading(false)
+          return
+        }
+
         // Determine primary role (for backward compatibility)
         let primaryRole = 'traveler'
         if (formData.isSupplier) primaryRole = 'supplier'
@@ -96,7 +113,10 @@ export default function RegisterPage() {
           })
           .eq('id', authData.user.id)
 
-        if (profileError) throw profileError
+        if (profileError) {
+          console.error('Profile update error:', profileError)
+          throw profileError
+        }
 
         // If user wants to be a creator, create creator record
         if (formData.isCreator) {
@@ -106,7 +126,10 @@ export default function RegisterPage() {
               id: authData.user.id,
             })
 
-          if (creatorError) throw creatorError
+          if (creatorError) {
+            console.error('Creator insert error:', creatorError)
+            throw creatorError
+          }
         }
 
         // If user wants to be a supplier, create supplier record
@@ -120,7 +143,10 @@ export default function RegisterPage() {
               location: formData.location || 'Philippines',
             })
 
-          if (supplierError) throw supplierError
+          if (supplierError) {
+            console.error('Supplier insert error:', supplierError)
+            throw supplierError
+          }
         }
 
         // Redirect to dashboard
