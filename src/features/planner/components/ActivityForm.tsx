@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { ItineraryActivity } from '@/types/database'
 import PlacesAutocomplete, { PlaceResult, PlaceTypeSelector } from './PlacesAutocomplete'
-import { PlaceType } from '@/lib/google-maps'
+import PlaceSuggestions from './PlaceSuggestions'
+import { PlaceType, PLACE_TYPES } from '@/lib/google-maps'
 
 export interface ActivityFormData {
   title: string
@@ -65,6 +66,30 @@ export default function ActivityForm({
     }))
   }
 
+  const handleSuggestionSelect = (place: {
+    name: string
+    address: string
+    coordinates: { x: number; y: number }
+    types: string[]
+  }) => {
+    // Determine place type from Google types
+    let placeType: PlaceType = 'activity'
+    if (place.types.includes('restaurant') || place.types.includes('food')) placeType = 'restaurant'
+    else if (place.types.includes('lodging')) placeType = 'hotel'
+    else if (place.types.includes('tourist_attraction')) placeType = 'attraction'
+    else if (place.types.includes('shopping_mall') || place.types.includes('store')) placeType = 'shopping'
+    else if (place.types.includes('cafe')) placeType = 'restaurant'
+    else if (place.types.includes('bar')) placeType = 'restaurant'
+
+    setFormData((prev) => ({
+      ...prev,
+      title: place.name,
+      location: place.address || place.name,
+      coordinates: place.coordinates,
+      place_type: placeType,
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -107,6 +132,17 @@ export default function ActivityForm({
           disabled={loading}
         />
       </div>
+
+      {/* Place Suggestions - show when location has coordinates */}
+      {formData.coordinates && (
+        <PlaceSuggestions
+          location={{
+            lat: formData.coordinates.x,
+            lng: formData.coordinates.y,
+          }}
+          onSelectPlace={handleSuggestionSelect}
+        />
+      )}
 
       {/* Title */}
       <div>
