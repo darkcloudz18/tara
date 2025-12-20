@@ -140,6 +140,7 @@ export default function ActivityForm({
             lat: formData.coordinates.x,
             lng: formData.coordinates.y,
           }}
+          destinationName={formData.location.split(',')[0].trim()}
           onSelectPlace={handleSuggestionSelect}
         />
       )}
