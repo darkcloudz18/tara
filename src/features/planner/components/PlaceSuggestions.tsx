@@ -4,18 +4,20 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useGoogleMaps } from '../hooks/useGoogleMaps'
 import { PLACE_TYPES, PlaceType } from '@/lib/google-maps'
-import { Listing } from '@/types/database'
+import { Listing, TaraPlace } from '@/types/database'
 
 interface Place {
   placeId: string
   name: string
   address: string
+  description?: string
   rating?: number
   userRatingsTotal?: number
   types: string[]
   coordinates: { x: number; y: number }
   photoUrl?: string
   isPartner?: boolean
+  isTaraPlace?: boolean // Our own database
   price?: number
   listingId?: string
 }
@@ -29,21 +31,32 @@ interface PlaceSuggestionsProps {
 
 const SEARCH_TYPES = [
   { type: 'all', label: 'All', icon: '✨' },
-  { type: 'tourist_attraction', label: 'Attractions', icon: '🏛️' },
-  { type: 'restaurant', label: 'Restaurants', icon: '🍽️' },
-  { type: 'lodging', label: 'Hotels', icon: '🏨' },
-  { type: 'shopping_mall', label: 'Shopping', icon: '🛍️' },
-  { type: 'cafe', label: 'Cafes', icon: '☕' },
+  { type: 'attraction', label: 'Attractions', icon: '🏛️' },
+  { type: 'beach', label: 'Beaches', icon: '🏖️' },
+  { type: 'restaurant', label: 'Food', icon: '🍽️' },
+  { type: 'hotel', label: 'Hotels', icon: '🏨' },
+  { type: 'activity', label: 'Activities', icon: '🎯' },
+  { type: 'shopping', label: 'Shopping', icon: '🛍️' },
 ]
 
-// Map our listing types to Google place types
-const LISTING_TYPE_MAP: Record<string, string> = {
+// Map our place types to Google place types
+const PLACE_TO_GOOGLE_TYPE: Record<string, string> = {
+  attraction: 'tourist_attraction',
+  beach: 'natural_feature',
+  restaurant: 'restaurant',
   hotel: 'lodging',
-  resort: 'lodging',
-  hostel: 'lodging',
-  tour: 'tourist_attraction',
   activity: 'tourist_attraction',
-  transport: 'transit_station',
+  shopping: 'shopping_mall',
+}
+
+// Map our listing types to our place types
+const LISTING_TYPE_MAP: Record<string, string> = {
+  hotel: 'hotel',
+  resort: 'hotel',
+  hostel: 'hotel',
+  tour: 'activity',
+  activity: 'activity',
+  transport: 'transport',
 }
 
 export default function PlaceSuggestions({
@@ -53,11 +66,21 @@ export default function PlaceSuggestions({
   className = '',
 }: PlaceSuggestionsProps) {
   const { isLoaded } = useGoogleMaps()
+  const [taraPlaces, setTaraPlaces] = useState<Place[]>([])
   const [partnerListings, setPartnerListings] = useState<Place[]>([])
   const [googlePlaces, setGooglePlaces] = useState<Place[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedType, setSelectedType] = useState('all')
   const [error, setError] = useState<string | null>(null)
+
+  // Fetch our own Tara places from database
+  useEffect(() => {
+    if (!location && !destinationName) {
+      setTaraPlaces([])
+      return
+    }
+    fetchTaraPlaces()
+  }, [location, destinationName, selectedType])
 
   // Fetch partner listings from Supabase
   useEffect(() => {
@@ -68,18 +91,63 @@ export default function PlaceSuggestions({
     fetchPartnerListings()
   }, [location, destinationName, selectedType])
 
-  // Fetch Google Places
+  // Fetch Google Places (only as fallback when we have few results)
   useEffect(() => {
     if (!isLoaded || !location) {
       setGooglePlaces([])
       return
     }
-    if (selectedType !== 'all') {
+    // Only fetch Google Places when type is selected and we don't have enough Tara results
+    if (selectedType !== 'all' && taraPlaces.length + partnerListings.length < 3) {
       searchNearbyPlaces()
     } else {
       setGooglePlaces([])
     }
-  }, [isLoaded, location, selectedType])
+  }, [isLoaded, location, selectedType, taraPlaces.length, partnerListings.length])
+
+  const fetchTaraPlaces = async () => {
+    try {
+      let query = supabase
+        .from('places')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_featured', { ascending: false })
+        .order('average_rating', { ascending: false })
+        .limit(10)
+
+      // Filter by location name if provided
+      if (destinationName) {
+        query = query.ilike('location', `%${destinationName}%`)
+      }
+
+      // Filter by place type based on selected type
+      if (selectedType !== 'all') {
+        query = query.eq('place_type', selectedType)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      const mappedPlaces: Place[] = (data || []).map((place: TaraPlace) => ({
+        placeId: `tara-${place.id}`,
+        name: place.name,
+        address: place.address || place.location,
+        description: place.description,
+        rating: place.average_rating,
+        userRatingsTotal: place.total_reviews,
+        types: [place.place_type, ...(place.tags || [])],
+        coordinates: place.coordinates || { x: location?.lat || 0, y: location?.lng || 0 },
+        photoUrl: place.photos?.[0],
+        isTaraPlace: true,
+        price: place.estimated_cost,
+      }))
+
+      setTaraPlaces(mappedPlaces)
+    } catch (err) {
+      console.error('Error fetching Tara places:', err)
+    }
+  }
 
   const fetchPartnerListings = async () => {
     try {
@@ -177,8 +245,8 @@ export default function PlaceSuggestions({
     }
   }
 
-  // Combine partner listings (first) with Google places
-  const allPlaces = [...partnerListings, ...googlePlaces]
+  // Combine: Tara places first, then partner listings, then Google places
+  const allPlaces = [...taraPlaces, ...partnerListings, ...googlePlaces]
 
   const getPlaceType = (types: string[]): PlaceType => {
     if (types.includes('restaurant') || types.includes('food')) return 'restaurant'
@@ -231,6 +299,70 @@ export default function PlaceSuggestions({
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
+            {/* Tara Places section - Our own curated database */}
+            {taraPlaces.length > 0 && (
+              <div className="bg-teal-50/50">
+                <div className="px-3 py-2 text-xs font-medium text-teal-700 border-b border-teal-100">
+                  🗺️ Popular Destinations
+                </div>
+                {taraPlaces.map((place) => (
+                  <button
+                    key={place.placeId}
+                    onClick={() => onSelectPlace(place)}
+                    className="w-full p-3 text-left hover:bg-teal-100/50 transition-colors flex gap-3"
+                  >
+                    {/* Photo or Icon */}
+                    {place.photoUrl ? (
+                      <img
+                        src={place.photoUrl}
+                        alt={place.name}
+                        className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xl">
+                          {PLACE_TYPES[getPlaceType(place.types)]?.icon || '📍'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h5 className="font-medium text-gray-900 text-sm truncate">
+                          {place.name}
+                        </h5>
+                        <span className="px-1.5 py-0.5 bg-teal-600 text-white text-[10px] font-medium rounded">
+                          TARA
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 truncate">{place.address}</p>
+                      {place.description && (
+                        <p className="text-xs text-gray-400 truncate mt-0.5">{place.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {place.rating && place.rating > 0 && (
+                          <span className="text-xs text-gray-600">
+                            <span className="text-yellow-500">★</span> {place.rating.toFixed(1)}
+                          </span>
+                        )}
+                        {place.price && (
+                          <span className="text-xs font-medium text-teal-600">
+                            ~₱{place.price.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Add Icon */}
+                    <div className="flex-shrink-0 self-center">
+                      <span className="text-teal-600 text-lg">+</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Partner listings section */}
             {partnerListings.length > 0 && (
               <div className="bg-primary-50/50">
@@ -292,10 +424,10 @@ export default function PlaceSuggestions({
               </div>
             )}
 
-            {/* Google Places section */}
+            {/* Google Places section - Fallback when we don't have enough data */}
             {googlePlaces.length > 0 && (
               <>
-                {partnerListings.length > 0 && (
+                {(taraPlaces.length > 0 || partnerListings.length > 0) && (
                   <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50">
                     More places nearby
                   </div>

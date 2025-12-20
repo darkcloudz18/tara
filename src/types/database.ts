@@ -6,6 +6,33 @@ export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' 
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded'
 export type PaymentMethod = 'card' | 'gcash' | 'maya' | 'bank_transfer' | 'cash'
 export type ListingType = 'hotel' | 'resort' | 'hostel' | 'tour' | 'activity' | 'transport'
+export type PlaceType = 'restaurant' | 'hotel' | 'attraction' | 'beach' | 'shopping' | 'activity' | 'transport' | 'other'
+export type PriceRange = 'budget' | 'moderate' | 'luxury'
+
+export interface TaraPlace {
+  id: string
+  name: string
+  description?: string
+  location: string
+  address?: string
+  coordinates?: { x: number; y: number }
+  place_type: PlaceType
+  category?: string
+  photos?: string[]
+  average_rating: number
+  total_reviews: number
+  price_range?: PriceRange
+  estimated_cost?: number
+  opening_hours?: string
+  contact_phone?: string
+  contact_email?: string
+  website?: string
+  tags?: string[]
+  is_featured: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
 
 export interface Profile {
   id: string
