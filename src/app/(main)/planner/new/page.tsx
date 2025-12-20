@@ -8,17 +8,21 @@ import { useItineraries } from '@/features/planner/hooks/useItineraries'
 
 export default function NewItineraryPage() {
   const router = useRouter()
-  const { createItinerary } = useItineraries()
+  const { createItinerary, error: hookError } = useItineraries()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (data: ItineraryFormData) => {
     setLoading(true)
+    setError(null)
 
     try {
       const destinations = data.destinations
         .split(',')
         .map((d) => d.trim())
         .filter((d) => d.length > 0)
+
+      console.log('Creating itinerary...', { title: data.title, destinations })
 
       const itinerary = await createItinerary({
         title: data.title.trim(),
@@ -29,9 +33,16 @@ export default function NewItineraryPage() {
         total_budget: data.total_budget ? parseFloat(data.total_budget) : undefined,
       })
 
+      console.log('Result:', itinerary)
+
       if (itinerary) {
         router.push(`/planner/${itinerary.id}`)
+      } else {
+        setError(hookError || 'Failed to create itinerary. Please make sure you are logged in.')
       }
+    } catch (err: any) {
+      console.error('Error creating itinerary:', err)
+      setError(err.message || 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -58,6 +69,13 @@ export default function NewItineraryPage() {
             Create your itinerary and start planning your adventure.
           </p>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
+          </div>
+        )}
 
         {/* Form Card */}
         <div className="card">
