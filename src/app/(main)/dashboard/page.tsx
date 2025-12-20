@@ -291,10 +291,11 @@ export default function DashboardPage() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="card">
+          <Link href="/planner" className="card hover:shadow-lg transition-shadow">
             <h3 className="text-gray-600 text-sm mb-1">Trips Planned</h3>
             <p className="text-3xl font-bold">{stats.itinerariesCount}</p>
-          </div>
+            <p className="text-sm text-primary-600 mt-1">View all →</p>
+          </Link>
           <div className="card">
             <h3 className="text-gray-600 text-sm mb-1">Bookings</h3>
             <p className="text-3xl font-bold">{stats.bookingsCount}</p>
@@ -329,13 +330,13 @@ export default function DashboardPage() {
         <div className="card mb-6">
           <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="btn-primary text-left p-4 flex items-center gap-3">
+            <Link href="/planner/new" className="btn-primary text-left p-4 flex items-center gap-3">
               <span className="text-2xl">🗺️</span>
               <div>
                 <div className="font-semibold">Plan a Trip</div>
                 <div className="text-sm opacity-90">Create a new itinerary</div>
               </div>
-            </button>
+            </Link>
             <button className="btn-secondary text-left p-4 flex items-center gap-3">
               <span className="text-2xl">🏨</span>
               <div>
@@ -421,9 +422,15 @@ export default function DashboardPage() {
         {/* Recent Activity */}
         <div className="card">
           <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
-          <p className="text-gray-500 text-center py-8">
-            No recent activity yet. Start by planning your first trip!
-          </p>
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-4">
+              No recent activity yet. Start by planning your first trip!
+            </p>
+            <Link href="/planner/new" className="btn-primary inline-flex items-center gap-2">
+              <span>🗺️</span>
+              Plan Your First Trip
+            </Link>
+          </div>
         </div>
 
         {/* Popular Destinations */}
