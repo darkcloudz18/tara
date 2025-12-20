@@ -75,9 +75,10 @@ export default function PlannerPage() {
         </button>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        {activeTab === 'discover' ? (
+      {/* Main Content - Split layout on desktop */}
+      <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+        {/* Left side - Discover (always visible on desktop) */}
+        <div className={`flex-1 lg:w-1/2 lg:border-r border-gray-200 ${activeTab === 'discover' ? 'flex' : 'hidden lg:flex'} flex-col`}>
           <DiscoverScreen
             onAddPlace={handleAddPlace}
             onSkipPlace={handleSkipPlace}
@@ -85,7 +86,10 @@ export default function PlannerPage() {
             isPlaceSkipped={tripBuilder.isPlaceSkipped}
             onResetSkipped={tripBuilder.resetSkipped}
           />
-        ) : (
+        </div>
+
+        {/* Right side - My Trip (always visible on desktop) */}
+        <div className={`flex-1 lg:w-1/2 ${activeTab === 'mytrip' ? 'flex' : 'hidden lg:flex'} flex-col`}>
           <MyTripScreen
             addedPlaces={tripBuilder.addedPlaces}
             groupedByLocation={tripBuilder.groupedByLocation}
@@ -94,15 +98,17 @@ export default function PlannerPage() {
             onClearAll={tripBuilder.clearTrip}
             onCreateTrip={() => setShowDateModal(true)}
           />
-        )}
+        </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <BottomNav
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        tripCount={tripBuilder.placeCount}
-      />
+      {/* Bottom Navigation - Only show on mobile */}
+      <div className="lg:hidden">
+        <BottomNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          tripCount={tripBuilder.placeCount}
+        />
+      </div>
 
       {/* Date Modal */}
       <TripDateModal
