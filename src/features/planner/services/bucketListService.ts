@@ -32,7 +32,11 @@ export async function getBucketList(): Promise<BucketListItem[]> {
   return data || []
 }
 
-export async function addToBucketList(place: DiscoverPlace): Promise<BucketListItem> {
+export async function addToBucketList(
+  place: DiscoverPlace,
+  referredByCreatorId?: string | null,
+  referredFromVideoId?: string | null
+): Promise<BucketListItem> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Must be logged in to add to bucket list')
 
@@ -46,6 +50,9 @@ export async function addToBucketList(place: DiscoverPlace): Promise<BucketListI
     place_category: place.category,
     place_image_url: place.photos?.[0] || null,
     place_estimated_cost: place.estimatedCost,
+    // Referral tracking for creator commissions
+    referred_by_creator_id: referredByCreatorId || null,
+    referred_from_video_id: referredFromVideoId || null,
   }
 
   const { data, error } = await supabase

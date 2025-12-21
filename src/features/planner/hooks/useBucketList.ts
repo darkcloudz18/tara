@@ -33,9 +33,13 @@ export function useBucketList() {
     fetchBucketList()
   }, [fetchBucketList])
 
-  const addPlace = useCallback(async (place: DiscoverPlace) => {
+  const addPlace = useCallback(async (
+    place: DiscoverPlace,
+    referredByCreatorId?: string | null,
+    referredFromVideoId?: string | null
+  ) => {
     try {
-      const newItem = await addToBucketList(place)
+      const newItem = await addToBucketList(place, referredByCreatorId, referredFromVideoId)
       setItems((prev) => [newItem, ...prev])
       return newItem
     } catch (err: any) {
