@@ -1,19 +1,19 @@
 'use client'
 
-import { Compass, Heart } from 'lucide-react'
+import { Compass, Bookmark } from 'lucide-react'
 
-export type TabType = 'discover' | 'mytrip'
+export type TabType = 'discover' | 'bucketlist'
 
 interface BottomNavProps {
   activeTab: TabType
   onTabChange: (tab: TabType) => void
-  tripCount: number
+  itemCount: number
 }
 
 export default function BottomNav({
   activeTab,
   onTabChange,
-  tripCount,
+  itemCount,
 }: BottomNavProps) {
   return (
     <div className="bg-white border-t border-gray-200 px-4 py-2 safe-area-pb">
@@ -33,26 +33,26 @@ export default function BottomNav({
           <span className="text-xs font-medium">Discover</span>
         </button>
 
-        {/* My Trip Tab */}
+        {/* Bucket List Tab */}
         <button
-          onClick={() => onTabChange('mytrip')}
+          onClick={() => onTabChange('bucketlist')}
           className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-colors relative ${
-            activeTab === 'mytrip'
+            activeTab === 'bucketlist'
               ? 'text-primary-600'
               : 'text-gray-400 hover:text-gray-600'
           }`}
         >
           <div className="relative">
-            <Heart
-              className={`w-6 h-6 ${activeTab === 'mytrip' ? 'stroke-[2.5] fill-primary-600' : ''}`}
+            <Bookmark
+              className={`w-6 h-6 ${activeTab === 'bucketlist' ? 'stroke-[2.5] fill-primary-600' : ''}`}
             />
-            {tripCount > 0 && (
+            {itemCount > 0 && (
               <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 bg-primary-600 text-white text-[10px] font-bold rounded-full">
-                {tripCount > 99 ? '99+' : tripCount}
+                {itemCount > 99 ? '99+' : itemCount}
               </span>
             )}
           </div>
-          <span className="text-xs font-medium">My Trip</span>
+          <span className="text-xs font-medium">Bucket List</span>
         </button>
       </div>
     </div>

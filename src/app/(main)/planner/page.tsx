@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useItineraries } from '@/features/planner/hooks/useItineraries'
-import { useTripBuilder } from '@/features/planner/hooks/useTripBuilder'
+import { useBucketList } from '@/features/planner/hooks/useBucketList'
 import {
   DiscoverScreen,
-  MyTripScreen,
+  BucketListScreen,
   BottomNav,
   TripDateModal,
   TabType,
@@ -17,41 +17,62 @@ import { List, Compass } from 'lucide-react'
 export default function PlannerPage() {
   const router = useRouter()
   const { createItinerary } = useItineraries()
-  const tripBuilder = useTripBuilder()
+  const bucketList = useBucketList()
 
   const [activeTab, setActiveTab] = useState<TabType>('discover')
   const [showDateModal, setShowDateModal] = useState(false)
   const [showExistingTrips, setShowExistingTrips] = useState(false)
+  const [skippedPlaces, setSkippedPlaces] = useState<Set<string>>(new Set())
 
-  const handleAddPlace = (place: DiscoverPlace) => {
-    tripBuilder.addPlace(place)
+  const handleAddPlace = async (place: DiscoverPlace) => {
+    try {
+      await bucketList.addPlace(place)
+    } catch (err) {
+      console.error('Failed to add to bucket list:', err)
+    }
   }
 
   const handleSkipPlace = (placeId: string) => {
-    tripBuilder.skipPlace(placeId)
+    setSkippedPlaces((prev) => new Set(prev).add(placeId))
   }
+
+  const handleResetSkipped = useCallback(() => {
+    setSkippedPlaces(new Set())
+  }, [])
+
+  const isPlaceSkipped = useCallback(
+    (placeId: string) => skippedPlaces.has(placeId),
+    [skippedPlaces]
+  )
+
+  // Get unique destinations from bucket list
+  const uniqueDestinations = [...new Set(
+    bucketList.items
+      .filter((item) => !item.is_visited && item.place_location)
+      .map((item) => item.place_location!)
+  )]
+
+  // Get total estimated cost
+  const totalEstimatedCost = bucketList.items
+    .filter((item) => !item.is_visited)
+    .reduce((sum, item) => sum + (item.place_estimated_cost || 0), 0)
 
   const handleCreateTrip = async (data: {
     title: string
     startDate: string
     endDate: string
   }) => {
-    // Get unique destinations from added places
-    const destinations = tripBuilder.uniqueDestinations
-
     // Create the itinerary
     const itinerary = await createItinerary({
       title: data.title,
-      description: `Trip to ${destinations.join(', ')}`,
+      description: `Trip to ${uniqueDestinations.join(', ')}`,
       start_date: data.startDate,
       end_date: data.endDate,
-      destinations,
-      total_budget: tripBuilder.totalEstimatedCost,
+      destinations: uniqueDestinations,
+      total_budget: totalEstimatedCost,
     })
 
     if (itinerary) {
-      // Clear the trip builder
-      tripBuilder.clearTrip()
       // Navigate to the itinerary detail page
       router.push(`/planner/${itinerary.id}`)
     }
@@ -82,20 +103,20 @@ export default function PlannerPage() {
           <DiscoverScreen
             onAddPlace={handleAddPlace}
             onSkipPlace={handleSkipPlace}
-            isPlaceAdded={tripBuilder.isPlaceAdded}
-            isPlaceSkipped={tripBuilder.isPlaceSkipped}
-            onResetSkipped={tripBuilder.resetSkipped}
+            isPlaceAdded={bucketList.isInBucketList}
+            isPlaceSkipped={isPlaceSkipped}
+            onResetSkipped={handleResetSkipped}
           />
         </div>
 
-        {/* Right side - My Trip (always visible on desktop) */}
-        <div className={`flex-1 lg:w-1/2 ${activeTab === 'mytrip' ? 'flex' : 'hidden lg:flex'} flex-col`}>
-          <MyTripScreen
-            addedPlaces={tripBuilder.addedPlaces}
-            groupedByLocation={tripBuilder.groupedByLocation}
-            totalEstimatedCost={tripBuilder.totalEstimatedCost}
-            onRemovePlace={tripBuilder.removePlace}
-            onClearAll={tripBuilder.clearTrip}
+        {/* Right side - Bucket List (always visible on desktop) */}
+        <div className={`flex-1 lg:w-1/2 ${activeTab === 'bucketlist' ? 'flex' : 'hidden lg:flex'} flex-col`}>
+          <BucketListScreen
+            items={bucketList.items}
+            loading={bucketList.loading}
+            groupedByLocation={bucketList.groupedByLocation()}
+            onRemoveItem={bucketList.removeItem}
+            onToggleVisited={bucketList.toggleVisited}
             onCreateTrip={() => setShowDateModal(true)}
           />
         </div>
@@ -106,7 +127,7 @@ export default function PlannerPage() {
         <BottomNav
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          tripCount={tripBuilder.placeCount}
+          itemCount={bucketList.unvisitedCount}
         />
       </div>
 
@@ -115,8 +136,8 @@ export default function PlannerPage() {
         isOpen={showDateModal}
         onClose={() => setShowDateModal(false)}
         onCreateTrip={handleCreateTrip}
-        placeCount={tripBuilder.placeCount}
-        destinations={tripBuilder.uniqueDestinations}
+        placeCount={bucketList.unvisitedCount}
+        destinations={uniqueDestinations}
       />
     </div>
   )

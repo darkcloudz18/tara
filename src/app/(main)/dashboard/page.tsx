@@ -7,15 +7,27 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Profile, Creator, Supplier } from '@/types/database'
+import { Bookmark, MapPin, Check, ChevronRight } from 'lucide-react'
+
+interface BucketListItem {
+  id: string
+  place_name: string
+  place_location: string | null
+  place_category: string | null
+  place_image_url: string | null
+  place_estimated_cost: number | null
+  is_visited: boolean
+}
 
 interface DashboardData {
   profile: Profile | null
   creator: Creator | null
   supplier: Supplier | null
+  bucketList: BucketListItem[]
   stats: {
     itinerariesCount: number
     bookingsCount: number
-    savedPlaces: number
+    bucketListCount: number
   }
 }
 
@@ -31,7 +43,8 @@ export default function DashboardPage() {
     profile: null,
     creator: null,
     supplier: null,
-    stats: { itinerariesCount: 0, bookingsCount: 0, savedPlaces: 0 }
+    bucketList: [],
+    stats: { itinerariesCount: 0, bookingsCount: 0, bucketListCount: 0 }
   })
   const [loading, setLoading] = useState(true)
   const [upgrading, setUpgrading] = useState<'creator' | 'supplier' | null>(null)
@@ -88,14 +101,24 @@ export default function DashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
 
+      // Get bucket list items (limit to 6 for dashboard preview)
+      const { data: bucketList, count: bucketListCount } = await supabase
+        .from('bucket_list')
+        .select('id, place_name, place_location, place_category, place_image_url, place_estimated_cost, is_visited', { count: 'exact' })
+        .eq('user_id', user.id)
+        .eq('is_visited', false)
+        .order('created_at', { ascending: false })
+        .limit(6)
+
       setData({
         profile,
         creator,
         supplier,
+        bucketList: bucketList || [],
         stats: {
           itinerariesCount: itinerariesCount || 0,
           bookingsCount: bookingsCount || 0,
-          savedPlaces: 0
+          bucketListCount: bucketListCount || 0
         }
       })
     } catch (error) {
@@ -166,7 +189,7 @@ export default function DashboardPage() {
     )
   }
 
-  const { profile, creator, supplier, stats } = data
+  const { profile, creator, supplier, bucketList, stats } = data
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -296,6 +319,14 @@ export default function DashboardPage() {
             <p className="text-3xl font-bold">{stats.itinerariesCount}</p>
             <p className="text-sm text-primary-600 mt-1">View all →</p>
           </Link>
+          <Link href="/planner" className="card hover:shadow-lg transition-shadow">
+            <div className="flex items-center gap-2 mb-1">
+              <Bookmark className="w-4 h-4 text-primary-600" />
+              <h3 className="text-gray-600 text-sm">Bucket List</h3>
+            </div>
+            <p className="text-3xl font-bold">{stats.bucketListCount}</p>
+            <p className="text-sm text-primary-600 mt-1">Add more →</p>
+          </Link>
           <div className="card">
             <h3 className="text-gray-600 text-sm mb-1">Bookings</h3>
             <p className="text-3xl font-bold">{stats.bookingsCount}</p>
@@ -353,6 +384,73 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+
+        {/* Bucket List Section */}
+        {bucketList.length > 0 && (
+          <div className="card mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-primary-600" />
+                My Bucket List
+              </h3>
+              <Link
+                href="/planner"
+                className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+              >
+                View all
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {bucketList.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  {/* Image */}
+                  <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
+                    {item.place_image_url ? (
+                      <img
+                        src={item.place_image_url}
+                        alt={item.place_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-gray-900 truncate">
+                      {item.place_name}
+                    </h4>
+                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {item.place_location || 'Philippines'}
+                    </p>
+                    {item.place_estimated_cost && item.place_estimated_cost > 0 && (
+                      <p className="text-sm text-primary-600 font-medium">
+                        ~₱{item.place_estimated_cost.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {stats.bucketListCount > 6 && (
+              <div className="mt-4 text-center">
+                <Link
+                  href="/planner"
+                  className="text-sm text-primary-600 hover:underline"
+                >
+                  +{stats.bucketListCount - 6} more places
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Creator Section */}
         {creator && (
