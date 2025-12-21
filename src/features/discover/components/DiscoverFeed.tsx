@@ -82,8 +82,8 @@ export default function DiscoverFeed({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-primary-600 animate-spin mb-4" />
-        <p className="text-gray-500">Discovering amazing places...</p>
+        <Loader2 className="w-8 h-8 text-primary-600 dark:text-primary-400 animate-spin mb-4" />
+        <p className="text-gray-500 dark:text-gray-400">Discovering amazing places...</p>
       </div>
     )
   }
@@ -91,10 +91,10 @@ export default function DiscoverFeed({
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4">
-        <p className="text-red-500 mb-4">{error}</p>
+        <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>
         <button
           onClick={loadFeed}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium"
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
         >
           Try Again
         </button>
@@ -105,9 +105,9 @@ export default function DiscoverFeed({
   if (feed.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4">
-        <Compass className="w-16 h-16 text-gray-300 mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">No content yet</h2>
-        <p className="text-gray-500 text-center">
+        <Compass className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No content yet</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-center">
           Check back soon for amazing travel content!
         </p>
       </div>
@@ -119,7 +119,7 @@ export default function DiscoverFeed({
       {/* Feed */}
       <div>
         {feed.map((item) => (
-          <div key={item.id} className="border-b border-gray-100">
+          <div key={item.id} className="border-b border-gray-100 dark:border-gray-800">
             {item.type === 'video' ? (
               <div
                 onMouseEnter={() => handleVideoView(item.data as CreatorVideo)}
@@ -147,7 +147,7 @@ export default function DiscoverFeed({
         <div className="text-center py-8">
           <button
             onClick={loadFeed}
-            className="px-6 py-3 text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+            className="px-6 py-3 text-primary-600 dark:text-primary-400 font-semibold hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
           >
             Load More
           </button>

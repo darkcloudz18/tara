@@ -61,7 +61,7 @@ export default function RightSidebar({ user }: RightSidebarProps) {
         {user ? (
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-gray-200 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                 {user.user_metadata?.avatar_url ? (
                   <img
                     src={user.user_metadata.avatar_url}
@@ -69,26 +69,26 @@ export default function RightSidebar({ user }: RightSidebarProps) {
                     className="w-11 h-11 rounded-full object-cover"
                   />
                 ) : (
-                  <User className="w-6 h-6 text-gray-500" />
+                  <User className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                 )}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   {user.user_metadata?.full_name || user.email?.split('@')[0]}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {user.email}
                 </p>
               </div>
             </div>
-            <Link href="/dashboard" className="text-xs font-semibold text-primary-600 hover:text-primary-700">
+            <Link href="/dashboard" className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
               Dashboard
             </Link>
           </div>
         ) : (
-          <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl">
-            <p className="text-sm text-gray-600">Sign in to save places</p>
-            <Link href="/login" className="text-xs font-semibold text-primary-600 hover:text-primary-700">
+          <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+            <p className="text-sm text-gray-600 dark:text-gray-400">Sign in to save places</p>
+            <Link href="/login" className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
               Log in
             </Link>
           </div>
@@ -97,8 +97,8 @@ export default function RightSidebar({ user }: RightSidebarProps) {
         {/* Suggested Creators */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-semibold text-gray-500">Suggested creators</span>
-            <Link href="/creators" className="text-xs font-semibold text-gray-900 hover:text-gray-600">
+            <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">Suggested creators</span>
+            <Link href="/creators" className="text-xs font-semibold text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300">
               See All
             </Link>
           </div>
@@ -121,11 +121,11 @@ export default function RightSidebar({ user }: RightSidebarProps) {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{creator.handle}</p>
-                    <p className="text-xs text-gray-500">{creator.followers}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{creator.handle}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{creator.followers}</p>
                   </div>
                 </div>
-                <button className="text-xs font-semibold text-primary-600 hover:text-primary-700">
+                <button className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
                   Follow
                 </button>
               </div>
@@ -136,8 +136,8 @@ export default function RightSidebar({ user }: RightSidebarProps) {
         {/* Popular Destinations */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-semibold text-gray-500">Trending destinations</span>
-            <Link href="/destinations" className="text-xs font-semibold text-gray-900 hover:text-gray-600">
+            <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">Trending destinations</span>
+            <Link href="/destinations" className="text-xs font-semibold text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300">
               See All
             </Link>
           </div>
@@ -147,7 +147,7 @@ export default function RightSidebar({ user }: RightSidebarProps) {
               <Link
                 key={dest}
                 href={`/explore?destination=${dest.toLowerCase()}`}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-medium text-gray-700 transition-colors"
+                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors"
               >
                 {dest}
               </Link>
@@ -156,7 +156,7 @@ export default function RightSidebar({ user }: RightSidebarProps) {
         </div>
 
         {/* Footer Links */}
-        <div className="mt-8 text-xs text-gray-400">
+        <div className="mt-8 text-xs text-gray-400 dark:text-gray-500">
           <div className="flex flex-wrap gap-x-2 gap-y-1 mb-4">
             <Link href="/about" className="hover:underline">About</Link>
             <span>·</span>

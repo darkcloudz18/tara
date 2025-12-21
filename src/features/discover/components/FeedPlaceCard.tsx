@@ -54,7 +54,7 @@ export default function FeedPlaceCard({
   }
 
   return (
-    <article className={`bg-white ${className}`}>
+    <article className={`bg-white dark:bg-black ${className}`}>
       {/* Header - Instagram style */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
@@ -65,24 +65,24 @@ export default function FeedPlaceCard({
           {/* Location info */}
           <div>
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-sm text-gray-900">{place.location}</span>
+              <span className="font-semibold text-sm text-gray-900 dark:text-white">{place.location}</span>
               {place.isFeatured && (
                 <span className="text-primary-500">✓</span>
               )}
             </div>
-            <span className="text-xs text-gray-500 capitalize">{place.category}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{place.category}</span>
           </div>
         </div>
         {/* More options */}
-        <button className="p-2 hover:bg-gray-100 rounded-full">
-          <MoreHorizontal className="w-5 h-5 text-gray-600" />
+        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <MoreHorizontal className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
       </div>
 
       {/* Image - Square like Instagram */}
-      <div className="relative aspect-square overflow-hidden bg-gray-100">
+      <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
         {!imageLoaded && (
-          <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+          <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 animate-pulse" />
         )}
         <img
           src={mainPhoto}
@@ -96,7 +96,7 @@ export default function FeedPlaceCard({
 
         {/* Source badge */}
         {place.source === 'partner' && (
-          <div className="absolute top-3 left-3 px-2 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-md">
+          <div className="absolute top-3 left-3 px-2 py-1 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs font-semibold rounded-md">
             Partner
           </div>
         )}
@@ -109,30 +109,30 @@ export default function FeedPlaceCard({
             {/* Like */}
             <button onClick={handleLike} className="hover:opacity-60 transition-opacity">
               <Heart
-                className={`w-6 h-6 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-900'}`}
+                className={`w-6 h-6 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-900 dark:text-white'}`}
               />
             </button>
             {/* Comment */}
             <button className="hover:opacity-60 transition-opacity">
-              <MessageCircle className="w-6 h-6 text-gray-900" />
+              <MessageCircle className="w-6 h-6 text-gray-900 dark:text-white" />
             </button>
             {/* Share */}
             <button className="hover:opacity-60 transition-opacity">
-              <Send className="w-6 h-6 text-gray-900" />
+              <Send className="w-6 h-6 text-gray-900 dark:text-white" />
             </button>
           </div>
           {/* Bookmark/Bucket List */}
           <button onClick={handleBucketListToggle} className="hover:opacity-60 transition-opacity">
             {isInBucketList ? (
-              <BookmarkCheck className="w-6 h-6 text-gray-900 fill-gray-900" />
+              <BookmarkCheck className="w-6 h-6 text-gray-900 dark:text-white fill-gray-900 dark:fill-white" />
             ) : (
-              <Bookmark className="w-6 h-6 text-gray-900" />
+              <Bookmark className="w-6 h-6 text-gray-900 dark:text-white" />
             )}
           </button>
         </div>
 
         {/* Likes count */}
-        <p className="font-semibold text-sm text-gray-900 mt-3">
+        <p className="font-semibold text-sm text-gray-900 dark:text-white mt-3">
           {likeCount.toLocaleString()} likes
         </p>
       </div>
@@ -141,15 +141,15 @@ export default function FeedPlaceCard({
       <div className="px-4 pb-4">
         {/* Name as "username" with description */}
         <p className="text-sm mt-1">
-          <span className="font-semibold text-gray-900">{place.name}</span>
+          <span className="font-semibold text-gray-900 dark:text-white">{place.name}</span>
           {' '}
           {place.description && (
-            <span className="text-gray-600">{place.description}</span>
+            <span className="text-gray-600 dark:text-gray-400">{place.description}</span>
           )}
         </p>
 
         {/* Rating & Price row */}
-        <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+        <div className="flex items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1">
             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
             {place.rating.toFixed(1)}
@@ -162,7 +162,7 @@ export default function FeedPlaceCard({
           {place.estimatedCost !== undefined && (
             <>
               <span>•</span>
-              <span className={place.estimatedCost === 0 ? 'text-green-600' : ''}>
+              <span className={place.estimatedCost === 0 ? 'text-green-600 dark:text-green-400' : ''}>
                 {place.estimatedCost === 0 ? 'Free' : `~₱${place.estimatedCost.toLocaleString()}`}
               </span>
             </>
@@ -173,7 +173,7 @@ export default function FeedPlaceCard({
         {place.tags && place.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {place.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="text-primary-600 text-sm">
+              <span key={tag} className="text-primary-600 dark:text-primary-400 text-sm">
                 #{tag.replace(/\s+/g, '')}
               </span>
             ))}

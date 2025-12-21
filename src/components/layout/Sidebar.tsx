@@ -13,8 +13,11 @@ import {
   User,
   Menu,
   MapPin,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>
@@ -45,6 +48,7 @@ interface SidebarProps {
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const { resolvedTheme, toggleTheme } = useTheme()
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -61,17 +65,17 @@ export default function Sidebar({ user }: SidebarProps) {
     return (
       <Link
         href={href}
-        className={`flex items-center gap-4 px-3 py-3 rounded-lg transition-all hover:bg-gray-100 group ${
+        className={`flex items-center gap-4 px-3 py-3 rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-800 group ${
           active ? 'font-semibold' : 'font-normal'
         }`}
       >
         <Icon
           className={`w-6 h-6 transition-transform group-hover:scale-110 ${
-            active ? 'text-gray-900' : 'text-gray-700'
+            active ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
           }`}
         />
         {!collapsed && (
-          <span className={`text-base ${active ? 'text-gray-900' : 'text-gray-700'}`}>
+          <span className={`text-base ${active ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
             {item.label}
           </span>
         )}
@@ -81,7 +85,7 @@ export default function Sidebar({ user }: SidebarProps) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 transition-all duration-300 ${
+      className={`fixed left-0 top-0 h-full bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 z-40 transition-all duration-300 ${
         collapsed ? 'w-[72px]' : 'w-[245px]'
       } hidden lg:flex flex-col`}
     >
@@ -105,18 +109,35 @@ export default function Sidebar({ user }: SidebarProps) {
       </nav>
 
       {/* Bottom Navigation */}
-      <div className="px-3 pb-6 space-y-1 border-t border-gray-100 pt-4">
+      <div className="px-3 pb-6 space-y-1 border-t border-gray-100 dark:border-gray-800 pt-4">
         {bottomNavItems.map((item) => (
           <NavLink key={item.href} item={item} />
         ))}
 
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-4 px-3 py-3 rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-800 w-full group"
+        >
+          {resolvedTheme === 'dark' ? (
+            <Sun className="w-6 h-6 text-gray-700 dark:text-gray-300 transition-transform group-hover:scale-110" />
+          ) : (
+            <Moon className="w-6 h-6 text-gray-700 dark:text-gray-300 transition-transform group-hover:scale-110" />
+          )}
+          {!collapsed && (
+            <span className="text-base text-gray-700 dark:text-gray-300">
+              {resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </span>
+          )}
+        </button>
+
         {/* More Menu */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center gap-4 px-3 py-3 rounded-lg transition-all hover:bg-gray-100 w-full group"
+          className="flex items-center gap-4 px-3 py-3 rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-800 w-full group"
         >
-          <Menu className="w-6 h-6 text-gray-700 transition-transform group-hover:scale-110" />
-          {!collapsed && <span className="text-base text-gray-700">More</span>}
+          <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300 transition-transform group-hover:scale-110" />
+          {!collapsed && <span className="text-base text-gray-700 dark:text-gray-300">More</span>}
         </button>
       </div>
     </aside>

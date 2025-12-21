@@ -25,7 +25,7 @@ export default function MobileNav({ user }: MobileNavProps) {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 z-50 lg:hidden">
       <div className="flex items-center justify-around py-2">
         {navItems.map((item) => {
           const Icon = item.icon
@@ -36,7 +36,7 @@ export default function MobileNav({ user }: MobileNavProps) {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center gap-1 px-4 py-2 ${
-                active ? 'text-gray-900' : 'text-gray-500'
+                active ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               <Icon className={`w-6 h-6 ${active ? 'fill-current' : ''}`} />

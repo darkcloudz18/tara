@@ -32,14 +32,14 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-black">
       {/* Left Sidebar - Desktop */}
       <Sidebar user={user} />
 
       {/* Main Content Area */}
       <div className="lg:ml-[245px] xl:mr-[320px]">
         {/* Mobile Header */}
-        <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+        <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
           <div className="px-4 py-3 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <span className="text-2xl">🌴</span>
@@ -79,22 +79,22 @@ export default function HomePage() {
       {/* Login Prompt Modal */}
       {showLoginPrompt && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 relative animate-scale-in">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-sm w-full p-6 relative animate-scale-in">
             <button
               onClick={() => setShowLoginPrompt(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full"
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             </button>
 
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bookmark className="w-8 h-8 text-primary-600" />
+              <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Bookmark className="w-8 h-8 text-primary-600 dark:text-primary-400" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 Save to Bucket List
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 Create a free account to save places and plan your trips!
               </p>
             </div>
@@ -108,13 +108,13 @@ export default function HomePage() {
               </Link>
               <Link
                 href="/login"
-                className="block w-full py-3 bg-gray-100 text-gray-700 text-center rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                className="block w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-center rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 Already have an account? Login
               </Link>
             </div>
 
-            <p className="text-xs text-gray-500 text-center mt-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
               By signing up, you agree to our Terms of Service
             </p>
           </div>

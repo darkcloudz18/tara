@@ -98,14 +98,14 @@ export default function DestinationStories({ onSelect, selected }: DestinationSt
   }
 
   return (
-    <div className="relative bg-white border-b border-gray-200 py-4">
+    <div className="relative bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 py-4">
       {/* Left Arrow */}
       {showLeftArrow && (
         <button
           onClick={() => scroll('left')}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700"
         >
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
+          <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </button>
       )}
 
@@ -126,11 +126,11 @@ export default function DestinationStories({ onSelect, selected }: DestinationSt
             <div
               className={`p-[3px] rounded-full ${
                 selected === destination.id
-                  ? 'bg-gray-300'
+                  ? 'bg-gray-300 dark:bg-gray-600'
                   : 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600'
               }`}
             >
-              <div className="p-[2px] bg-white rounded-full">
+              <div className="p-[2px] bg-white dark:bg-black rounded-full">
                 <img
                   src={destination.image}
                   alt={destination.name}
@@ -141,7 +141,9 @@ export default function DestinationStories({ onSelect, selected }: DestinationSt
             {/* Name */}
             <span
               className={`text-xs truncate w-16 text-center ${
-                selected === destination.id ? 'font-semibold text-gray-900' : 'text-gray-600'
+                selected === destination.id
+                  ? 'font-semibold text-gray-900 dark:text-white'
+                  : 'text-gray-600 dark:text-gray-400'
               }`}
             >
               {destination.shortName}
@@ -154,9 +156,9 @@ export default function DestinationStories({ onSelect, selected }: DestinationSt
       {showRightArrow && (
         <button
           onClick={() => scroll('right')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700"
         >
-          <ChevronRight className="w-5 h-5 text-gray-600" />
+          <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </button>
       )}
     </div>

@@ -29,7 +29,7 @@ export default function VideoCard({ video, onCreatorClick, className = '' }: Vid
   }
 
   return (
-    <article className={`bg-white ${className}`}>
+    <article className={`bg-white dark:bg-black ${className}`}>
       {/* Header - Instagram style */}
       <div className="flex items-center justify-between px-4 py-3">
         <button
@@ -38,8 +38,8 @@ export default function VideoCard({ video, onCreatorClick, className = '' }: Vid
         >
           {/* Avatar */}
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 via-red-500 to-purple-600 p-[2px]">
-            <div className="w-full h-full rounded-full bg-white p-[2px]">
-              <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
+            <div className="w-full h-full rounded-full bg-white dark:bg-black p-[2px]">
+              <div className="w-full h-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                 {video.creator?.avatar_url ? (
                   <img
                     src={video.creator.avatar_url}
@@ -57,7 +57,7 @@ export default function VideoCard({ video, onCreatorClick, className = '' }: Vid
           {/* Creator info */}
           <div className="text-left">
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-sm text-gray-900">
+              <span className="font-semibold text-sm text-gray-900 dark:text-white">
                 {video.creator?.display_name || 'creator'}
               </span>
               {video.creator?.verified && (
@@ -65,13 +65,13 @@ export default function VideoCard({ video, onCreatorClick, className = '' }: Vid
               )}
             </div>
             {video.location && (
-              <span className="text-xs text-gray-500">{video.location}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{video.location}</span>
             )}
           </div>
         </button>
         {/* More options */}
-        <button className="p-2 hover:bg-gray-100 rounded-full">
-          <MoreHorizontal className="w-5 h-5 text-gray-600" />
+        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <MoreHorizontal className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
       </div>
 
@@ -120,26 +120,26 @@ export default function VideoCard({ video, onCreatorClick, className = '' }: Vid
             {/* Like */}
             <button onClick={handleLike} className="hover:opacity-60 transition-opacity">
               <Heart
-                className={`w-6 h-6 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-900'}`}
+                className={`w-6 h-6 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-900 dark:text-white'}`}
               />
             </button>
             {/* Comment */}
             <button className="hover:opacity-60 transition-opacity">
-              <MessageCircle className="w-6 h-6 text-gray-900" />
+              <MessageCircle className="w-6 h-6 text-gray-900 dark:text-white" />
             </button>
             {/* Share */}
             <button className="hover:opacity-60 transition-opacity">
-              <Send className="w-6 h-6 text-gray-900" />
+              <Send className="w-6 h-6 text-gray-900 dark:text-white" />
             </button>
           </div>
           {/* Save */}
           <button onClick={() => setSaved(!saved)} className="hover:opacity-60 transition-opacity">
-            <Bookmark className={`w-6 h-6 ${saved ? 'fill-gray-900' : ''} text-gray-900`} />
+            <Bookmark className={`w-6 h-6 ${saved ? 'fill-gray-900 dark:fill-white' : ''} text-gray-900 dark:text-white`} />
           </button>
         </div>
 
         {/* Likes count */}
-        <p className="font-semibold text-sm text-gray-900 mt-3">
+        <p className="font-semibold text-sm text-gray-900 dark:text-white mt-3">
           {likeCount.toLocaleString()} likes
         </p>
       </div>
@@ -148,19 +148,19 @@ export default function VideoCard({ video, onCreatorClick, className = '' }: Vid
       <div className="px-4 pb-4">
         {/* Creator name with caption */}
         <p className="text-sm mt-1">
-          <span className="font-semibold text-gray-900">
+          <span className="font-semibold text-gray-900 dark:text-white">
             {video.creator?.display_name || 'creator'}
           </span>
           {' '}
-          <span className="text-gray-900">{video.title}</span>
+          <span className="text-gray-900 dark:text-white">{video.title}</span>
         </p>
 
         {video.description && (
-          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{video.description}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{video.description}</p>
         )}
 
         {/* View count */}
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
           {video.views.toLocaleString()} views
         </p>
       </div>
