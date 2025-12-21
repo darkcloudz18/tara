@@ -18,6 +18,7 @@ import {
 import { useState } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import BucketIcon from '@/components/icons/BucketIcon'
+import TaraLogo from '@/components/icons/TaraLogo'
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>
@@ -102,7 +103,7 @@ export default function Sidebar({ user }: SidebarProps) {
       <div className="px-4 pt-6 pb-6">
         <Link href="/" className="flex items-center gap-3 px-2">
           <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
-            <span className="text-xl">🌴</span>
+            <TaraLogo className="w-6 h-6 text-white" />
           </div>
           {!collapsed && (
             <div>

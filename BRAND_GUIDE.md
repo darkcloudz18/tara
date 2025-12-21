@@ -12,15 +12,23 @@
 - **Description:** All-in-one travel platform for the Philippines. Plan trips, discover content, and book with confidence.
 
 ### Logo
-- **Icon:** 🌴 Palm tree emoji
-- **Logo Mark:** Teal gradient rounded square with palm tree
+- **Icon:** Custom TaraLogo SVG (palm tree silhouette)
+- **Logo Mark:** Teal gradient rounded square with palm tree icon
 - **Logo Text:** "Tara" in bold, followed by "Travel Philippines" subtitle
 
 ```jsx
-// Logo Usage
+import TaraLogo from '@/components/icons/TaraLogo'
+
+// Logo Usage - Icon only
+<TaraLogo className="w-8 h-8 text-teal-500" />
+
+// Logo with background
 <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
-  <span className="text-xl">🌴</span>
+  <TaraLogo className="w-6 h-6 text-white" />
 </div>
+
+// Logo with text
+<TaraLogo className="w-8 h-8 text-teal-500" showText />
 ```
 
 ---
@@ -190,28 +198,42 @@ import BucketIcon from '@/components/icons/BucketIcon'
 <BucketIcon className="w-6 h-6 text-teal-500" filled />
 ```
 
-### Category Emojis
+### Category Icons (Lucide)
 
-| Category | Emoji | Label |
-|----------|-------|-------|
-| All | 🌴 | All |
-| Beaches | 🏖️ | Beaches |
-| Islands | 🏝️ | Islands |
-| Mountains | ⛰️ | Mountains |
-| Food | 🍜 | Food Spots |
-| Heritage | 🏛️ | Heritage |
-| Adventure | 🏄 | Adventure |
-| Stays | 🏨 | Stays |
+| Category | Icon | Label | Import |
+|----------|------|-------|--------|
+| All | `Compass` | All | `lucide-react` |
+| Beaches | `Waves` | Beaches | `lucide-react` |
+| Islands | `Sunrise` | Islands | `lucide-react` |
+| Mountains | `Mountain` | Mountains | `lucide-react` |
+| Food | `UtensilsCrossed` | Food Spots | `lucide-react` |
+| Heritage | `Landmark` | Heritage | `lucide-react` |
+| Adventure | `Palmtree` | Adventure | `lucide-react` |
+| Stays | `Hotel` | Stays | `lucide-react` |
+
+```jsx
+import { Compass, Waves, Sunrise, Mountain, UtensilsCrossed, Landmark, Palmtree, Hotel } from 'lucide-react'
+
+// Usage in category filter
+<Icon className="w-4 h-4" />
+```
 
 ### Place Type Icons
 
-| Type | Emoji | Category |
-|------|-------|----------|
-| Stay | 🏨 | Accommodation |
-| Eat | 🍜 | Food & Dining |
-| See | 📸 | Attractions |
-| Do | 🏄 | Activities |
-| Default | 🌴 | General |
+| Type | Icon | Gradient | Label |
+|------|------|----------|-------|
+| Stay | `Hotel` | `from-blue-400 to-blue-600` | Accommodation |
+| Eat | `UtensilsCrossed` | `from-orange-400 to-orange-600` | Food & Dining |
+| See | `Camera` | `from-purple-400 to-purple-600` | Attractions |
+| Do | `Compass` | `from-green-400 to-green-600` | Activities |
+| Default | `MapPin` | `from-teal-400 to-teal-600` | General |
+
+```jsx
+// Place type avatar with gradient background
+<div className={`w-10 h-10 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+  <Icon className="w-5 h-5 text-white" />
+</div>
+```
 
 ---
 
@@ -259,11 +281,14 @@ import BucketIcon from '@/components/icons/BucketIcon'
 
 #### Place Card
 ```jsx
+import { Hotel, Heart, MessageCircle, Send } from 'lucide-react'
+import BucketIcon from '@/components/icons/BucketIcon'
+
 <article className="bg-white dark:bg-black">
-  {/* Header with emoji avatar */}
+  {/* Header with icon avatar */}
   <div className="flex items-center gap-3 px-4 py-3">
-    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
-      🏨
+    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+      <Hotel className="w-5 h-5 text-white" />
     </div>
     <div>
       <span className="font-semibold text-sm">Location</span>
@@ -279,9 +304,11 @@ import BucketIcon from '@/components/icons/BucketIcon'
   {/* Actions */}
   <div className="flex items-center justify-between px-4 pt-3">
     <div className="flex items-center gap-4">
-      <Heart /> <MessageCircle /> <Send />
+      <Heart className="w-7 h-7" />
+      <MessageCircle className="w-7 h-7" />
+      <Send className="w-7 h-7" />
     </div>
-    <BucketIcon />
+    <BucketIcon className="w-7 h-7" />
   </div>
 </article>
 ```
@@ -422,7 +449,8 @@ duration-300       /* 300ms for smooth feel */
 src/
 ├── components/
 │   ├── icons/
-│   │   └── BucketIcon.tsx     # Custom bucket icon
+│   │   ├── BucketIcon.tsx     # Custom bucket list icon
+│   │   └── TaraLogo.tsx       # Custom palm tree logo
 │   └── layout/
 │       ├── Header.tsx          # Top header with search
 │       ├── Sidebar.tsx         # Desktop sidebar nav

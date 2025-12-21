@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal } from 'lucide-react'
+import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass } from 'lucide-react'
 import BucketIcon from '@/components/icons/BucketIcon'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 
@@ -41,19 +41,20 @@ export default function PlaceCard({
   const getCategoryStyle = (category: string) => {
     switch (category) {
       case 'stay':
-        return { emoji: '🏨', label: 'Stay' }
+        return { icon: Hotel, label: 'Stay', color: 'from-blue-400 to-blue-600' }
       case 'eat':
-        return { emoji: '🍜', label: 'Food' }
+        return { icon: UtensilsCrossed, label: 'Food', color: 'from-orange-400 to-orange-600' }
       case 'see':
-        return { emoji: '📸', label: 'See' }
+        return { icon: Camera, label: 'See', color: 'from-purple-400 to-purple-600' }
       case 'do':
-        return { emoji: '🏄', label: 'Activity' }
+        return { icon: Compass, label: 'Activity', color: 'from-green-400 to-green-600' }
       default:
-        return { emoji: '🌴', label: 'Place' }
+        return { icon: MapPin, label: 'Place', color: 'from-teal-400 to-teal-600' }
     }
   }
 
   const categoryStyle = getCategoryStyle(place.category)
+  const CategoryIcon = categoryStyle.icon
 
   return (
     <article className="bg-white dark:bg-black">
@@ -61,8 +62,8 @@ export default function PlaceCard({
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           {/* Location Avatar */}
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-lg">
-            {categoryStyle.emoji}
+          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${categoryStyle.color} flex items-center justify-center`}>
+            <CategoryIcon className="w-5 h-5 text-white" />
           </div>
           {/* Location Info */}
           <div>

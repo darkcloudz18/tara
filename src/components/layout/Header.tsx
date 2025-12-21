@@ -2,17 +2,31 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Search, SlidersHorizontal, MapPin, X } from 'lucide-react'
+import {
+  Search,
+  SlidersHorizontal,
+  MapPin,
+  X,
+  Palmtree,
+  Waves,
+  Mountain,
+  UtensilsCrossed,
+  Landmark,
+  Compass,
+  Hotel,
+  Sunrise
+} from 'lucide-react'
+import TaraLogo from '@/components/icons/TaraLogo'
 
 const categories = [
-  { id: 'all', label: 'All', emoji: '🌴' },
-  { id: 'beaches', label: 'Beaches', emoji: '🏖️' },
-  { id: 'islands', label: 'Islands', emoji: '🏝️' },
-  { id: 'mountains', label: 'Mountains', emoji: '⛰️' },
-  { id: 'food', label: 'Food Spots', emoji: '🍜' },
-  { id: 'heritage', label: 'Heritage', emoji: '🏛️' },
-  { id: 'adventure', label: 'Adventure', emoji: '🏄' },
-  { id: 'stays', label: 'Stays', emoji: '🏨' },
+  { id: 'all', label: 'All', icon: Compass },
+  { id: 'beaches', label: 'Beaches', icon: Waves },
+  { id: 'islands', label: 'Islands', icon: Sunrise },
+  { id: 'mountains', label: 'Mountains', icon: Mountain },
+  { id: 'food', label: 'Food Spots', icon: UtensilsCrossed },
+  { id: 'heritage', label: 'Heritage', icon: Landmark },
+  { id: 'adventure', label: 'Adventure', icon: Palmtree },
+  { id: 'stays', label: 'Stays', icon: Hotel },
 ]
 
 interface HeaderProps {
@@ -37,7 +51,7 @@ export default function Header({ selectedCategory, onCategoryChange, onSearch }:
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-2xl">🌴</span>
+            <TaraLogo className="w-8 h-8 text-teal-500" />
             <span className="text-xl font-bold text-teal-600 dark:text-teal-400">
               Tara
             </span>
@@ -103,20 +117,23 @@ export default function Header({ selectedCategory, onCategoryChange, onSearch }:
       {/* Category Tabs */}
       <div className="px-4 pb-3 overflow-x-auto scrollbar-hide">
         <div className="flex gap-2 max-w-7xl mx-auto" style={{ scrollbarWidth: 'none' }}>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => onCategoryChange(cat.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                selectedCategory === cat.id
-                  ? 'bg-teal-500 text-white shadow-md'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              <span>{cat.emoji}</span>
-              <span className="text-sm font-medium">{cat.label}</span>
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const Icon = cat.icon
+            return (
+              <button
+                key={cat.id}
+                onClick={() => onCategoryChange(cat.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-teal-500 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{cat.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
     </header>
