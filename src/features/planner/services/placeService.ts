@@ -107,7 +107,8 @@ async function fetchPartnerListings(
 }
 
 // Fetch Tara places (our database)
-async function fetchTaraPlaces(
+export async function fetchTaraPlaces(
+  limit: number = 30,
   destination?: string,
   category?: PlaceCategory
 ): Promise<DiscoverPlace[]> {
@@ -118,7 +119,7 @@ async function fetchTaraPlaces(
       .eq('is_active', true)
       .order('is_featured', { ascending: false })
       .order('average_rating', { ascending: false })
-      .limit(30)
+      .limit(limit)
 
     if (destination && destination !== 'all') {
       query = query.ilike('location', `%${destination}%`)
@@ -188,7 +189,7 @@ export async function fetchDiscoverPlaces(
   // Fetch in priority order
   const [partnerPlaces, taraPlaces] = await Promise.all([
     fetchPartnerListings(destination, category),
-    fetchTaraPlaces(destination, category),
+    fetchTaraPlaces(30, destination, category),
   ])
 
   // Combine with priority: partners first, then tara
@@ -204,7 +205,7 @@ export async function fetchDiscoverPlaces(
 export async function fetchFeaturedPlaces(): Promise<DiscoverPlace[]> {
   const [partnerPlaces, taraPlaces] = await Promise.all([
     fetchPartnerListings(),
-    fetchTaraPlaces(),
+    fetchTaraPlaces(30),
   ])
 
   // Prioritize featured items

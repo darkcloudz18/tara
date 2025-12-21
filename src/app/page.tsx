@@ -2,24 +2,30 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Bookmark, X } from 'lucide-react'
-import { DiscoverFeed } from '@/features/discover'
-import { Sidebar, MobileNav, DestinationStories, RightSidebar } from '@/components/layout'
+import { X, MapPin, Sparkles } from 'lucide-react'
+import { Sidebar, MobileNav } from '@/components/layout'
+import Header from '@/components/layout/Header'
+import PlaceCard from '@/features/discover/components/PlaceCard'
+import BucketIcon from '@/components/icons/BucketIcon'
 import { supabase } from '@/lib/supabase'
+import { useBucketList } from '@/features/planner/hooks/useBucketList'
+import { fetchTaraPlaces, DiscoverPlace } from '@/features/planner/services/placeService'
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
-  const [currentCreatorId, setCurrentCreatorId] = useState<string | null>(null)
-  const [selectedDestination, setSelectedDestination] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [places, setPlaces] = useState<DiscoverPlace[]>([])
+  const [loading, setLoading] = useState(true)
+  const [featuredPlace, setFeaturedPlace] = useState<DiscoverPlace | null>(null)
+
+  const bucketList = useBucketList()
 
   useEffect(() => {
-    // Check if user is logged in
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user)
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null)
     })
@@ -27,115 +33,193 @@ export default function HomePage() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleLoginRequired = () => {
-    setShowLoginPrompt(true)
+  useEffect(() => {
+    loadPlaces()
+  }, [selectedCategory])
+
+  const loadPlaces = async () => {
+    setLoading(true)
+    try {
+      const data = await fetchTaraPlaces(50)
+      // Filter by category if not 'all'
+      let filtered = data
+      if (selectedCategory !== 'all') {
+        const categoryMap: Record<string, string[]> = {
+          beaches: ['beach', 'see'],
+          islands: ['island', 'see'],
+          mountains: ['mountain', 'see', 'do'],
+          food: ['eat', 'restaurant', 'cafe'],
+          heritage: ['heritage', 'see', 'landmark'],
+          adventure: ['do', 'activity', 'adventure'],
+          stays: ['stay', 'hotel', 'resort'],
+        }
+        const categories = categoryMap[selectedCategory] || []
+        filtered = data.filter(p =>
+          categories.some(c => p.category?.toLowerCase().includes(c) || p.tags?.some(t => t.toLowerCase().includes(c)))
+        )
+      }
+
+      // Pick a featured place
+      const featured = filtered.find(p => p.isFeatured) || filtered[0]
+      setFeaturedPlace(featured)
+
+      // Rest of places (excluding featured)
+      setPlaces(filtered.filter(p => p.id !== featured?.id))
+    } catch (err) {
+      console.error('Failed to load places:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddToBucketList = async (place: DiscoverPlace) => {
+    try {
+      await bucketList.addPlace(place)
+    } catch (err: any) {
+      if (err.message?.includes('logged in')) {
+        setShowLoginPrompt(true)
+      }
+    }
+  }
+
+  const handleRemoveFromBucketList = async (placeId: string) => {
+    const item = bucketList.getItemByPlaceId(placeId)
+    if (item) {
+      await bucketList.removeItem(item.id)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
-      {/* Left Sidebar - Desktop */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Sidebar - Desktop */}
       <Sidebar user={user} />
 
-      {/* Main Content Area */}
-      <div className="lg:ml-[245px] xl:mr-[320px]">
-        {/* Mobile Header */}
-        <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
-          <div className="px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">🌴</span>
-              <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent">
-                Tara
-              </span>
-            </Link>
-          </div>
-        </header>
+      {/* Main Content */}
+      <div className="lg:ml-[260px]">
+        {/* Header */}
+        <Header
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
 
-        {/* Destination Stories */}
-        <div className="lg:pt-0 pt-14">
-          <DestinationStories
-            selected={selectedDestination}
-            onSelect={setSelectedDestination}
-          />
-        </div>
+        {/* Content */}
+        <main className="px-4 py-6 max-w-7xl mx-auto">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
+                  <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-800 animate-pulse" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse w-1/2" />
+                    <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse w-3/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Featured Place */}
+              {featuredPlace && (
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-teal-500" />
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Featured Destination</h2>
+                  </div>
+                  <PlaceCard
+                    place={featuredPlace}
+                    variant="featured"
+                    isInBucketList={bucketList.isInBucketList(featuredPlace.id)}
+                    onAddToBucketList={() => handleAddToBucketList(featuredPlace)}
+                    onRemoveFromBucketList={() => handleRemoveFromBucketList(featuredPlace.id)}
+                  />
+                </div>
+              )}
 
-        {/* Feed */}
-        <main className="max-w-[470px] mx-auto">
-          <DiscoverFeed
-            onLoginRequired={handleLoginRequired}
-            currentVideoCreatorId={currentCreatorId}
-            setCurrentVideoCreatorId={setCurrentCreatorId}
-          />
+              {/* Section Title */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-teal-500" />
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedCategory === 'all' ? 'Explore Philippines' : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}`}
+                  </h2>
+                </div>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {places.length} places
+                </span>
+              </div>
+
+              {/* Places Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {places.map((place) => (
+                  <PlaceCard
+                    key={place.id}
+                    place={place}
+                    isInBucketList={bucketList.isInBucketList(place.id)}
+                    onAddToBucketList={() => handleAddToBucketList(place)}
+                    onRemoveFromBucketList={() => handleRemoveFromBucketList(place.id)}
+                  />
+                ))}
+              </div>
+
+              {/* Empty State */}
+              {places.length === 0 && !featuredPlace && (
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MapPin className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No places found</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Try selecting a different category</p>
+                </div>
+              )}
+            </>
+          )}
         </main>
       </div>
 
-      {/* Right Sidebar - Desktop */}
-      <div className="fixed right-0 top-0 h-full hidden xl:block">
-        <RightSidebar user={user} />
-      </div>
-
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Navigation */}
       <MobileNav user={user} />
 
       {/* Login Prompt Modal */}
       {showLoginPrompt && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-sm w-full p-6 relative animate-scale-in">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-sm w-full p-6 relative">
             <button
               onClick={() => setShowLoginPrompt(false)}
               className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
             >
-              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <X className="w-5 h-5 text-gray-500" />
             </button>
 
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bookmark className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+              <div className="w-16 h-16 bg-teal-100 dark:bg-teal-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <BucketIcon className="w-8 h-8 text-teal-600 dark:text-teal-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Save to Bucket List
+                Add to Bucket List
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Create a free account to save places and plan your trips!
+                Sign in to save places and plan your dream trip to the Philippines!
               </p>
             </div>
 
             <div className="space-y-3">
               <Link
                 href="/register"
-                className="block w-full py-3 bg-primary-600 text-white text-center rounded-xl font-semibold hover:bg-primary-700 transition-colors"
+                className="block w-full py-3 bg-teal-500 text-white text-center rounded-xl font-semibold hover:bg-teal-600 transition-colors"
               >
-                Sign Up Free
+                Create Free Account
               </Link>
               <Link
                 href="/login"
                 className="block w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-center rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
-                Already have an account? Login
+                Sign In
               </Link>
             </div>
-
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-              By signing up, you agree to our Terms of Service
-            </p>
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes scale-in {
-          from {
-            transform: scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        .animate-scale-in {
-          animation: scale-in 0.2s ease-out;
-        }
-      `}</style>
     </div>
   )
 }
