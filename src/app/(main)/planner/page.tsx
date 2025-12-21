@@ -23,12 +23,18 @@ export default function PlannerPage() {
   const [showDateModal, setShowDateModal] = useState(false)
   const [showExistingTrips, setShowExistingTrips] = useState(false)
   const [skippedPlaces, setSkippedPlaces] = useState<Set<string>>(new Set())
+  const [addError, setAddError] = useState<string | null>(null)
 
   const handleAddPlace = async (place: DiscoverPlace) => {
+    setAddError(null)
     try {
       await bucketList.addPlace(place)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to add to bucket list:', err)
+      const message = err.message || 'Failed to add to bucket list'
+      setAddError(message)
+      // Auto-clear error after 3 seconds
+      setTimeout(() => setAddError(null), 3000)
     }
   }
 
@@ -84,7 +90,14 @@ export default function PlannerPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-gray-50 relative">
+      {/* Error Toast */}
+      {addError && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 bg-red-500 text-white rounded-lg shadow-lg text-sm font-medium animate-fade-in">
+          {addError}
+        </div>
+      )}
+
       {/* Top Bar - View Existing Trips */}
       <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-end">
         <button

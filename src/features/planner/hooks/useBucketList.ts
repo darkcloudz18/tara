@@ -76,18 +76,36 @@ export function useBucketList() {
 
   const isInBucketList = useCallback(
     (placeId: string) => {
-      return items.some(
-        (item) => item.place_id === placeId || item.external_place_id === placeId
-      )
+      // placeId format is "tara-uuid" or "partner-uuid" or "google-id"
+      // Extract the actual ID for comparison
+      const parts = placeId.split('-')
+      const source = parts[0]
+      const actualId = parts.slice(1).join('-') // Handle UUIDs with dashes
+
+      return items.some((item) => {
+        if (source === 'tara') {
+          return item.place_id === actualId
+        } else {
+          return item.external_place_id === placeId
+        }
+      })
     },
     [items]
   )
 
   const getItemByPlaceId = useCallback(
     (placeId: string) => {
-      return items.find(
-        (item) => item.place_id === placeId || item.external_place_id === placeId
-      )
+      const parts = placeId.split('-')
+      const source = parts[0]
+      const actualId = parts.slice(1).join('-')
+
+      return items.find((item) => {
+        if (source === 'tara') {
+          return item.place_id === actualId
+        } else {
+          return item.external_place_id === placeId
+        }
+      })
     },
     [items]
   )

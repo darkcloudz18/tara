@@ -36,9 +36,10 @@ export async function addToBucketList(place: DiscoverPlace): Promise<BucketListI
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Must be logged in to add to bucket list')
 
+  // Use sourceId (actual UUID) for database foreign key, but store full id for external sources
   const bucketItem = {
     user_id: user.id,
-    place_id: place.source === 'tara' ? place.id : null,
+    place_id: place.source === 'tara' ? place.sourceId : null,
     external_place_id: place.source !== 'tara' ? place.id : null,
     place_name: place.name,
     place_location: place.location,
