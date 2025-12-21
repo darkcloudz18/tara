@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Star, Navigation, ChevronRight } from 'lucide-react'
+import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal } from 'lucide-react'
 import BucketIcon from '@/components/icons/BucketIcon'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 
@@ -10,7 +10,6 @@ interface PlaceCardProps {
   isInBucketList: boolean
   onAddToBucketList: () => void
   onRemoveFromBucketList: () => void
-  variant?: 'default' | 'compact' | 'featured'
 }
 
 export default function PlaceCard({
@@ -18,10 +17,10 @@ export default function PlaceCard({
   isInBucketList,
   onAddToBucketList,
   onRemoveFromBucketList,
-  variant = 'default',
 }: PlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 500) + 50)
 
   const mainPhoto = place.photos?.[0] || 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800'
 
@@ -34,200 +33,162 @@ export default function PlaceCard({
     }
   }
 
+  const handleLike = () => {
+    setLiked(!liked)
+    setLikeCount(prev => liked ? prev - 1 : prev + 1)
+  }
+
   const getCategoryStyle = (category: string) => {
     switch (category) {
       case 'stay':
-        return { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-700 dark:text-blue-300', emoji: '🏨' }
+        return { emoji: '🏨', label: 'Stay' }
       case 'eat':
-        return { bg: 'bg-orange-100 dark:bg-orange-900', text: 'text-orange-700 dark:text-orange-300', emoji: '🍜' }
+        return { emoji: '🍜', label: 'Food' }
       case 'see':
-        return { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-700 dark:text-purple-300', emoji: '📸' }
+        return { emoji: '📸', label: 'See' }
       case 'do':
-        return { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-700 dark:text-green-300', emoji: '🏄' }
+        return { emoji: '🏄', label: 'Activity' }
       default:
-        return { bg: 'bg-teal-100 dark:bg-teal-900', text: 'text-teal-700 dark:text-teal-300', emoji: '🌴' }
+        return { emoji: '🌴', label: 'Place' }
     }
   }
 
   const categoryStyle = getCategoryStyle(place.category)
 
-  if (variant === 'featured') {
-    return (
-      <div
-        className="relative rounded-2xl overflow-hidden group cursor-pointer"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {/* Image */}
-        <div className="aspect-[16/10] relative">
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 animate-pulse" />
-          )}
-          <img
-            src={mainPhoto}
-            alt={place.name}
-            className={`w-full h-full object-cover transition-transform duration-500 ${
-              isHovered ? 'scale-105' : 'scale-100'
-            } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-            onLoad={() => setImageLoaded(true)}
-          />
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-        </div>
-
-        {/* Bucket Button */}
-        <button
-          onClick={handleBucketToggle}
-          className={`absolute top-4 right-4 p-3 rounded-full transition-all shadow-lg ${
-            isInBucketList
-              ? 'bg-teal-500 text-white'
-              : 'bg-white/90 dark:bg-gray-900/90 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
-          }`}
-        >
-          <BucketIcon className="w-5 h-5" filled={isInBucketList} />
-        </button>
-
-        {/* Content Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-5">
-          {/* Category Badge */}
-          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium mb-3 ${categoryStyle.bg} ${categoryStyle.text}`}>
-            {categoryStyle.emoji} {place.category}
-          </span>
-
-          {/* Title */}
-          <h3 className="text-xl font-bold text-white mb-2">{place.name}</h3>
-
-          {/* Location */}
-          <div className="flex items-center gap-1 text-white/80 mb-3">
-            <MapPin className="w-4 h-4" />
-            <span className="text-sm">{place.location}</span>
+  return (
+    <article className="bg-white dark:bg-black">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-3">
+          {/* Location Avatar */}
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-lg">
+            {categoryStyle.emoji}
           </div>
-
-          {/* Bottom Row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Rating */}
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                <span className="text-white font-medium">{place.rating.toFixed(1)}</span>
-              </div>
-              {/* Price */}
-              {place.estimatedCost !== undefined && (
-                <span className={`font-semibold ${place.estimatedCost === 0 ? 'text-green-400' : 'text-white'}`}>
-                  {place.estimatedCost === 0 ? 'Free' : `₱${place.estimatedCost.toLocaleString()}`}
-                </span>
+          {/* Location Info */}
+          <div>
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-sm text-gray-900 dark:text-white">{place.location}</span>
+              {place.isFeatured && (
+                <svg className="w-4 h-4 text-teal-500 fill-teal-500" viewBox="0 0 24 24">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
               )}
             </div>
-            {/* View Button */}
-            <button className="flex items-center gap-1 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium hover:bg-white/30 transition-colors">
-              Explore <ChevronRight className="w-4 h-4" />
-            </button>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{categoryStyle.label}</span>
           </div>
         </div>
+        {/* More Options */}
+        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+          <MoreHorizontal className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        </button>
       </div>
-    )
-  }
 
-  // Default card variant
-  return (
-    <div
-      className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100 dark:border-gray-800"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Image */}
-      <div className="aspect-[4/3] relative overflow-hidden">
+      {/* Square Image */}
+      <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
         {!imageLoaded && (
           <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 animate-pulse" />
         )}
         <img
           src={mainPhoto}
           alt={place.name}
-          className={`w-full h-full object-cover transition-transform duration-500 ${
-            isHovered ? 'scale-110' : 'scale-100'
-          } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`w-full h-full object-cover transition-opacity ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
           onLoad={() => setImageLoaded(true)}
+          onDoubleClick={handleLike}
         />
 
-        {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-          {/* Category */}
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium ${categoryStyle.bg} ${categoryStyle.text}`}>
-            {categoryStyle.emoji} {place.category}
-          </span>
+        {/* Partner Badge */}
+        {place.source === 'partner' && (
+          <div className="absolute top-3 left-3 px-2.5 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-lg">
+            PARTNER
+          </div>
+        )}
 
-          {/* Partner Badge */}
-          {place.source === 'partner' && (
-            <span className="px-2.5 py-1 bg-amber-400 text-amber-900 rounded-lg text-xs font-bold">
-              PARTNER
-            </span>
-          )}
+        {/* Price Tag */}
+        {place.estimatedCost !== undefined && (
+          <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-black/70 backdrop-blur-sm text-white text-sm font-semibold rounded-lg">
+            {place.estimatedCost === 0 ? 'Free' : `₱${place.estimatedCost.toLocaleString()}`}
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="px-4 pt-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {/* Like */}
+            <button onClick={handleLike} className="hover:opacity-60 transition-opacity">
+              <Heart
+                className={`w-7 h-7 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-900 dark:text-white'}`}
+              />
+            </button>
+            {/* Comment */}
+            <button className="hover:opacity-60 transition-opacity">
+              <MessageCircle className="w-7 h-7 text-gray-900 dark:text-white" />
+            </button>
+            {/* Share */}
+            <button className="hover:opacity-60 transition-opacity">
+              <Send className="w-7 h-7 text-gray-900 dark:text-white" />
+            </button>
+          </div>
+
+          {/* Bucket List */}
+          <button
+            onClick={handleBucketToggle}
+            className="hover:opacity-60 transition-opacity"
+          >
+            <BucketIcon
+              className={`w-7 h-7 ${isInBucketList ? 'text-teal-500' : 'text-gray-900 dark:text-white'}`}
+              filled={isInBucketList}
+            />
+          </button>
         </div>
 
-        {/* Bucket Button */}
-        <button
-          onClick={handleBucketToggle}
-          className={`absolute bottom-3 right-3 p-2.5 rounded-xl transition-all shadow-lg ${
-            isInBucketList
-              ? 'bg-teal-500 text-white scale-110'
-              : 'bg-white/90 dark:bg-gray-900/90 text-gray-700 dark:text-gray-300 hover:scale-110'
-          }`}
-        >
-          <BucketIcon className="w-5 h-5" filled={isInBucketList} />
-        </button>
+        {/* Likes Count */}
+        <p className="font-semibold text-sm text-gray-900 dark:text-white mt-3">
+          {likeCount.toLocaleString()} likes
+        </p>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        {/* Location */}
-        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm mb-1">
-          <MapPin className="w-3.5 h-3.5" />
-          <span>{place.location}</span>
-        </div>
-
-        {/* Title */}
-        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 line-clamp-1 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-          {place.name}
-        </h3>
-
-        {/* Description */}
-        {place.description && (
-          <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-3">
-            {place.description}
-          </p>
-        )}
-
-        {/* Bottom Row */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
-          {/* Rating */}
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-            <span className="font-semibold text-gray-900 dark:text-white">{place.rating.toFixed(1)}</span>
-            <span className="text-gray-500 dark:text-gray-400 text-sm">({place.reviewCount})</span>
-          </div>
-
-          {/* Price */}
-          {place.estimatedCost !== undefined && (
-            <span className={`font-bold ${place.estimatedCost === 0 ? 'text-green-600 dark:text-green-400' : 'text-teal-600 dark:text-teal-400'}`}>
-              {place.estimatedCost === 0 ? 'Free' : `₱${place.estimatedCost.toLocaleString()}`}
-            </span>
+      <div className="px-4 pb-4">
+        {/* Place Name & Description */}
+        <p className="text-sm mt-1">
+          <span className="font-semibold text-gray-900 dark:text-white">{place.name}</span>
+          {place.description && (
+            <>
+              {' '}
+              <span className="text-gray-700 dark:text-gray-300">{place.description}</span>
+            </>
           )}
+        </p>
+
+        {/* Rating & Location */}
+        <div className="flex items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <span className="flex items-center gap-1">
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+            <span className="font-medium text-gray-900 dark:text-white">{place.rating.toFixed(1)}</span>
+            <span>({place.reviewCount})</span>
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5" />
+            {place.location}
+          </span>
         </div>
 
         {/* Tags */}
         {place.tags && place.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {place.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs rounded-md"
-              >
-                {tag}
+          <div className="flex flex-wrap gap-1 mt-2">
+            {place.tags.slice(0, 4).map((tag) => (
+              <span key={tag} className="text-teal-600 dark:text-teal-400 text-sm">
+                #{tag.replace(/\s+/g, '')}
               </span>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </article>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { X, MapPin, Sparkles } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 import { Sidebar, MobileNav } from '@/components/layout'
 import Header from '@/components/layout/Header'
 import PlaceCard from '@/features/discover/components/PlaceCard'
@@ -17,7 +17,6 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [places, setPlaces] = useState<DiscoverPlace[]>([])
   const [loading, setLoading] = useState(true)
-  const [featuredPlace, setFeaturedPlace] = useState<DiscoverPlace | null>(null)
 
   const bucketList = useBucketList()
 
@@ -58,13 +57,7 @@ export default function HomePage() {
           categories.some(c => p.category?.toLowerCase().includes(c) || p.tags?.some(t => t.toLowerCase().includes(c)))
         )
       }
-
-      // Pick a featured place
-      const featured = filtered.find(p => p.isFeatured) || filtered[0]
-      setFeaturedPlace(featured)
-
-      // Rest of places (excluding featured)
-      setPlaces(filtered.filter(p => p.id !== featured?.id))
+      setPlaces(filtered)
     } catch (err) {
       console.error('Failed to load places:', err)
     } finally {
@@ -90,7 +83,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-white dark:bg-black">
       {/* Sidebar - Desktop */}
       <Sidebar user={user} />
 
@@ -102,77 +95,44 @@ export default function HomePage() {
           onCategoryChange={setSelectedCategory}
         />
 
-        {/* Content */}
-        <main className="px-4 py-6 max-w-7xl mx-auto">
+        {/* Vertical Feed */}
+        <main className="max-w-[470px] mx-auto pb-20 lg:pb-8">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
-                  <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                  <div className="p-4 space-y-3">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse w-1/2" />
-                    <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse w-3/4" />
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 text-teal-500 animate-spin mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Discovering places...</p>
+            </div>
+          ) : places.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 px-4">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                <BucketIcon className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No places found</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-center">Try selecting a different category</p>
             </div>
           ) : (
-            <>
-              {/* Featured Place */}
-              {featuredPlace && (
-                <div className="mb-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="w-5 h-5 text-teal-500" />
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Featured Destination</h2>
-                  </div>
+            <div>
+              {places.map((place) => (
+                <div key={place.id} className="border-b border-gray-100 dark:border-gray-800">
                   <PlaceCard
-                    place={featuredPlace}
-                    variant="featured"
-                    isInBucketList={bucketList.isInBucketList(featuredPlace.id)}
-                    onAddToBucketList={() => handleAddToBucketList(featuredPlace)}
-                    onRemoveFromBucketList={() => handleRemoveFromBucketList(featuredPlace.id)}
-                  />
-                </div>
-              )}
-
-              {/* Section Title */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-teal-500" />
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedCategory === 'all' ? 'Explore Philippines' : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}`}
-                  </h2>
-                </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {places.length} places
-                </span>
-              </div>
-
-              {/* Places Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {places.map((place) => (
-                  <PlaceCard
-                    key={place.id}
                     place={place}
                     isInBucketList={bucketList.isInBucketList(place.id)}
                     onAddToBucketList={() => handleAddToBucketList(place)}
                     onRemoveFromBucketList={() => handleRemoveFromBucketList(place.id)}
                   />
-                ))}
-              </div>
-
-              {/* Empty State */}
-              {places.length === 0 && !featuredPlace && (
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MapPin className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No places found</h3>
-                  <p className="text-gray-500 dark:text-gray-400">Try selecting a different category</p>
                 </div>
-              )}
-            </>
+              ))}
+
+              {/* Load More */}
+              <div className="text-center py-8">
+                <button
+                  onClick={loadPlaces}
+                  className="px-6 py-3 text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
+                >
+                  Load More
+                </button>
+              </div>
+            </div>
           )}
         </main>
       </div>
