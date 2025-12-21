@@ -6,16 +6,23 @@ import { X, Loader2 } from 'lucide-react'
 import { Sidebar, MobileNav } from '@/components/layout'
 import Header from '@/components/layout/Header'
 import PlaceCard from '@/features/discover/components/PlaceCard'
+import CuratedVideoCard from '@/features/discover/components/CuratedVideoCard'
 import BucketIcon from '@/components/icons/BucketIcon'
 import { supabase } from '@/lib/supabase'
 import { useBucketList } from '@/features/planner/hooks/useBucketList'
 import { fetchTaraPlaces, DiscoverPlace } from '@/features/planner/services/placeService'
+import { fetchCuratedVideos, FeedVideo } from '@/features/discover/services/videoService'
+
+// Union type for feed items
+type FeedItem =
+  | { type: 'place'; data: DiscoverPlace }
+  | { type: 'video'; data: FeedVideo }
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [places, setPlaces] = useState<DiscoverPlace[]>([])
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
 
   const bucketList = useBucketList()
@@ -33,15 +40,20 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    loadPlaces()
+    loadFeed()
   }, [selectedCategory])
 
-  const loadPlaces = async () => {
+  const loadFeed = async () => {
     setLoading(true)
     try {
-      const data = await fetchTaraPlaces(50)
-      // Filter by category if not 'all'
-      let filtered = data
+      // Fetch both places and videos in parallel
+      const [placesData, videosData] = await Promise.all([
+        fetchTaraPlaces(30),
+        fetchCuratedVideos(10),
+      ])
+
+      // Filter places by category if not 'all'
+      let filteredPlaces = placesData
       if (selectedCategory !== 'all') {
         const categoryMap: Record<string, string[]> = {
           beaches: ['beach', 'see'],
@@ -53,13 +65,37 @@ export default function HomePage() {
           stays: ['stay', 'hotel', 'resort'],
         }
         const categories = categoryMap[selectedCategory] || []
-        filtered = data.filter(p =>
+        filteredPlaces = placesData.filter(p =>
           categories.some(c => p.category?.toLowerCase().includes(c) || p.tags?.some(t => t.toLowerCase().includes(c)))
         )
       }
-      setPlaces(filtered)
+
+      // Convert to feed items
+      const placeItems: FeedItem[] = filteredPlaces.map(p => ({ type: 'place', data: p }))
+      const videoItems: FeedItem[] = videosData.map(v => ({ type: 'video', data: v }))
+
+      // Interleave videos with places (insert video every 3-4 places)
+      const mixed: FeedItem[] = []
+      let videoIndex = 0
+
+      placeItems.forEach((place, index) => {
+        mixed.push(place)
+        // Insert a video after every 3 places
+        if ((index + 1) % 3 === 0 && videoIndex < videoItems.length) {
+          mixed.push(videoItems[videoIndex])
+          videoIndex++
+        }
+      })
+
+      // Add remaining videos at the end
+      while (videoIndex < videoItems.length) {
+        mixed.push(videoItems[videoIndex])
+        videoIndex++
+      }
+
+      setFeedItems(mixed)
     } catch (err) {
-      console.error('Failed to load places:', err)
+      console.error('Failed to load feed:', err)
     } finally {
       setLoading(false)
     }
@@ -102,31 +138,35 @@ export default function HomePage() {
               <Loader2 className="w-8 h-8 text-teal-500 animate-spin mb-4" />
               <p className="text-gray-500 dark:text-gray-400">Discovering places...</p>
             </div>
-          ) : places.length === 0 ? (
+          ) : feedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-4">
               <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
                 <BucketIcon className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No places found</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No content found</h3>
               <p className="text-gray-500 dark:text-gray-400 text-center">Try selecting a different category</p>
             </div>
           ) : (
             <div>
-              {places.map((place) => (
-                <div key={place.id} className="border-b border-gray-100 dark:border-gray-800">
-                  <PlaceCard
-                    place={place}
-                    isInBucketList={bucketList.isInBucketList(place.id)}
-                    onAddToBucketList={() => handleAddToBucketList(place)}
-                    onRemoveFromBucketList={() => handleRemoveFromBucketList(place.id)}
-                  />
+              {feedItems.map((item) => (
+                <div key={item.type === 'place' ? item.data.id : item.data.id} className="border-b border-gray-100 dark:border-gray-800">
+                  {item.type === 'place' ? (
+                    <PlaceCard
+                      place={item.data}
+                      isInBucketList={bucketList.isInBucketList(item.data.id)}
+                      onAddToBucketList={() => handleAddToBucketList(item.data)}
+                      onRemoveFromBucketList={() => handleRemoveFromBucketList(item.data.id)}
+                    />
+                  ) : (
+                    <CuratedVideoCard video={item.data} />
+                  )}
                 </div>
               ))}
 
               {/* Load More */}
               <div className="text-center py-8">
                 <button
-                  onClick={loadPlaces}
+                  onClick={loadFeed}
                   className="px-6 py-3 text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
                 >
                   Load More

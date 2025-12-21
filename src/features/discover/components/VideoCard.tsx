@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Play, Heart, MessageCircle, Send, Bookmark, User, CheckCircle, MoreHorizontal } from 'lucide-react'
+import { Play, Heart, MessageCircle, Send, User, CheckCircle, MoreHorizontal, Video, MapPin } from 'lucide-react'
+import BucketIcon from '@/components/icons/BucketIcon'
 import { CreatorVideo, getYouTubeVideoId, getYouTubeThumbnail } from '../services/creatorVideoService'
 
 interface VideoCardProps {
@@ -132,9 +133,12 @@ export default function VideoCard({ video, onCreatorClick, className = '' }: Vid
               <Send className="w-6 h-6 text-gray-900 dark:text-white" />
             </button>
           </div>
-          {/* Save */}
+          {/* Save to Bucket List */}
           <button onClick={() => setSaved(!saved)} className="hover:opacity-60 transition-opacity">
-            <Bookmark className={`w-6 h-6 ${saved ? 'fill-gray-900 dark:fill-white' : ''} text-gray-900 dark:text-white`} />
+            <BucketIcon
+              className={`w-6 h-6 ${saved ? 'text-teal-500' : 'text-gray-900 dark:text-white'}`}
+              filled={saved}
+            />
           </button>
         </div>
 

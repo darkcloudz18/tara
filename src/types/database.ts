@@ -246,3 +246,33 @@ export interface FullProfile extends Profile {
   creator?: Creator
   supplier?: Supplier
 }
+
+// Video types
+export type VideoType = 'youtube' | 'tiktok' | 'instagram' | 'short'
+export type VideoCategory = 'stay' | 'eat' | 'see' | 'do' | 'vlog' | 'guide'
+
+export interface CuratedVideo {
+  id: string
+  title: string
+  description?: string
+  video_url: string
+  video_type: VideoType
+  youtube_id?: string
+  thumbnail_url?: string
+  duration_seconds?: number
+  category: VideoCategory
+  location: string
+  destinations?: string[]
+  tags?: string[]
+  source_channel?: string
+  source_url?: string
+  views: number
+  likes: number
+  saves: number
+  is_featured: boolean
+  is_short: boolean
+  is_active: boolean
+  display_order: number
+  created_at: string
+  updated_at: string
+}
