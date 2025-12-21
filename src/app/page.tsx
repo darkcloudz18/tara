@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Compass, User, Bookmark, Search, X } from 'lucide-react'
+import { Bookmark, X } from 'lucide-react'
 import { DiscoverFeed } from '@/features/discover'
+import { Sidebar, MobileNav, DestinationStories, RightSidebar } from '@/components/layout'
 import { supabase } from '@/lib/supabase'
 
 export default function HomePage() {
-  const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [currentCreatorId, setCurrentCreatorId] = useState<string | null>(null)
+  const [selectedDestination, setSelectedDestination] = useState<string | null>(null)
 
   useEffect(() => {
     // Check if user is logged in
@@ -32,92 +32,49 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Floating Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/50">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">🌴</span>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent">
-              Tara
-            </span>
-          </Link>
+    <div className="min-h-screen bg-white">
+      {/* Left Sidebar - Desktop */}
+      <Sidebar user={user} />
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {/* Search */}
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <Search className="w-5 h-5 text-gray-600" />
-            </button>
-
-            {user ? (
-              <>
-                {/* Bucket List */}
-                <Link
-                  href="/planner"
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <Bookmark className="w-5 h-5 text-gray-600" />
-                </Link>
-
-                {/* Profile */}
-                <Link
-                  href="/dashboard"
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <User className="w-5 h-5 text-gray-600" />
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-4 py-2 bg-primary-600 text-white rounded-full text-sm font-medium hover:bg-primary-700 transition-colors"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
+      {/* Main Content Area */}
+      <div className="lg:ml-[245px] xl:mr-[320px]">
+        {/* Mobile Header */}
+        <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-2xl">🌴</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent">
+                Tara
+              </span>
+            </Link>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Feed */}
-      <main className="pt-16">
-        <DiscoverFeed
-          onLoginRequired={handleLoginRequired}
-          currentVideoCreatorId={currentCreatorId}
-          setCurrentVideoCreatorId={setCurrentCreatorId}
-        />
-      </main>
-
-      {/* Bottom Navigation (Mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 lg:hidden">
-        <div className="flex items-center justify-around py-2">
-          <Link href="/" className="flex flex-col items-center gap-1 px-4 py-2 text-primary-600">
-            <Compass className="w-6 h-6" />
-            <span className="text-xs font-medium">Discover</span>
-          </Link>
-          <Link href="/planner" className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500 hover:text-gray-900">
-            <Bookmark className="w-6 h-6" />
-            <span className="text-xs font-medium">Bucket List</span>
-          </Link>
-          <Link
-            href={user ? '/dashboard' : '/login'}
-            className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500 hover:text-gray-900"
-          >
-            <User className="w-6 h-6" />
-            <span className="text-xs font-medium">{user ? 'Profile' : 'Login'}</span>
-          </Link>
+        {/* Destination Stories */}
+        <div className="lg:pt-0 pt-14">
+          <DestinationStories
+            selected={selectedDestination}
+            onSelect={setSelectedDestination}
+          />
         </div>
-      </nav>
+
+        {/* Feed */}
+        <main className="max-w-[470px] mx-auto">
+          <DiscoverFeed
+            onLoginRequired={handleLoginRequired}
+            currentVideoCreatorId={currentCreatorId}
+            setCurrentVideoCreatorId={setCurrentCreatorId}
+          />
+        </main>
+      </div>
+
+      {/* Right Sidebar - Desktop */}
+      <div className="fixed right-0 top-0 h-full hidden xl:block">
+        <RightSidebar user={user} />
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNav user={user} />
 
       {/* Login Prompt Modal */}
       {showLoginPrompt && (

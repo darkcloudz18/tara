@@ -81,7 +81,7 @@ export default function DiscoverFeed({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-primary-600 animate-spin mb-4" />
         <p className="text-gray-500">Discovering amazing places...</p>
       </div>
@@ -90,7 +90,7 @@ export default function DiscoverFeed({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
+      <div className="flex flex-col items-center justify-center py-20 px-4">
         <p className="text-red-500 mb-4">{error}</p>
         <button
           onClick={loadFeed}
@@ -104,7 +104,7 @@ export default function DiscoverFeed({
 
   if (feed.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
+      <div className="flex flex-col items-center justify-center py-20 px-4">
         <Compass className="w-16 h-16 text-gray-300 mb-4" />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">No content yet</h2>
         <p className="text-gray-500 text-center">
@@ -115,11 +115,11 @@ export default function DiscoverFeed({
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="pb-20 lg:pb-8">
       {/* Feed */}
-      <div className="max-w-lg mx-auto pb-20">
-        {feed.map((item, index) => (
-          <div key={item.id} className="mb-4">
+      <div>
+        {feed.map((item) => (
+          <div key={item.id} className="border-b border-gray-100">
             {item.type === 'video' ? (
               <div
                 onMouseEnter={() => handleVideoView(item.data as CreatorVideo)}
@@ -128,7 +128,6 @@ export default function DiscoverFeed({
                 <VideoCard
                   video={item.data as CreatorVideo}
                   onCreatorClick={handleVideoCreatorClick}
-                  className="mx-4"
                 />
               </div>
             ) : (
@@ -139,7 +138,6 @@ export default function DiscoverFeed({
                 onRemoveFromBucketList={() =>
                   handleRemoveFromBucketList((item.data as DiscoverPlace).id)
                 }
-                className="mx-4"
               />
             )}
           </div>
@@ -149,7 +147,7 @@ export default function DiscoverFeed({
         <div className="text-center py-8">
           <button
             onClick={loadFeed}
-            className="px-6 py-3 bg-white text-primary-600 rounded-xl font-medium shadow-sm hover:shadow-md transition-shadow"
+            className="px-6 py-3 text-primary-600 font-semibold hover:text-primary-700 transition-colors"
           >
             Load More
           </button>
