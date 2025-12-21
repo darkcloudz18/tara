@@ -18,7 +18,13 @@ export default function CuratedVideoCard({ video, onLike, onSave }: CuratedVideo
   const [likeCount, setLikeCount] = useState(video.likes || Math.floor(Math.random() * 1000) + 100)
 
   const handlePlay = () => {
-    setIsPlaying(true)
+    // Only embed if we have a valid YouTube ID
+    if (video.youtubeId) {
+      setIsPlaying(true)
+    } else if (video.videoUrl) {
+      // Open external video URL in new tab
+      window.open(video.videoUrl, '_blank')
+    }
   }
 
   const handleLike = () => {
@@ -84,7 +90,7 @@ export default function CuratedVideoCard({ video, onLike, onSave }: CuratedVideo
         ) : (
           <>
             <img
-              src={video.thumbnailUrl || `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
+              src={video.thumbnailUrl || (video.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800')}
               alt={video.title}
               className="w-full h-full object-cover"
             />
