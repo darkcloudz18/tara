@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Heart, MessageCircle, Send, MoreHorizontal, Play, Eye, Video } from 'lucide-react'
+import { MapPin, Heart, MessageCircle, Send, MoreHorizontal, Play, Eye, Video, Camera } from 'lucide-react'
 import BucketIcon from '@/components/icons/BucketIcon'
 import { FeedVideo, getYouTubeEmbedUrl } from '../services/videoService'
 
@@ -47,7 +47,7 @@ export default function CuratedVideoCard({ video, onLike, onSave }: CuratedVideo
       vlog: 'Travel Vlog',
       guide: 'Travel Guide',
     }
-    return labels[category] || 'Video'
+    return labels[category] || (video.youtubeId ? 'Video' : 'Destination')
   }
 
   return (
@@ -56,8 +56,14 @@ export default function CuratedVideoCard({ video, onLike, onSave }: CuratedVideo
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           {/* Channel Avatar */}
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-            <Video className="w-5 h-5 text-white" />
+          <div className={`w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center ${
+            video.youtubeId ? 'from-red-500 to-red-600' : 'from-teal-400 to-teal-600'
+          }`}>
+            {video.youtubeId ? (
+              <Video className="w-5 h-5 text-white" />
+            ) : (
+              <Camera className="w-5 h-5 text-white" />
+            )}
           </div>
           {/* Channel Info */}
           <div>
@@ -94,15 +100,17 @@ export default function CuratedVideoCard({ video, onLike, onSave }: CuratedVideo
               alt={video.title}
               className="w-full h-full object-cover"
             />
-            {/* Play Button Overlay */}
-            <button
-              onClick={handlePlay}
-              className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors group"
-            >
-              <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Play className="w-8 h-8 text-white ml-1" fill="white" />
-              </div>
-            </button>
+            {/* Play Button Overlay - Only show if video is playable */}
+            {video.youtubeId && (
+              <button
+                onClick={handlePlay}
+                className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors group"
+              >
+                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Play className="w-8 h-8 text-white ml-1" fill="white" />
+                </div>
+              </button>
+            )}
             {/* Views Badge */}
             <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/70 backdrop-blur-sm text-white text-xs font-medium rounded-lg">
               <Eye className="w-3.5 h-3.5" />
