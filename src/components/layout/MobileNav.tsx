@@ -22,7 +22,7 @@ export default function MobileNav({ user }: MobileNavProps) {
     { icon: Search, label: 'Search', href: '/search' },
     { icon: PlusCircle, label: 'Plan Trip', href: user ? '/planner/new' : '/login' },
     { icon: () => <BucketIcon className="w-6 h-6" />, label: 'Bucket List', href: user ? '/planner' : '/login' },
-    { icon: User, label: 'Account', href: user ? '/dashboard' : '/login' },
+    { icon: User, label: 'Profile', href: user ? '/profile' : '/login' },
   ]
 
   return (

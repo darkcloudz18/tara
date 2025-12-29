@@ -14,6 +14,7 @@ import {
   Sun,
   LogOut,
   HelpCircle,
+  LayoutDashboard,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -55,7 +56,8 @@ export default function Sidebar({ user }: SidebarProps) {
 
   const accountNavItems: NavItem[] = [
     { icon: Bell, label: 'Notifications', href: '/notifications', requiresAuth: true, badge: 3 },
-    { icon: User, label: 'Dashboard', href: '/dashboard', requiresAuth: true },
+    { icon: User, label: 'Profile', href: '/profile', requiresAuth: true },
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', requiresAuth: true },
   ]
 
   const NavLink = ({ item }: { item: NavItem }) => {
@@ -177,7 +179,10 @@ export default function Sidebar({ user }: SidebarProps) {
 
         {/* User Profile / Login */}
         {user ? (
-          <div className="flex items-center gap-3 px-4 py-3 mt-2 bg-gray-50 dark:bg-gray-900 rounded-xl">
+          <Link
+            href="/profile"
+            className="flex items-center gap-3 px-4 py-3 mt-2 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center text-white font-bold">
               {user.email?.charAt(0).toUpperCase()}
             </div>
@@ -189,7 +194,7 @@ export default function Sidebar({ user }: SidebarProps) {
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
               </div>
             )}
-          </div>
+          </Link>
         ) : (
           <Link
             href="/login"
