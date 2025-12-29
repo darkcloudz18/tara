@@ -6,10 +6,12 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus, Image, Play, Map, X } from 'lucide-react'
 import ProfileHeader from '@/features/profile/components/ProfileHeader'
 import ProfileContentGrid from '@/features/profile/components/ProfileContentGrid'
 import EditProfileModal from '@/features/profile/components/EditProfileModal'
+import CreatePostModal from '@/features/profile/components/CreatePostModal'
+import CreateVideoModal from '@/features/profile/components/CreateVideoModal'
 import {
   UserProfile,
   ProfileContent,
@@ -31,6 +33,9 @@ export default function ProfilePage() {
   const [error, setError] = useState('')
   const [followLoading, setFollowLoading] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showCreateMenu, setShowCreateMenu] = useState(false)
+  const [showPostModal, setShowPostModal] = useState(false)
+  const [showVideoModal, setShowVideoModal] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -120,6 +125,17 @@ export default function ProfilePage() {
     setProfile((prev) => (prev ? { ...prev, ...updates } : null))
   }
 
+  const handleContentCreated = () => {
+    // Refresh content after creating new post/video
+    if (profile) {
+      fetchUserContent(profile.id).then(setContent)
+    }
+    // Update posts count
+    setProfile((prev) =>
+      prev ? { ...prev, postsCount: prev.postsCount + 1 } : null
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
@@ -150,7 +166,7 @@ export default function ProfilePage() {
   const isOwnProfile = currentUserId === profile.id
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="min-h-screen bg-white dark:bg-black pb-20">
       {/* Top Bar (Mobile) */}
       <div className="sticky top-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 md:hidden">
         <div className="flex items-center justify-between px-4 py-3">
@@ -177,9 +193,108 @@ export default function ProfilePage() {
         isFollowLoading={followLoading}
       />
 
+      {/* Create Content Section - Only for own profile */}
+      {isOwnProfile && (
+        <div className="border-t border-b border-gray-200 dark:border-gray-800 px-4 py-4">
+          <div className="max-w-4xl mx-auto">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Create
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              <button
+                onClick={() => setShowPostModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+              >
+                <Image className="w-5 h-5" />
+                New Post
+              </button>
+              <button
+                onClick={() => setShowVideoModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+              >
+                <Play className="w-5 h-5" />
+                Add Video
+              </button>
+              <Link
+                href="/planner/new"
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-green-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+              >
+                <Map className="w-5 h-5" />
+                Plan Trip
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content Grid */}
       {content && (
-        <ProfileContentGrid content={content} username={profile.username} />
+        <ProfileContentGrid
+          content={content}
+          username={profile.username}
+          isOwnProfile={isOwnProfile}
+        />
+      )}
+
+      {/* Floating Action Button - Only for own profile */}
+      {isOwnProfile && (
+        <>
+          {/* FAB */}
+          <button
+            onClick={() => setShowCreateMenu(!showCreateMenu)}
+            className={`fixed bottom-24 right-4 md:bottom-8 md:right-8 w-14 h-14 bg-teal-500 text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-transform ${
+              showCreateMenu ? 'rotate-45' : ''
+            }`}
+          >
+            <Plus className="w-7 h-7" />
+          </button>
+
+          {/* FAB Menu */}
+          {showCreateMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-30"
+                onClick={() => setShowCreateMenu(false)}
+              />
+              <div className="fixed bottom-44 right-4 md:bottom-28 md:right-8 flex flex-col gap-3 z-40">
+                <button
+                  onClick={() => {
+                    setShowCreateMenu(false)
+                    setShowPostModal(true)
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full flex items-center justify-center">
+                    <Image className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-medium text-gray-900 dark:text-white">New Post</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCreateMenu(false)
+                    setShowVideoModal(true)
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                    <Play className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-medium text-gray-900 dark:text-white">Add Video</span>
+                </button>
+                <Link
+                  href="/planner/new"
+                  onClick={() => setShowCreateMenu(false)}
+                  className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-green-500 rounded-full flex items-center justify-center">
+                    <Map className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-medium text-gray-900 dark:text-white">Plan Trip</span>
+                </Link>
+              </div>
+            </>
+          )}
+        </>
       )}
 
       {/* Edit Profile Modal */}
@@ -188,6 +303,24 @@ export default function ProfilePage() {
           profile={profile}
           onClose={() => setShowEditModal(false)}
           onSave={handleSaveProfile}
+        />
+      )}
+
+      {/* Create Post Modal */}
+      {showPostModal && currentUserId && (
+        <CreatePostModal
+          userId={currentUserId}
+          onClose={() => setShowPostModal(false)}
+          onSuccess={handleContentCreated}
+        />
+      )}
+
+      {/* Create Video Modal */}
+      {showVideoModal && currentUserId && (
+        <CreateVideoModal
+          userId={currentUserId}
+          onClose={() => setShowVideoModal(false)}
+          onSuccess={handleContentCreated}
         />
       )}
     </div>

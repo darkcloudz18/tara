@@ -8,11 +8,12 @@ import { getYouTubeThumbnail, getYouTubeVideoId } from '@/features/discover/serv
 interface ProfileContentGridProps {
   content: ProfileContent
   username?: string
+  isOwnProfile?: boolean
 }
 
 type TabType = 'posts' | 'videos' | 'itineraries' | 'saved'
 
-export default function ProfileContentGrid({ content, username }: ProfileContentGridProps) {
+export default function ProfileContentGrid({ content, username, isOwnProfile }: ProfileContentGridProps) {
   const [activeTab, setActiveTab] = useState<TabType>('posts')
 
   const tabs: { id: TabType; icon: typeof Grid3X3; label: string; count: number }[] = [
