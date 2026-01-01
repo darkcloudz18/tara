@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Loader2, Plus, Image, Play, Map, X } from 'lucide-react'
+import { Sidebar, MobileNav } from '@/components/layout'
 import ProfileHeader from '@/features/profile/components/ProfileHeader'
 import ProfileContentGrid from '@/features/profile/components/ProfileContentGrid'
 import EditProfileModal from '@/features/profile/components/EditProfileModal'
@@ -26,6 +27,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const username = params.username as string
 
+  const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [content, setContent] = useState<ProfileContent | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -47,11 +49,12 @@ export default function ProfilePage() {
 
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      setCurrentUserId(user?.id || null)
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      setUser(authUser)
+      setCurrentUserId(authUser?.id || null)
 
       // Fetch profile
-      const profileData = await fetchUserProfile(username, user?.id)
+      const profileData = await fetchUserProfile(username, authUser?.id)
 
       if (!profileData) {
         setError('User not found')
@@ -138,27 +141,35 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+      <div className="min-h-screen bg-white dark:bg-black">
+        <Sidebar user={user} />
+        <div className="lg:ml-[260px] flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+        </div>
+        <MobileNav user={user} />
       </div>
     )
   }
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {error || 'User not found'}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">
-          The user you're looking for doesn't exist or may have been removed.
-        </p>
-        <Link
-          href="/"
-          className="px-6 py-2.5 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600 transition-colors"
-        >
-          Go Home
-        </Link>
+      <div className="min-h-screen bg-white dark:bg-black">
+        <Sidebar user={user} />
+        <div className="lg:ml-[260px] flex flex-col items-center justify-center min-h-screen p-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            {error || 'User not found'}
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            The user you're looking for doesn't exist or may have been removed.
+          </p>
+          <Link
+            href="/"
+            className="px-6 py-2.5 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600 transition-colors"
+          >
+            Go Home
+          </Link>
+        </div>
+        <MobileNav user={user} />
       </div>
     )
   }
@@ -166,25 +177,30 @@ export default function ProfilePage() {
   const isOwnProfile = currentUserId === profile.id
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black pb-20">
-      {/* Top Bar (Mobile) */}
-      <div className="sticky top-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 md:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => router.back()}
-            className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-          >
-            <ArrowLeft className="w-6 h-6 text-gray-900 dark:text-white" />
-          </button>
-          <h1 className="font-semibold text-gray-900 dark:text-white">
-            {profile.username || 'Profile'}
-          </h1>
-          <div className="w-10" />
-        </div>
-      </div>
+    <div className="min-h-screen bg-white dark:bg-black">
+      {/* Sidebar - Desktop */}
+      <Sidebar user={user} />
 
-      {/* Profile Header */}
-      <ProfileHeader
+      {/* Main Content */}
+      <div className="lg:ml-[260px] pb-20 lg:pb-8">
+        {/* Top Bar (Mobile) */}
+        <div className="sticky top-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 lg:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+            >
+              <ArrowLeft className="w-6 h-6 text-gray-900 dark:text-white" />
+            </button>
+            <h1 className="font-semibold text-gray-900 dark:text-white">
+              {profile.username || 'Profile'}
+            </h1>
+            <div className="w-10" />
+          </div>
+        </div>
+
+        {/* Profile Header */}
+        <ProfileHeader
         profile={profile}
         isOwnProfile={isOwnProfile}
         onFollow={handleFollow}
@@ -193,48 +209,49 @@ export default function ProfilePage() {
         isFollowLoading={followLoading}
       />
 
-      {/* Create Content Section - Only for own profile */}
-      {isOwnProfile && (
-        <div className="border-t border-b border-gray-200 dark:border-gray-800 px-4 py-4">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-              Create
-            </h3>
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              <button
-                onClick={() => setShowPostModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
-              >
-                <Image className="w-5 h-5" />
-                New Post
-              </button>
-              <button
-                onClick={() => setShowVideoModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
-              >
-                <Play className="w-5 h-5" />
-                Add Video
-              </button>
-              <Link
-                href="/planner/new"
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-green-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
-              >
-                <Map className="w-5 h-5" />
-                Plan Trip
-              </Link>
+        {/* Create Content Section - Only for own profile */}
+        {isOwnProfile && (
+          <div className="border-t border-b border-gray-200 dark:border-gray-800 px-4 py-4">
+            <div className="max-w-4xl mx-auto">
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                Create
+              </h3>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                <button
+                  onClick={() => setShowPostModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                >
+                  <Image className="w-5 h-5" />
+                  New Post
+                </button>
+                <button
+                  onClick={() => setShowVideoModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                >
+                  <Play className="w-5 h-5" />
+                  Add Video
+                </button>
+                <Link
+                  href="/planner/new"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-green-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                >
+                  <Map className="w-5 h-5" />
+                  Plan Trip
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Content Grid */}
-      {content && (
-        <ProfileContentGrid
-          content={content}
-          username={profile.username}
-          isOwnProfile={isOwnProfile}
-        />
-      )}
+        {/* Content Grid */}
+        {content && (
+          <ProfileContentGrid
+            content={content}
+            username={profile.username}
+            isOwnProfile={isOwnProfile}
+          />
+        )}
+      </div>
 
       {/* Floating Action Button - Only for own profile */}
       {isOwnProfile && (
@@ -323,6 +340,9 @@ export default function ProfilePage() {
           onSuccess={handleContentCreated}
         />
       )}
+
+      {/* Mobile Navigation */}
+      <MobileNav user={user} />
     </div>
   )
 }
