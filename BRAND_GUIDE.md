@@ -185,19 +185,6 @@ npm install lucide-react
 | `User` | Account | Profile/settings |
 | `Moon` / `Sun` | Theme | Dark/light toggle |
 
-### Custom Icons
-
-#### Bucket Icon (Bucket List)
-```jsx
-import BucketIcon from '@/components/icons/BucketIcon'
-
-// Empty bucket
-<BucketIcon className="w-6 h-6 text-gray-900" />
-
-// Filled bucket (added to list)
-<BucketIcon className="w-6 h-6 text-teal-500" filled />
-```
-
 ### Category Icons (Lucide)
 
 | Category | Icon | Label | Import |
@@ -281,8 +268,7 @@ import { Compass, Waves, Sunrise, Mountain, UtensilsCrossed, Landmark, Palmtree,
 
 #### Place Card
 ```jsx
-import { Hotel, Heart, MessageCircle, Send } from 'lucide-react'
-import BucketIcon from '@/components/icons/BucketIcon'
+import { Hotel, Heart, MessageCircle, Send, Plus } from 'lucide-react'
 
 <article className="bg-white dark:bg-black">
   {/* Header with icon avatar */}
@@ -296,9 +282,13 @@ import BucketIcon from '@/components/icons/BucketIcon'
     </div>
   </div>
 
-  {/* Square image */}
-  <div className="aspect-square overflow-hidden">
+  {/* Square image with Add to Trip button */}
+  <div className="aspect-square overflow-hidden relative">
     <img className="w-full h-full object-cover" />
+    <button className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold rounded-lg shadow-lg">
+      <Plus className="w-4 h-4" />
+      Add to Trip
+    </button>
   </div>
 
   {/* Actions */}
@@ -308,7 +298,7 @@ import BucketIcon from '@/components/icons/BucketIcon'
       <MessageCircle className="w-7 h-7" />
       <Send className="w-7 h-7" />
     </div>
-    <BucketIcon className="w-7 h-7" />
+    <Plus className="w-6 h-6 text-teal-600" />
   </div>
 </article>
 ```
@@ -430,16 +420,17 @@ duration-300       /* 300ms for smooth feel */
 | Do | Don't |
 |----|-------|
 | "Tara, let's explore!" | "Click here to browse" |
-| "Add to Bucket List" | "Save to favorites" |
+| "Add to Trip" | "Save to favorites" |
 | "Where in the Philippines?" | "Enter destination" |
 | "Discover places" | "View listings" |
-| "Plan your trip" | "Create itinerary" |
+| "Build your trip" | "Create itinerary" |
 
 ### Key Phrases
 - "Tara!" — Let's go!
-- "Bucket List" — Saved places to visit
+- "Add to Trip" — Save places directly to your itinerary
 - "Discover" — Browse and explore
 - "Travel Together, Book Better" — Tagline
+- "Lakad" — Filipino word for trip (used for PH users)
 
 ---
 
@@ -449,18 +440,24 @@ duration-300       /* 300ms for smooth feel */
 src/
 ├── components/
 │   ├── icons/
-│   │   ├── BucketIcon.tsx     # Custom bucket list icon
 │   │   └── TaraLogo.tsx       # Custom palm tree logo
 │   └── layout/
 │       ├── Header.tsx          # Top header with search
-│       ├── Sidebar.tsx         # Desktop sidebar nav
+│       ├── Sidebar.tsx         # Desktop sidebar nav (with active trip widget)
 │       └── MobileNav.tsx       # Mobile bottom nav
 ├── contexts/
 │   └── ThemeContext.tsx        # Dark mode provider
+├── hooks/
+│   └── useLocalizedTrip.ts     # Localization hook (Trip vs Lakad)
 ├── features/
-│   └── discover/
-│       └── components/
-│           └── PlaceCard.tsx   # Main feed card
+│   ├── discover/
+│   │   └── components/
+│   │       └── PlaceCard.tsx   # Main feed card with Add to Trip
+│   └── planner/
+│       ├── components/
+│       │   └── AddToTripModal.tsx  # Trip selection modal
+│       └── hooks/
+│           └── useTripDrafts.ts    # Trip management hook
 └── app/
     ├── globals.css             # Global styles
     └── layout.tsx              # Root layout
