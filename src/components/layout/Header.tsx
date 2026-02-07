@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search,
   SlidersHorizontal,
@@ -36,12 +37,17 @@ interface HeaderProps {
 }
 
 export default function Header({ selectedCategory, onCategoryChange, onSearch }: HeaderProps) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    onSearch?.(searchQuery)
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    } else {
+      router.push('/search')
+    }
   }
 
   return (

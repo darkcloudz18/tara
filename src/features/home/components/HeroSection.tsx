@@ -173,7 +173,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
 
             <div className="text-center mt-4">
               <Link
-                href="/planner/new"
+                href="/templates"
                 className="text-white/80 hover:text-white text-sm font-medium inline-flex items-center gap-1 transition-colors"
               >
                 View all templates

@@ -9,6 +9,8 @@ import { HeroSection } from '@/features/home/components'
 import PlaceCard from '@/features/discover/components/PlaceCard'
 import CuratedVideoCard from '@/features/discover/components/CuratedVideoCard'
 import AddToTripModal from '@/features/planner/components/AddToTripModal'
+import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
+import { NoResults } from '@/components/illustrations'
 import { supabase } from '@/lib/supabase'
 import { fetchTaraPlaces, DiscoverPlace } from '@/features/planner/services/placeService'
 import { fetchCuratedVideos, FeedVideo } from '@/features/discover/services/videoService'
@@ -240,17 +242,22 @@ export default function HomePage() {
         {/* Vertical Feed */}
         <main className="max-w-[470px] mx-auto pb-20 lg:pb-8">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-teal-500 animate-spin mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Finding amazing places...</p>
+            <div className="px-4 space-y-4 py-4">
+              {[1, 2, 3].map((i) => (
+                <PlaceCardSkeleton key={i} />
+              ))}
             </div>
           ) : feedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-4">
-              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                <MapPin className="w-10 h-10 text-gray-400" />
-              </div>
+              <NoResults className="mb-6" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No places found</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-center">Try selecting a different category</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center mb-4">Try selecting a different category</p>
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className="text-teal-600 dark:text-teal-400 font-medium hover:underline"
+              >
+                Show all places
+              </button>
             </div>
           ) : (
             <div>
