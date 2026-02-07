@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { Loader2, Compass } from 'lucide-react'
 import VideoCard from './VideoCard'
 import FeedPlaceCard from './FeedPlaceCard'
+import AddToTripModal from '@/features/planner/components/AddToTripModal'
 import { FeedItem, fetchDiscoverFeed } from '../services/discoverFeedService'
 import { CreatorVideo } from '../services/creatorVideoService'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
-import { useBucketList } from '@/features/planner/hooks/useBucketList'
 
 interface DiscoverFeedProps {
   onLoginRequired?: () => void
@@ -23,8 +23,9 @@ export default function DiscoverFeed({
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  const bucketList = useBucketList()
+  const [showAddToTripModal, setShowAddToTripModal] = useState(false)
+  const [selectedPlace, setSelectedPlace] = useState<DiscoverPlace | null>(null)
+  const [addedPlaces, setAddedPlaces] = useState<Set<string>>(new Set())
 
   // Track which video the user last engaged with (for referral attribution)
   const [lastViewedVideoCreatorId, setLastViewedVideoCreatorId] = useState<string | null>(null)
@@ -47,23 +48,14 @@ export default function DiscoverFeed({
     loadFeed()
   }, [loadFeed])
 
-  const handleAddToBucketList = async (place: DiscoverPlace) => {
-    try {
-      // Pass referral info when adding to bucket list
-      await bucketList.addPlace(place, lastViewedVideoCreatorId, lastViewedVideoId)
-    } catch (err: any) {
-      if (err.message?.includes('logged in')) {
-        onLoginRequired?.()
-      } else {
-        console.error('Failed to add to bucket list:', err)
-      }
-    }
+  const handleAddToTrip = (place: DiscoverPlace) => {
+    setSelectedPlace(place)
+    setShowAddToTripModal(true)
   }
 
-  const handleRemoveFromBucketList = async (placeId: string) => {
-    const item = bucketList.getItemByPlaceId(placeId)
-    if (item) {
-      await bucketList.removeItem(item.id)
+  const handleTripAddSuccess = (tripId: string) => {
+    if (selectedPlace) {
+      setAddedPlaces((prev) => new Set(prev).add(selectedPlace.id))
     }
   }
 
@@ -133,11 +125,9 @@ export default function DiscoverFeed({
             ) : (
               <FeedPlaceCard
                 place={item.data as DiscoverPlace}
-                isInBucketList={bucketList.isInBucketList((item.data as DiscoverPlace).id)}
-                onAddToBucketList={() => handleAddToBucketList(item.data as DiscoverPlace)}
-                onRemoveFromBucketList={() =>
-                  handleRemoveFromBucketList((item.data as DiscoverPlace).id)
-                }
+                isInBucketList={addedPlaces.has((item.data as DiscoverPlace).id)}
+                onAddToBucketList={() => handleAddToTrip(item.data as DiscoverPlace)}
+                onRemoveFromBucketList={() => {}}
               />
             )}
           </div>
@@ -153,6 +143,14 @@ export default function DiscoverFeed({
           </button>
         </div>
       </div>
+
+      {/* Add to Trip Modal */}
+      <AddToTripModal
+        isOpen={showAddToTripModal}
+        onClose={() => setShowAddToTripModal(false)}
+        place={selectedPlace}
+        onSuccess={handleTripAddSuccess}
+      />
     </div>
   )
 }

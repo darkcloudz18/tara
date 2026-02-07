@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Compass, Search, PlusCircle, User } from 'lucide-react'
-import BucketIcon from '@/components/icons/BucketIcon'
+import { Compass, Search, PlusCircle, User, Map } from 'lucide-react'
 
 interface MobileNavProps {
   user: any
@@ -21,7 +20,7 @@ export default function MobileNav({ user }: MobileNavProps) {
     { icon: Compass, label: 'Discover', href: '/' },
     { icon: Search, label: 'Search', href: '/search' },
     { icon: PlusCircle, label: 'Plan Trip', href: user ? '/planner/new' : '/login' },
-    { icon: () => <BucketIcon className="w-7 h-7" />, label: 'Bucket List', href: user ? '/planner' : '/login' },
+    { icon: Map, label: 'My Trips', href: user ? '/planner' : '/login' },
     { icon: User, label: 'Profile', href: user ? '/profile' : '/login' },
   ]
 

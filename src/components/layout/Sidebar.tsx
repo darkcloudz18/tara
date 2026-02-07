@@ -18,7 +18,6 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
-import BucketIcon from '@/components/icons/BucketIcon'
 import TaraLogo from '@/components/icons/TaraLogo'
 
 interface NavItem {
@@ -50,7 +49,7 @@ export default function Sidebar({ user }: SidebarProps) {
   ]
 
   const tripNavItems: NavItem[] = [
-    { icon: () => <BucketIcon className="w-6 h-6" />, label: 'Bucket List', href: '/planner', requiresAuth: true },
+    { icon: Map, label: 'My Trips', href: '/planner', requiresAuth: true },
     { icon: PlusCircle, label: 'Plan a Trip', href: '/planner/new', requiresAuth: true },
   ]
 

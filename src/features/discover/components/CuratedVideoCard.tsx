@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Heart, MessageCircle, Send, MoreHorizontal, Play, Eye, Video, Camera } from 'lucide-react'
-import BucketIcon from '@/components/icons/BucketIcon'
+import { MapPin, Heart, MessageCircle, Send, MoreHorizontal, Play, Eye, Video, Camera, Bookmark } from 'lucide-react'
 import { FeedVideo, getYouTubeEmbedUrl } from '../services/videoService'
 
 interface CuratedVideoCardProps {
@@ -146,11 +145,10 @@ export default function CuratedVideoCard({ video, onLike, onSave }: CuratedVideo
             </button>
           </div>
 
-          {/* Save to Bucket List */}
+          {/* Save */}
           <button onClick={handleSave} className="hover:opacity-60 transition-opacity">
-            <BucketIcon
-              className={`w-7 h-7 ${saved ? 'text-teal-500' : 'text-gray-900 dark:text-white'}`}
-              filled={saved}
+            <Bookmark
+              className={`w-7 h-7 ${saved ? 'fill-teal-500 text-teal-500' : 'text-gray-900 dark:text-white'}`}
             />
           </button>
         </div>

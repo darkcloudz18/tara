@@ -1,40 +1,50 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useItineraries } from '@/features/planner/hooks/useItineraries'
-import { useBucketList } from '@/features/planner/hooks/useBucketList'
 import {
   DiscoverScreen,
-  BucketListScreen,
-  BottomNav,
   TripDateModal,
-  TabType,
 } from '@/features/planner/components/discover'
+import AddToTripModal from '@/features/planner/components/AddToTripModal'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
-import { List, Compass } from 'lucide-react'
+import { runMigrationIfNeeded, MigrationResult } from '@/features/planner/services/migrateBucketList'
+import { List, Compass, CalendarPlus, Loader2, CheckCircle } from 'lucide-react'
 
 export default function PlannerPage() {
   const router = useRouter()
   const { createItinerary } = useItineraries()
-  const bucketList = useBucketList()
 
-  const [activeTab, setActiveTab] = useState<TabType>('discover')
   const [showDateModal, setShowDateModal] = useState(false)
   const [showExistingTrips, setShowExistingTrips] = useState(false)
+  const [showAddToTripModal, setShowAddToTripModal] = useState(false)
+  const [selectedPlace, setSelectedPlace] = useState<DiscoverPlace | null>(null)
   const [skippedPlaces, setSkippedPlaces] = useState<Set<string>>(new Set())
-  const [addError, setAddError] = useState<string | null>(null)
+  const [addedPlaces, setAddedPlaces] = useState<Set<string>>(new Set())
+  const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null)
+  const [showMigrationBanner, setShowMigrationBanner] = useState(false)
 
-  const handleAddPlace = async (place: DiscoverPlace) => {
-    setAddError(null)
-    try {
-      await bucketList.addPlace(place)
-    } catch (err: any) {
-      console.error('Failed to add to bucket list:', err)
-      const message = err.message || 'Failed to add to bucket list'
-      setAddError(message)
-      // Auto-clear error after 3 seconds
-      setTimeout(() => setAddError(null), 3000)
+  // Run migration on mount
+  useEffect(() => {
+    runMigrationIfNeeded().then((result) => {
+      if (result && result.itemsMigrated > 0) {
+        setMigrationResult(result)
+        setShowMigrationBanner(true)
+        // Auto-hide banner after 5 seconds
+        setTimeout(() => setShowMigrationBanner(false), 5000)
+      }
+    })
+  }, [])
+
+  const handleAddPlace = (place: DiscoverPlace) => {
+    setSelectedPlace(place)
+    setShowAddToTripModal(true)
+  }
+
+  const handleTripAddSuccess = (tripId: string) => {
+    if (selectedPlace) {
+      setAddedPlaces((prev) => new Set(prev).add(selectedPlace.id))
     }
   }
 
@@ -51,35 +61,25 @@ export default function PlannerPage() {
     [skippedPlaces]
   )
 
-  // Get unique destinations from bucket list
-  const uniqueDestinations = [...new Set(
-    bucketList.items
-      .filter((item) => !item.is_visited && item.place_location)
-      .map((item) => item.place_location!)
-  )]
-
-  // Get total estimated cost
-  const totalEstimatedCost = bucketList.items
-    .filter((item) => !item.is_visited)
-    .reduce((sum, item) => sum + (item.place_estimated_cost || 0), 0)
+  const isPlaceAdded = useCallback(
+    (placeId: string) => addedPlaces.has(placeId),
+    [addedPlaces]
+  )
 
   const handleCreateTrip = async (data: {
     title: string
     startDate: string
     endDate: string
   }) => {
-    // Create the itinerary
     const itinerary = await createItinerary({
       title: data.title,
-      description: `Trip to ${uniqueDestinations.join(', ')}`,
+      description: '',
       start_date: data.startDate,
       end_date: data.endDate,
-      destinations: uniqueDestinations,
-      total_budget: totalEstimatedCost,
+      destinations: [],
     })
 
     if (itinerary) {
-      // Navigate to the itinerary detail page
       router.push(`/planner/${itinerary.id}`)
     }
   }
@@ -91,15 +91,29 @@ export default function PlannerPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 relative">
-      {/* Error Toast */}
-      {addError && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 bg-red-500 text-white rounded-lg shadow-lg text-sm font-medium animate-fade-in">
-          {addError}
+      {/* Migration Success Banner */}
+      {showMigrationBanner && migrationResult && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 bg-teal-500 text-white rounded-lg shadow-lg text-sm font-medium animate-fade-in flex items-center gap-2">
+          <CheckCircle className="w-5 h-5" />
+          {migrationResult.itemsMigrated} saved places migrated to "My Saved Places" trip!
+          <button
+            onClick={() => migrationResult.itineraryId && router.push(`/planner/${migrationResult.itineraryId}`)}
+            className="underline ml-2"
+          >
+            View Trip
+          </button>
         </div>
       )}
 
-      {/* Top Bar - View Existing Trips */}
-      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-end">
+      {/* Top Bar */}
+      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-between">
+        <button
+          onClick={() => setShowDateModal(true)}
+          className="flex items-center gap-2 px-3 py-1.5 text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg text-sm font-medium transition-colors"
+        >
+          <CalendarPlus className="w-4 h-4" />
+          New Trip
+        </button>
         <button
           onClick={() => setShowExistingTrips(true)}
           className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
@@ -109,48 +123,32 @@ export default function PlannerPage() {
         </button>
       </div>
 
-      {/* Main Content - Split layout on desktop */}
-      <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
-        {/* Left side - Discover (always visible on desktop) */}
-        <div className={`flex-1 lg:w-1/2 lg:border-r border-gray-200 ${activeTab === 'discover' ? 'flex' : 'hidden lg:flex'} flex-col`}>
-          <DiscoverScreen
-            onAddPlace={handleAddPlace}
-            onSkipPlace={handleSkipPlace}
-            isPlaceAdded={bucketList.isInBucketList}
-            isPlaceSkipped={isPlaceSkipped}
-            onResetSkipped={handleResetSkipped}
-          />
-        </div>
-
-        {/* Right side - Bucket List (always visible on desktop) */}
-        <div className={`flex-1 lg:w-1/2 ${activeTab === 'bucketlist' ? 'flex' : 'hidden lg:flex'} flex-col`}>
-          <BucketListScreen
-            items={bucketList.items}
-            loading={bucketList.loading}
-            groupedByLocation={bucketList.groupedByLocation()}
-            onRemoveItem={bucketList.removeItem}
-            onToggleVisited={bucketList.toggleVisited}
-            onCreateTrip={() => setShowDateModal(true)}
-          />
-        </div>
-      </div>
-
-      {/* Bottom Navigation - Only show on mobile */}
-      <div className="lg:hidden">
-        <BottomNav
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          itemCount={bucketList.unvisitedCount}
+      {/* Main Content - Full discover screen */}
+      <div className="flex-1 overflow-hidden">
+        <DiscoverScreen
+          onAddPlace={handleAddPlace}
+          onSkipPlace={handleSkipPlace}
+          isPlaceAdded={isPlaceAdded}
+          isPlaceSkipped={isPlaceSkipped}
+          onResetSkipped={handleResetSkipped}
         />
       </div>
 
-      {/* Date Modal */}
+      {/* Trip Date Modal (for quick new trip creation) */}
       <TripDateModal
         isOpen={showDateModal}
         onClose={() => setShowDateModal(false)}
         onCreateTrip={handleCreateTrip}
-        placeCount={bucketList.unvisitedCount}
-        destinations={uniqueDestinations}
+        placeCount={0}
+        destinations={[]}
+      />
+
+      {/* Add to Trip Modal */}
+      <AddToTripModal
+        isOpen={showAddToTripModal}
+        onClose={() => setShowAddToTripModal(false)}
+        place={selectedPlace}
+        onSuccess={handleTripAddSuccess}
       />
     </div>
   )

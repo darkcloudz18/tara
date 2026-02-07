@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { X, Loader2 } from 'lucide-react'
+import { X, Loader2, CalendarPlus } from 'lucide-react'
 import { Sidebar, MobileNav } from '@/components/layout'
 import Header from '@/components/layout/Header'
 import { HeroSection } from '@/features/home/components'
 import PlaceCard from '@/features/discover/components/PlaceCard'
 import CuratedVideoCard from '@/features/discover/components/CuratedVideoCard'
-import BucketIcon from '@/components/icons/BucketIcon'
+import AddToTripModal from '@/features/planner/components/AddToTripModal'
 import { supabase } from '@/lib/supabase'
-import { useBucketList } from '@/features/planner/hooks/useBucketList'
 import { fetchTaraPlaces, DiscoverPlace } from '@/features/planner/services/placeService'
 import { fetchCuratedVideos, FeedVideo } from '@/features/discover/services/videoService'
 
@@ -25,8 +24,8 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
-
-  const bucketList = useBucketList()
+  const [showAddToTripModal, setShowAddToTripModal] = useState(false)
+  const [selectedPlace, setSelectedPlace] = useState<DiscoverPlace | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -102,21 +101,13 @@ export default function HomePage() {
     }
   }
 
-  const handleAddToBucketList = async (place: DiscoverPlace) => {
-    try {
-      await bucketList.addPlace(place)
-    } catch (err: any) {
-      if (err.message?.includes('logged in')) {
-        setShowLoginPrompt(true)
-      }
+  const handleAddToTrip = (place: DiscoverPlace) => {
+    if (!user) {
+      setShowLoginPrompt(true)
+      return
     }
-  }
-
-  const handleRemoveFromBucketList = async (placeId: string) => {
-    const item = bucketList.getItemByPlaceId(placeId)
-    if (item) {
-      await bucketList.removeItem(item.id)
-    }
+    setSelectedPlace(place)
+    setShowAddToTripModal(true)
   }
 
   return (
@@ -155,7 +146,7 @@ export default function HomePage() {
           ) : feedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-4">
               <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                <BucketIcon className="w-10 h-10 text-gray-400" />
+                <CalendarPlus className="w-10 h-10 text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No content found</h3>
               <p className="text-gray-500 dark:text-gray-400 text-center">Try selecting a different category</p>
@@ -167,9 +158,7 @@ export default function HomePage() {
                   {item.type === 'place' ? (
                     <PlaceCard
                       place={item.data}
-                      isInBucketList={bucketList.isInBucketList(item.data.id)}
-                      onAddToBucketList={() => handleAddToBucketList(item.data)}
-                      onRemoveFromBucketList={() => handleRemoveFromBucketList(item.data.id)}
+                      onAddToTrip={() => handleAddToTrip(item.data)}
                     />
                   ) : (
                     <CuratedVideoCard video={item.data} />
@@ -207,10 +196,10 @@ export default function HomePage() {
 
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-teal-100 dark:bg-teal-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <BucketIcon className="w-8 h-8 text-teal-600 dark:text-teal-400" />
+                <CalendarPlus className="w-8 h-8 text-teal-600 dark:text-teal-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Add to Bucket List
+                Add to Your Trip
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
                 Sign in to save places and plan your dream trip to the Philippines!
@@ -234,6 +223,13 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* Add to Trip Modal */}
+      <AddToTripModal
+        isOpen={showAddToTripModal}
+        onClose={() => setShowAddToTripModal(false)}
+        place={selectedPlace}
+      />
     </div>
   )
 }

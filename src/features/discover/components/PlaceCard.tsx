@@ -1,22 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass } from 'lucide-react'
-import BucketIcon from '@/components/icons/BucketIcon'
+import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, CalendarPlus } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 
 interface PlaceCardProps {
   place: DiscoverPlace
-  isInBucketList: boolean
-  onAddToBucketList: () => void
-  onRemoveFromBucketList: () => void
+  onAddToTrip: () => void
 }
 
 export default function PlaceCard({
   place,
-  isInBucketList,
-  onAddToBucketList,
-  onRemoveFromBucketList,
+  onAddToTrip,
 }: PlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [liked, setLiked] = useState(false)
@@ -24,13 +19,9 @@ export default function PlaceCard({
 
   const mainPhoto = place.photos?.[0] || 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800'
 
-  const handleBucketToggle = (e: React.MouseEvent) => {
+  const handleAddToTrip = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (isInBucketList) {
-      onRemoveFromBucketList()
-    } else {
-      onAddToBucketList()
-    }
+    onAddToTrip()
   }
 
   const handleLike = () => {
@@ -134,15 +125,13 @@ export default function PlaceCard({
             </button>
           </div>
 
-          {/* Bucket List */}
+          {/* Add to Trip */}
           <button
-            onClick={handleBucketToggle}
+            onClick={handleAddToTrip}
             className="hover:opacity-60 transition-opacity"
+            title="Add to Trip"
           >
-            <BucketIcon
-              className={`w-7 h-7 ${isInBucketList ? 'text-teal-500' : 'text-gray-900 dark:text-white'}`}
-              filled={isInBucketList}
-            />
+            <CalendarPlus className="w-7 h-7 text-gray-900 dark:text-white" />
           </button>
         </div>
 
