@@ -1,23 +1,39 @@
 'use client'
 
-import { useState } from 'react'
-import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, Plus } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, Plus, Check, Loader2 } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 
 interface PlaceCardProps {
   place: DiscoverPlace
   onAddToTrip: () => void
+  activeTripTitle?: string
+  isAddingToTrip?: boolean
+  wasJustAdded?: boolean
 }
 
 export default function PlaceCard({
   place,
   onAddToTrip,
+  activeTripTitle,
+  isAddingToTrip = false,
+  wasJustAdded = false,
 }: PlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 500) + 50)
+  const [showAddedFeedback, setShowAddedFeedback] = useState(false)
   const t = useLocalizedTrip()
+
+  // Show feedback when wasJustAdded changes to true
+  useEffect(() => {
+    if (wasJustAdded) {
+      setShowAddedFeedback(true)
+      const timer = setTimeout(() => setShowAddedFeedback(false), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [wasJustAdded])
 
   const mainPhoto = place.photos?.[0] || 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800'
 
@@ -102,10 +118,35 @@ export default function PlaceCard({
         {/* Add to Trip Button - Prominent on image */}
         <button
           onClick={handleAddToTrip}
-          className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold rounded-lg shadow-lg transition-colors"
+          disabled={isAddingToTrip}
+          className={`absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 text-white text-sm font-semibold rounded-lg shadow-lg transition-all ${
+            showAddedFeedback
+              ? 'bg-green-500'
+              : isAddingToTrip
+              ? 'bg-teal-400 cursor-wait'
+              : 'bg-teal-500 hover:bg-teal-600'
+          }`}
         >
-          <Plus className="w-4 h-4" />
-          {t.addToTrip}
+          {showAddedFeedback ? (
+            <>
+              <Check className="w-4 h-4" />
+              Added!
+            </>
+          ) : isAddingToTrip ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Adding...
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              {activeTripTitle ? (
+                <span className="max-w-[100px] truncate">+ {activeTripTitle}</span>
+              ) : (
+                t.addToTrip
+              )}
+            </>
+          )}
         </button>
 
         {/* Price Tag */}
@@ -139,10 +180,21 @@ export default function PlaceCard({
           {/* Secondary Add to Trip (icon only) */}
           <button
             onClick={handleAddToTrip}
-            className="p-2 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-full transition-colors"
-            title={t.addToTrip}
+            disabled={isAddingToTrip}
+            className={`p-2 rounded-full transition-colors ${
+              showAddedFeedback
+                ? 'bg-green-100 dark:bg-green-900/30'
+                : 'hover:bg-teal-50 dark:hover:bg-teal-900/30'
+            }`}
+            title={activeTripTitle ? `Add to ${activeTripTitle}` : t.addToTrip}
           >
-            <Plus className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+            {showAddedFeedback ? (
+              <Check className="w-6 h-6 text-green-600 dark:text-green-400" />
+            ) : isAddingToTrip ? (
+              <Loader2 className="w-6 h-6 text-teal-600 dark:text-teal-400 animate-spin" />
+            ) : (
+              <Plus className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+            )}
           </button>
         </div>
 

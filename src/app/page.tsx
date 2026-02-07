@@ -255,21 +255,14 @@ export default function HomePage() {
           ) : (
             <div>
               {feedItems.map((item) => (
-                <div key={item.type === 'place' ? item.data.id : item.data.id} className="border-b border-gray-100 dark:border-gray-800 relative">
+                <div key={item.type === 'place' ? item.data.id : item.data.id} className="border-b border-gray-100 dark:border-gray-800">
                   {item.type === 'place' ? (
-                    <>
-                      <PlaceCard
-                        place={item.data}
-                        onAddToTrip={() => handleAddToTrip(item.data)}
-                      />
-                      {/* Recently Added Indicator */}
-                      {recentlyAdded === item.data.id && (
-                        <div className="absolute top-4 right-4 bg-teal-500 text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 animate-fade-in">
-                          <Check className="w-3 h-3" />
-                          Added!
-                        </div>
-                      )}
-                    </>
+                    <PlaceCard
+                      place={item.data}
+                      onAddToTrip={() => handleAddToTrip(item.data)}
+                      activeTripTitle={activeTrip?.title}
+                      wasJustAdded={recentlyAdded === item.data.id}
+                    />
                   ) : (
                     <CuratedVideoCard video={item.data} />
                   )}
