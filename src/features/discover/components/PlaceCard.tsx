@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, CalendarPlus } from 'lucide-react'
+import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, Plus } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 
 interface PlaceCardProps {
@@ -97,6 +97,15 @@ export default function PlaceCard({
           </div>
         )}
 
+        {/* Add to Trip Button - Prominent on image */}
+        <button
+          onClick={handleAddToTrip}
+          className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold rounded-lg shadow-lg transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add to Trip
+        </button>
+
         {/* Price Tag */}
         {place.estimatedCost !== undefined && (
           <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-black/70 backdrop-blur-sm text-white text-sm font-semibold rounded-lg">
@@ -125,13 +134,13 @@ export default function PlaceCard({
             </button>
           </div>
 
-          {/* Add to Trip */}
+          {/* Secondary Add to Trip (icon only) */}
           <button
             onClick={handleAddToTrip}
-            className="hover:opacity-60 transition-opacity"
+            className="p-2 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-full transition-colors"
             title="Add to Trip"
           >
-            <CalendarPlus className="w-7 h-7 text-gray-900 dark:text-white" />
+            <Plus className="w-6 h-6 text-teal-600 dark:text-teal-400" />
           </button>
         </div>
 

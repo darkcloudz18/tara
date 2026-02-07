@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowRight, MapPin, Calendar, Sparkles } from 'lucide-react'
+import { ArrowRight, MapPin, Calendar, Sparkles, Plus, ChevronRight } from 'lucide-react'
 import { getFeaturedTemplates, TripTemplate } from '@/features/planner/data/tripTemplates'
+import { supabase } from '@/lib/supabase'
+import { Itinerary } from '@/types/database'
 
 interface HeroSectionProps {
   user: any
@@ -11,7 +13,23 @@ interface HeroSectionProps {
 
 export default function HeroSection({ user }: HeroSectionProps) {
   const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null)
+  const [recentTrips, setRecentTrips] = useState<Itinerary[]>([])
   const templates = getFeaturedTemplates()
+
+  // Fetch user's recent trips
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('itineraries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(3)
+        .then(({ data }) => {
+          if (data) setRecentTrips(data)
+        })
+    }
+  }, [user])
 
   return (
     <section className="relative overflow-hidden">
@@ -35,82 +53,133 @@ export default function HeroSection({ user }: HeroSectionProps) {
         <div className="max-w-3xl mx-auto text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            <span>100% Free Trip Planner</span>
+            <span>Build & Share Your Trip</span>
           </div>
 
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
-            Plan Your Next
-            <br />
-            <span className="text-teal-200">Philippine Adventure</span>
+            {user ? (
+              <>
+                Continue Building
+                <br />
+                <span className="text-teal-200">Your Dream Trip</span>
+              </>
+            ) : (
+              <>
+                Plan Your Next
+                <br />
+                <span className="text-teal-200">Philippine Adventure</span>
+              </>
+            )}
           </h1>
 
           <p className="text-lg text-teal-100 mb-8 max-w-xl mx-auto">
-            Create beautiful day-by-day itineraries with budget tracking.
-            No signup required to start planning.
+            {user
+              ? 'Browse places below and tap + to add them to your trip. Share your itinerary with friends when ready!'
+              : 'Create beautiful day-by-day itineraries. Browse places and build your perfect trip.'}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href={user ? '/planner/new' : '/planner/new'}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              Start Planning
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="#templates"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm border border-white/20"
-            >
-              Browse Templates
-            </Link>
-          </div>
-
-          {/* Social proof */}
-          <div className="mt-8 flex items-center justify-center gap-6 text-teal-100 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-300 to-blue-300 border-2 border-teal-600 flex items-center justify-center text-xs font-bold text-teal-700"
+          {/* User has trips - show them */}
+          {user && recentTrips.length > 0 ? (
+            <div className="max-w-md mx-auto">
+              <p className="text-white/70 text-sm mb-3">Your Trips</p>
+              <div className="space-y-2">
+                {recentTrips.slice(0, 2).map((trip) => (
+                  <Link
+                    key={trip.id}
+                    href={`/planner/${trip.id}`}
+                    className="flex items-center justify-between p-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors group"
                   >
-                    {['J', 'M', 'A', 'K'][i - 1]}
-                  </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-white font-semibold text-sm">{trip.title}</p>
+                        <p className="text-white/60 text-xs">
+                          {trip.destinations?.slice(0, 2).join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
+                  </Link>
                 ))}
               </div>
-              <span>500+ trips planned</span>
+              <Link
+                href="/planner/new"
+                className="mt-3 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all w-full"
+              >
+                <Plus className="w-5 h-5" />
+                Create New Trip
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/planner/new"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              >
+                <Plus className="w-5 h-5" />
+                Create Your Trip
+              </Link>
+              <Link
+                href="#templates"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm border border-white/20"
+              >
+                Use a Template
+              </Link>
+            </div>
+          )}
+
+          {/* Social proof - only show for non-logged in users */}
+          {!user && (
+            <div className="mt-8 flex items-center justify-center gap-6 text-teal-100 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-300 to-blue-300 border-2 border-teal-600 flex items-center justify-center text-xs font-bold text-teal-700"
+                    >
+                      {['J', 'M', 'A', 'K'][i - 1]}
+                    </div>
+                  ))}
+                </div>
+                <span>500+ trips created & shared</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Featured Templates - collapsed for logged-in users with trips */}
+        {(!user || recentTrips.length === 0) && (
+          <div id="templates" className="max-w-4xl mx-auto">
+            <h2 className="text-center text-white/80 text-sm font-medium uppercase tracking-wider mb-4">
+              Start with a Template
+            </h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {templates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  isHovered={hoveredTemplate === template.id}
+                  onHover={() => setHoveredTemplate(template.id)}
+                  onLeave={() => setHoveredTemplate(null)}
+                />
+              ))}
+            </div>
+
+            <div className="text-center mt-4">
+              <Link
+                href="/planner/new"
+                className="text-white/80 hover:text-white text-sm font-medium inline-flex items-center gap-1 transition-colors"
+              >
+                View all templates
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
-        </div>
-
-        {/* Featured Templates */}
-        <div id="templates" className="max-w-4xl mx-auto">
-          <h2 className="text-center text-white/80 text-sm font-medium uppercase tracking-wider mb-4">
-            Popular Trip Templates
-          </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {templates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                isHovered={hoveredTemplate === template.id}
-                onHover={() => setHoveredTemplate(template.id)}
-                onLeave={() => setHoveredTemplate(null)}
-              />
-            ))}
-          </div>
-
-          <div className="text-center mt-4">
-            <Link
-              href="/planner/new"
-              className="text-white/80 hover:text-white text-sm font-medium inline-flex items-center gap-1 transition-colors"
-            >
-              View all templates
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
+        )}
       </div>
     </section>
   )
