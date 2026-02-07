@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, Plus } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
+import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 
 interface PlaceCardProps {
   place: DiscoverPlace
@@ -16,6 +17,7 @@ export default function PlaceCard({
   const [imageLoaded, setImageLoaded] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 500) + 50)
+  const t = useLocalizedTrip()
 
   const mainPhoto = place.photos?.[0] || 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800'
 
@@ -103,7 +105,7 @@ export default function PlaceCard({
           className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold rounded-lg shadow-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add to Trip
+          {t.addToTrip}
         </button>
 
         {/* Price Tag */}
@@ -138,7 +140,7 @@ export default function PlaceCard({
           <button
             onClick={handleAddToTrip}
             className="p-2 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-full transition-colors"
-            title="Add to Trip"
+            title={t.addToTrip}
           >
             <Plus className="w-6 h-6 text-teal-600 dark:text-teal-400" />
           </button>

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Compass, Search, PlusCircle, User, Map } from 'lucide-react'
+import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 
 interface MobileNavProps {
   user: any
@@ -10,6 +11,7 @@ interface MobileNavProps {
 
 export default function MobileNav({ user }: MobileNavProps) {
   const pathname = usePathname()
+  const t = useLocalizedTrip()
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -19,8 +21,8 @@ export default function MobileNav({ user }: MobileNavProps) {
   const navItems = [
     { icon: Compass, label: 'Discover', href: '/' },
     { icon: Search, label: 'Search', href: '/search' },
-    { icon: PlusCircle, label: 'Plan Trip', href: user ? '/planner/new' : '/login' },
-    { icon: Map, label: 'My Trips', href: user ? '/planner' : '/login' },
+    { icon: PlusCircle, label: t.planTrip, href: user ? '/planner/new' : '/login' },
+    { icon: Map, label: t.myTrips, href: user ? '/planner' : '/login' },
     { icon: User, label: 'Profile', href: user ? '/profile' : '/login' },
   ]
 

@@ -6,6 +6,7 @@ import { ArrowRight, MapPin, Calendar, Sparkles, Plus, ChevronRight } from 'luci
 import { getFeaturedTemplates, TripTemplate } from '@/features/planner/data/tripTemplates'
 import { supabase } from '@/lib/supabase'
 import { Itinerary } from '@/types/database'
+import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 
 interface HeroSectionProps {
   user: any
@@ -15,6 +16,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
   const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null)
   const [recentTrips, setRecentTrips] = useState<Itinerary[]>([])
   const templates = getFeaturedTemplates()
+  const t = useLocalizedTrip()
 
   // Fetch user's recent trips
   useEffect(() => {
@@ -53,7 +55,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
         <div className="max-w-3xl mx-auto text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            <span>Build & Share Your Trip</span>
+            <span>Build & Share Your {t.trip}</span>
           </div>
 
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
@@ -61,7 +63,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
               <>
                 Continue Building
                 <br />
-                <span className="text-teal-200">Your Dream Trip</span>
+                <span className="text-teal-200">Your Dream {t.trip}</span>
               </>
             ) : (
               <>
@@ -74,14 +76,14 @@ export default function HeroSection({ user }: HeroSectionProps) {
 
           <p className="text-lg text-teal-100 mb-8 max-w-xl mx-auto">
             {user
-              ? 'Browse places below and tap + to add them to your trip. Share your itinerary with friends when ready!'
-              : 'Create beautiful day-by-day itineraries. Browse places and build your perfect trip.'}
+              ? `Browse places below and tap + to add them to your ${t.trip.toLowerCase()}. Share your itinerary with friends when ready!`
+              : `Create beautiful day-by-day itineraries. Browse places and build your perfect ${t.trip.toLowerCase()}.`}
           </p>
 
           {/* User has trips - show them */}
           {user && recentTrips.length > 0 ? (
             <div className="max-w-md mx-auto">
-              <p className="text-white/70 text-sm mb-3">Your Trips</p>
+              <p className="text-white/70 text-sm mb-3">Your {t.trips}</p>
               <div className="space-y-2">
                 {recentTrips.slice(0, 2).map((trip) => (
                   <Link
@@ -109,7 +111,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
                 className="mt-3 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all w-full"
               >
                 <Plus className="w-5 h-5" />
-                Create New Trip
+                Create New {t.trip}
               </Link>
             </div>
           ) : (
@@ -119,7 +121,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
               >
                 <Plus className="w-5 h-5" />
-                Create Your Trip
+                Create Your {t.trip}
               </Link>
               <Link
                 href="#templates"
@@ -144,7 +146,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
                     </div>
                   ))}
                 </div>
-                <span>500+ trips created & shared</span>
+                <span>500+ {t.trips.toLowerCase()} created & shared</span>
               </div>
             </div>
           )}

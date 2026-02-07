@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { fetchTaraPlaces, DiscoverPlace } from '@/features/planner/services/placeService'
 import { fetchCuratedVideos, FeedVideo } from '@/features/discover/services/videoService'
 import { Itinerary } from '@/types/database'
+import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 
 // Union type for feed items
 type FeedItem =
@@ -33,6 +34,9 @@ export default function HomePage() {
   const [activeTrip, setActiveTrip] = useState<Itinerary | null>(null)
   const [showTripSelector, setShowTripSelector] = useState(false)
   const [recentlyAdded, setRecentlyAdded] = useState<string | null>(null)
+
+  // Localized strings
+  const t = useLocalizedTrip()
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -181,7 +185,7 @@ export default function HomePage() {
                   href={`/planner/${activeTrip.id}`}
                   className="text-xs text-white/80 hover:text-white underline"
                 >
-                  View Trip
+                  {t.viewTrip}
                 </Link>
               </div>
 
@@ -213,7 +217,7 @@ export default function HomePage() {
                     href="/planner/new"
                     className="block w-full px-3 py-2 text-sm text-teal-600 dark:text-teal-400 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
                   >
-                    + Create New Trip
+                    + Create New {t.trip}
                   </Link>
                 </div>
               )}
@@ -224,12 +228,12 @@ export default function HomePage() {
         {/* Section Title */}
         <div className="max-w-[470px] mx-auto px-4 pt-6 pb-2">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {user ? 'Add Places to Your Trip' : 'Discover & Plan'}
+            {user ? `Add Places to Your ${t.trip}` : 'Discover & Plan'}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {user
               ? 'Tap the + button to add places to your itinerary'
-              : 'Browse destinations and start building your trip'}
+              : `Browse destinations and start building your ${t.trip.toLowerCase()}`}
           </p>
         </div>
 
@@ -305,7 +309,7 @@ export default function HomePage() {
                 <CalendarPlus className="w-8 h-8 text-teal-600 dark:text-teal-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Start Building Your Trip
+                Start Building Your {t.trip}
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
                 Create a free account to save places and build shareable itineraries!

@@ -6,6 +6,7 @@ import { X, Plus, MapPin, Calendar, Check, ChevronRight, Loader2 } from 'lucide-
 import { useTripDrafts, TripWithDays } from '../hooks/useTripDrafts'
 import { DiscoverPlace } from '../services/placeService'
 import { ItineraryDay } from '@/types/database'
+import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 
 interface AddToTripModalProps {
   isOpen: boolean
@@ -24,6 +25,7 @@ export default function AddToTripModal({
 }: AddToTripModalProps) {
   const router = useRouter()
   const { trips, loading, fetchUserTrips, fetchTripDays, addPlaceToTrip } = useTripDrafts()
+  const t = useLocalizedTrip()
 
   const [step, setStep] = useState<ModalStep>('select-trip')
   const [selectedTrip, setSelectedTrip] = useState<TripWithDays | null>(null)
@@ -107,7 +109,7 @@ export default function AddToTripModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {step === 'select-trip' && 'Add to Trip'}
+            {step === 'select-trip' && t.addToTrip}
             {step === 'select-day' && 'Select Day'}
             {step === 'success' && 'Added!'}
           </h2>
@@ -155,7 +157,7 @@ export default function AddToTripModal({
                   <Plus className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold text-teal-600 dark:text-teal-400">Create New Trip</p>
+                  <p className="font-semibold text-teal-600 dark:text-teal-400">Create New {t.trip}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Start planning a new adventure</p>
                 </div>
               </button>
@@ -170,7 +172,7 @@ export default function AddToTripModal({
               {/* Existing Trips */}
               {!loading && trips.length > 0 && (
                 <>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 pt-2 pb-1">Your Trips</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 pt-2 pb-1">Your {t.trips}</p>
                   {trips.slice(0, 5).map((trip) => (
                     <button
                       key={trip.id}
@@ -208,7 +210,7 @@ export default function AddToTripModal({
               {/* Empty State */}
               {!loading && trips.length === 0 && (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 dark:text-gray-400">No trips yet. Create your first trip!</p>
+                  <p className="text-gray-500 dark:text-gray-400">No {t.trips.toLowerCase()} yet. Create your first {t.trip.toLowerCase()}!</p>
                 </div>
               )}
             </div>
@@ -222,7 +224,7 @@ export default function AddToTripModal({
                 onClick={() => setStep('select-trip')}
                 className="text-sm text-teal-600 dark:text-teal-400 hover:underline mb-2"
               >
-                ← Back to trips
+                ← Back to {t.trips.toLowerCase()}
               </button>
 
               <p className="text-sm text-gray-500 dark:text-gray-400 pb-1">
@@ -254,12 +256,12 @@ export default function AddToTripModal({
                 ))
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 dark:text-gray-400">No days in this trip yet.</p>
+                  <p className="text-gray-500 dark:text-gray-400">No days in this {t.trip.toLowerCase()} yet.</p>
                   <button
                     onClick={() => router.push(`/planner/${selectedTrip.id}`)}
                     className="mt-2 text-teal-600 dark:text-teal-400 hover:underline"
                   >
-                    Go to trip to add days
+                    Go to {t.trip.toLowerCase()} to add days
                   </button>
                 </div>
               )}
@@ -273,17 +275,17 @@ export default function AddToTripModal({
                 <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Added to Trip!
+                Added to {t.trip}!
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                <span className="font-medium">{place.name}</span> has been added to your trip.
+                <span className="font-medium">{place.name}</span> has been added to your {t.trip.toLowerCase()}.
               </p>
               <div className="space-y-3">
                 <button
                   onClick={handleViewTrip}
                   className="w-full py-3 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-colors"
                 >
-                  View Trip
+                  {t.viewTrip}
                 </button>
                 <button
                   onClick={onClose}

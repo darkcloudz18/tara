@@ -19,6 +19,7 @@ import {
 import { useState } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import TaraLogo from '@/components/icons/TaraLogo'
+import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>
@@ -36,6 +37,7 @@ export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const { resolvedTheme, toggleTheme } = useTheme()
+  const t = useLocalizedTrip()
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -49,8 +51,8 @@ export default function Sidebar({ user }: SidebarProps) {
   ]
 
   const tripNavItems: NavItem[] = [
-    { icon: Map, label: 'My Trips', href: '/planner', requiresAuth: true },
-    { icon: PlusCircle, label: 'Plan a Trip', href: '/planner/new', requiresAuth: true },
+    { icon: Map, label: t.myTrips, href: '/planner', requiresAuth: true },
+    { icon: PlusCircle, label: `Plan a ${t.trip}`, href: '/planner/new', requiresAuth: true },
   ]
 
   const accountNavItems: NavItem[] = [
