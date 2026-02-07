@@ -103,4 +103,90 @@ export const itineraryService = {
         .eq('id', id)
     }
   },
+
+  // Get a public itinerary (for shared links)
+  async getPublicById(id: string): Promise<Itinerary | null> {
+    const { data, error } = await supabase
+      .from('itineraries')
+      .select('*')
+      .eq('id', id)
+      .eq('is_public', true)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') return null
+      throw error
+    }
+    return data
+  },
+
+  // Get full itinerary with days and activities (for share page)
+  async getFullItinerary(id: string, requirePublic: boolean = false): Promise<{
+    itinerary: Itinerary
+    days: any[]
+    activities: any[]
+    owner: { username?: string; first_name?: string; photo_url?: string } | null
+  } | null> {
+    // Build the query
+    let query = supabase
+      .from('itineraries')
+      .select(`
+        *,
+        owner:profiles!itineraries_user_id_fkey(username, first_name, photo_url)
+      `)
+      .eq('id', id)
+
+    if (requirePublic) {
+      query = query.eq('is_public', true)
+    }
+
+    const { data: itinerary, error: itinError } = await query.single()
+
+    if (itinError || !itinerary) {
+      return null
+    }
+
+    // Get days
+    const { data: days } = await supabase
+      .from('itinerary_days')
+      .select('*')
+      .eq('itinerary_id', id)
+      .order('day_number', { ascending: true })
+
+    // Get activities for all days
+    const dayIds = (days || []).map(d => d.id)
+    const { data: activities } = await supabase
+      .from('itinerary_activities')
+      .select('*')
+      .in('day_id', dayIds)
+      .order('order_index', { ascending: true })
+
+    return {
+      itinerary,
+      days: days || [],
+      activities: activities || [],
+      owner: itinerary.owner,
+    }
+  },
+
+  // Make an itinerary public and return the share URL
+  async makePublic(id: string): Promise<string> {
+    const { error } = await supabase
+      .from('itineraries')
+      .update({ is_public: true, updated_at: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) throw error
+    return `/trip/${id}`
+  },
+
+  // Make an itinerary private
+  async makePrivate(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('itineraries')
+      .update({ is_public: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) throw error
+  },
 }

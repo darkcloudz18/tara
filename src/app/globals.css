@@ -3,8 +3,30 @@
 @tailwind utilities;
 
 @layer base {
+  /* Smooth scrolling on iOS */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html {
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior-y: contain;
+  }
+
   body {
     @apply bg-gray-50 text-gray-900;
+    /* Prevent text size adjustment on orientation change */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Improve tap highlighting on mobile */
+  a, button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Better focus styles for mobile */
+  input, textarea, select {
+    font-size: 16px; /* Prevents iOS zoom on focus */
   }
 }
 
@@ -23,5 +45,39 @@
 
   .card {
     @apply bg-white rounded-lg shadow-md p-6;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Horizontal scroll container for mobile */
+  .scroll-snap-x {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-snap-x > * {
+    scroll-snap-align: start;
+  }
+}
+
+@layer utilities {
+  /* Safe area padding for notched devices */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
   }
 }

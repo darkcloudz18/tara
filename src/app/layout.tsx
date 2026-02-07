@@ -1,10 +1,26 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import Providers from '@/components/Providers'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
+}
 
 export const metadata: Metadata = {
   title: 'Tara - Travel Together, Book Better',
   description: 'All-in-one travel platform for the Philippines. Plan trips, discover content, and book with confidence.',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Tara',
+  },
+  formatDetection: {
+    telephone: true,
+  },
 }
 
 export default function RootLayout({

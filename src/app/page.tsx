@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { X, Loader2 } from 'lucide-react'
 import { Sidebar, MobileNav } from '@/components/layout'
 import Header from '@/components/layout/Header'
+import { HeroSection } from '@/features/home/components'
 import PlaceCard from '@/features/discover/components/PlaceCard'
 import CuratedVideoCard from '@/features/discover/components/CuratedVideoCard'
 import BucketIcon from '@/components/icons/BucketIcon'
@@ -125,11 +126,24 @@ export default function HomePage() {
 
       {/* Main Content */}
       <div className="lg:ml-[260px]">
-        {/* Header */}
+        {/* Hero Section */}
+        <HeroSection user={user} />
+
+        {/* Header with Categories */}
         <Header
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
         />
+
+        {/* Section Title */}
+        <div className="max-w-[470px] mx-auto px-4 pt-6 pb-2">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            Discover Destinations
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Explore beautiful places across the Philippines
+          </p>
+        </div>
 
         {/* Vertical Feed */}
         <main className="max-w-[470px] mx-auto pb-20 lg:pb-8">

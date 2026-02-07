@@ -9,10 +9,12 @@ import { useBudgetCalculations } from '@/features/planner/hooks/useBudgetCalcula
 import { dayService } from '@/features/planner/services/dayService'
 import { activityService } from '@/features/planner/services/activityService'
 import DayCard from '@/features/planner/components/DayCard'
-import BudgetSummary from '@/features/planner/components/BudgetSummary'
+import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
 import ItineraryMap from '@/features/planner/components/ItineraryMap'
 import ItineraryForm, { ItineraryFormData } from '@/features/planner/components/ItineraryForm'
 import DeleteConfirmModal from '@/features/planner/components/DeleteConfirmModal'
+import ShareTripButton from '@/features/planner/components/ShareTripButton'
+import DownloadPDFButton from '@/features/planner/components/DownloadPDFButton'
 import { NoDaysState } from '@/features/planner/components/EmptyState'
 import { DayFormData } from '@/features/planner/components/DayForm'
 import { ActivityFormData } from '@/features/planner/components/ActivityForm'
@@ -233,6 +235,19 @@ export default function ItineraryDetailPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <ShareTripButton
+                  itineraryId={itinerary.id}
+                  isPublic={itinerary.is_public}
+                  onVisibilityChange={(isPublic) => {
+                    // Optionally refetch to update local state
+                    refetch()
+                  }}
+                />
+                <DownloadPDFButton
+                  itinerary={itinerary}
+                  days={days}
+                  activities={activities}
+                />
                 <button
                   onClick={() => setEditingItinerary(true)}
                   className="btn-secondary flex items-center gap-1"
@@ -309,7 +324,7 @@ export default function ItineraryDetailPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              <BudgetSummary budget={budget} />
+              <BudgetBreakdown budget={budget} showTips={false} />
 
               {/* Mini Map */}
               <div className="card">
