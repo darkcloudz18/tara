@@ -1,8 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { Share2, Download, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Share2, Download, Loader2, Copy, Check } from 'lucide-react'
 import { downloadItineraryPDF } from '@/features/planner/components/ItineraryPDF'
+import { itineraryService } from '@/features/planner/services/itineraryService'
+import { supabase } from '@/lib/supabase'
+import { useToast } from '@/contexts/ToastContext'
 
 interface TripActionsProps {
   tripId: string
@@ -19,7 +23,18 @@ export default function TripActions({
   days,
   activities,
 }: TripActionsProps) {
+  const router = useRouter()
+  const { success, error: showError } = useToast()
   const [downloading, setDownloading] = useState(false)
+  const [copying, setCopying] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+    })
+  }, [])
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/trip/${tripId}`
@@ -50,9 +65,35 @@ export default function TripActions({
       await downloadItineraryPDF(itinerary, days, activities)
     } catch (error) {
       console.error('Failed to generate PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      showError('Failed to generate PDF. Please try again.')
     } finally {
       setDownloading(false)
+    }
+  }
+
+  const handleCopy = async () => {
+    if (!user) {
+      router.push('/login?redirect=/trip/' + tripId)
+      return
+    }
+
+    setCopying(true)
+    try {
+      const newItinerary = await itineraryService.copyItinerary(tripId, user.id)
+      if (newItinerary) {
+        setCopied(true)
+        success('Trip copied to your itineraries!')
+        setTimeout(() => {
+          router.push(`/planner/${newItinerary.id}`)
+        }, 1500)
+      } else {
+        showError('Failed to copy trip. Please try again.')
+      }
+    } catch (error) {
+      console.error('Failed to copy trip:', error)
+      showError('Failed to copy trip. Please try again.')
+    } finally {
+      setCopying(false)
     }
   }
 
@@ -79,6 +120,28 @@ export default function TripActions({
           <>
             <Download className="w-5 h-5" />
             Download PDF
+          </>
+        )}
+      </button>
+      <button
+        onClick={handleCopy}
+        disabled={copying || copied}
+        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-50"
+      >
+        {copied ? (
+          <>
+            <Check className="w-5 h-5" />
+            Copied!
+          </>
+        ) : copying ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Copying...
+          </>
+        ) : (
+          <>
+            <Copy className="w-5 h-5" />
+            Copy to My Trips
           </>
         )}
       </button>

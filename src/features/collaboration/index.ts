@@ -1,0 +1,5 @@
+export { collaborationService } from './services/collaborationService'
+export { default as InviteCollaboratorModal } from './components/InviteCollaboratorModal'
+export { default as CollaboratorList } from './components/CollaboratorList'
+export { default as PresenceIndicator } from './components/PresenceIndicator'
+export type { Collaborator, CollaboratorRole, CollaboratorStatus, PresenceState } from './types'

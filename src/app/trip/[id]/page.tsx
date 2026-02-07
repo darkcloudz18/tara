@@ -15,6 +15,7 @@ import {
   Copy,
 } from 'lucide-react'
 import { itineraryService } from '@/features/planner/services/itineraryService'
+import { TripComments, LikeButton } from '@/features/social'
 import TripActions from './TripActions'
 
 interface PageProps {
@@ -247,6 +248,20 @@ export default async function PublicTripPage({ params }: PageProps) {
           {dayActivities.map((day) => (
             <DayCard key={day.id} day={day} />
           ))}
+        </div>
+
+        {/* Social Section */}
+        <div className="mt-8 space-y-6">
+          {/* Like Button */}
+          <div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <LikeButton itineraryId={params.id} size="lg" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Like this trip to show your appreciation
+            </span>
+          </div>
+
+          {/* Comments */}
+          <TripComments itineraryId={params.id} isPublic={true} />
         </div>
 
         {/* Bottom CTA */}

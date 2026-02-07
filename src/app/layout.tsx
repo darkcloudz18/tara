@@ -11,9 +11,51 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Tara - Travel Together, Book Better',
-  description: 'All-in-one travel platform for the Philippines. Plan trips, discover content, and book with confidence.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://tara.ph'),
+  title: {
+    default: 'Tara - Free Trip Planner for the Philippines',
+    template: '%s | Tara',
+  },
+  description: 'Plan your perfect Philippine adventure with Tara. Discover destinations, create detailed itineraries, and share trips with friends - all for free.',
+  keywords: ['Philippines travel', 'trip planner', 'itinerary', 'travel app', 'Philippine destinations', 'free trip planner', 'Palawan', 'Boracay', 'Cebu', 'Siargao'],
+  authors: [{ name: 'Tara' }],
+  creator: 'Tara',
+  publisher: 'Tara',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   manifest: '/manifest.json',
+  openGraph: {
+    type: 'website',
+    locale: 'en_PH',
+    url: '/',
+    siteName: 'Tara',
+    title: 'Tara - Free Trip Planner for the Philippines',
+    description: 'Plan your perfect Philippine adventure with Tara. Discover destinations, create detailed itineraries, and share trips with friends.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Tara - Your Philippine Adventure Awaits',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tara - Free Trip Planner for the Philippines',
+    description: 'Plan your perfect Philippine adventure with Tara. Discover destinations, create detailed itineraries, and share trips with friends.',
+    images: ['/og-image.png'],
+    creator: '@taratravel',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -32,6 +74,7 @@ export const metadata: Metadata = {
       { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
     ],
   },
+  category: 'travel',
 }
 
 export default function RootLayout({

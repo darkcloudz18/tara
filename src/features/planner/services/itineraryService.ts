@@ -189,4 +189,102 @@ export const itineraryService = {
 
     if (error) throw error
   },
+
+  // Copy an itinerary (with all days and activities)
+  async copyItinerary(sourceId: string, newOwnerId: string): Promise<Itinerary | null> {
+    try {
+      // Get the source itinerary with all data
+      const source = await this.getFullItinerary(sourceId, false)
+      if (!source) return null
+
+      const { itinerary, days, activities } = source
+
+      // Calculate new dates (start from today)
+      const today = new Date()
+      const sourceDuration = Math.ceil(
+        (new Date(itinerary.end_date).getTime() - new Date(itinerary.start_date).getTime()) /
+        (1000 * 60 * 60 * 24)
+      )
+      const newEndDate = new Date(today)
+      newEndDate.setDate(today.getDate() + sourceDuration)
+
+      // Create the new itinerary
+      const { data: newItinerary, error: createError } = await supabase
+        .from('itineraries')
+        .insert({
+          user_id: newOwnerId,
+          title: `Copy of ${itinerary.title}`,
+          description: itinerary.description,
+          start_date: today.toISOString().split('T')[0],
+          end_date: newEndDate.toISOString().split('T')[0],
+          destinations: itinerary.destinations,
+          total_budget: itinerary.total_budget,
+          cover_image_url: itinerary.cover_image_url,
+          is_public: false,
+          actual_spent: 0,
+          views_count: 0,
+          copies_count: 0,
+        })
+        .select()
+        .single()
+
+      if (createError || !newItinerary) throw createError
+
+      // Increment copies count on original
+      await supabase
+        .from('itineraries')
+        .update({ copies_count: (itinerary.copies_count || 0) + 1 })
+        .eq('id', sourceId)
+
+      // Copy days
+      const dayIdMap: Record<string, string> = {}
+
+      for (const day of days) {
+        const newDate = new Date(today)
+        newDate.setDate(today.getDate() + day.day_number - 1)
+
+        const { data: newDay, error: dayError } = await supabase
+          .from('itinerary_days')
+          .insert({
+            itinerary_id: newItinerary.id,
+            day_number: day.day_number,
+            date: newDate.toISOString().split('T')[0],
+            title: day.title,
+            notes: day.notes,
+          })
+          .select()
+          .single()
+
+        if (!dayError && newDay) {
+          dayIdMap[day.id] = newDay.id
+        }
+      }
+
+      // Copy activities
+      for (const activity of activities) {
+        const newDayId = dayIdMap[activity.day_id]
+        if (!newDayId) continue
+
+        await supabase.from('itinerary_activities').insert({
+          day_id: newDayId,
+          title: activity.title,
+          description: activity.description,
+          location: activity.location,
+          start_time: activity.start_time,
+          end_time: activity.end_time,
+          estimated_cost: activity.estimated_cost,
+          actual_cost: 0,
+          place_type: activity.place_type,
+          place_id: activity.place_id,
+          order_index: activity.order_index,
+          notes: activity.notes,
+        })
+      }
+
+      return newItinerary
+    } catch (err) {
+      console.error('Error copying itinerary:', err)
+      return null
+    }
+  },
 }

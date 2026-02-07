@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Loader2, Compass } from 'lucide-react'
 import VideoCard from './VideoCard'
 import FeedPlaceCard from './FeedPlaceCard'
 import AddToTripModal from '@/features/planner/components/AddToTripModal'
-import { FeedItem, fetchDiscoverFeed } from '../services/discoverFeedService'
+import { FeedItem, fetchDiscoverFeedPaginated } from '../services/discoverFeedService'
 import { CreatorVideo } from '../services/creatorVideoService'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 
 interface DiscoverFeedProps {
   onLoginRequired?: () => void
@@ -20,9 +21,6 @@ export default function DiscoverFeed({
   currentVideoCreatorId,
   setCurrentVideoCreatorId,
 }: DiscoverFeedProps) {
-  const [feed, setFeed] = useState<FeedItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showAddToTripModal, setShowAddToTripModal] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState<DiscoverPlace | null>(null)
   const [addedPlaces, setAddedPlaces] = useState<Set<string>>(new Set())
@@ -31,22 +29,19 @@ export default function DiscoverFeed({
   const [lastViewedVideoCreatorId, setLastViewedVideoCreatorId] = useState<string | null>(null)
   const [lastViewedVideoId, setLastViewedVideoId] = useState<string | null>(null)
 
-  const loadFeed = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const feedItems = await fetchDiscoverFeed(30)
-      setFeed(feedItems)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load feed')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadFeed()
-  }, [loadFeed])
+  // Use infinite scroll hook
+  const {
+    items: feed,
+    loading,
+    loadingMore,
+    hasMore,
+    error,
+    refresh: loadFeed,
+  } = useInfiniteScroll<FeedItem>({
+    fetchFn: fetchDiscoverFeedPaginated,
+    pageSize: 20,
+    threshold: 300,
+  })
 
   const handleAddToTrip = (place: DiscoverPlace) => {
     setSelectedPlace(place)
@@ -133,14 +128,18 @@ export default function DiscoverFeed({
           </div>
         ))}
 
-        {/* Load More */}
-        <div className="text-center py-8">
-          <button
-            onClick={loadFeed}
-            className="px-6 py-3 text-primary-600 dark:text-primary-400 font-semibold hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-          >
-            Load More
-          </button>
+        {/* Infinite Scroll Sentinel */}
+        <div id="infinite-scroll-sentinel" className="py-8">
+          {loadingMore && (
+            <div className="flex justify-center">
+              <Loader2 className="w-6 h-6 text-primary-600 dark:text-primary-400 animate-spin" />
+            </div>
+          )}
+          {!hasMore && feed.length > 0 && (
+            <p className="text-center text-gray-400 dark:text-gray-500 text-sm">
+              You&apos;ve seen it all! Check back for new places.
+            </p>
+          )}
         </div>
       </div>
 

@@ -87,6 +87,8 @@ export default function FeedPlaceCard({
         <img
           src={mainPhoto}
           alt={place.name}
+          loading="lazy"
+          decoding="async"
           className={`w-full h-full object-cover transition-opacity ${
             imageLoaded ? 'opacity-100' : 'opacity-0'
           }`}
