@@ -23,6 +23,7 @@ import TaraLogo from '@/components/icons/TaraLogo'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { supabase } from '@/lib/supabase'
 import { Itinerary } from '@/types/database'
+import { notificationService } from '@/features/notifications/services/notificationService'
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>
@@ -43,6 +44,7 @@ export default function Sidebar({ user }: SidebarProps) {
   const t = useLocalizedTrip()
   const [activeTrip, setActiveTrip] = useState<Itinerary | null>(null)
   const [tripPlaceCount, setTripPlaceCount] = useState(0)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   // Fetch user's most recent trip
   useEffect(() => {
@@ -75,7 +77,25 @@ export default function Sidebar({ user }: SidebarProps) {
               })
           }
         })
+
+      // Fetch notification count
+      notificationService.getUnreadCount(user.id).then(setUnreadNotifications)
     }
+  }, [user])
+
+  // Subscribe to real-time notifications
+  useEffect(() => {
+    if (!user) return
+
+    const unsubscribe = notificationService.subscribeToNotifications(
+      user.id,
+      () => {
+        // Update count when new notification arrives
+        notificationService.getUnreadCount(user.id).then(setUnreadNotifications)
+      }
+    )
+
+    return () => unsubscribe()
   }, [user])
 
   const isActive = (href: string) => {
@@ -94,7 +114,7 @@ export default function Sidebar({ user }: SidebarProps) {
   ]
 
   const accountNavItems: NavItem[] = [
-    { icon: Bell, label: 'Notifications', href: '/notifications', requiresAuth: true, badge: 3 },
+    { icon: Bell, label: 'Notifications', href: '/notifications', requiresAuth: true, badge: unreadNotifications },
     { icon: User, label: 'Profile', href: '/profile', requiresAuth: true },
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', requiresAuth: true },
   ]

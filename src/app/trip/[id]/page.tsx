@@ -11,6 +11,8 @@ import {
   UtensilsCrossed,
   Camera,
   Sparkles,
+  Eye,
+  Copy,
 } from 'lucide-react'
 import { itineraryService } from '@/features/planner/services/itineraryService'
 import TripActions from './TripActions'
@@ -71,6 +73,9 @@ export default async function PublicTripPage({ params }: PageProps) {
   if (!data) {
     notFound()
   }
+
+  // Increment view count (fire and forget)
+  itineraryService.incrementViews(params.id).catch(() => {})
 
   const { itinerary, days, activities, owner } = data
   const destination = itinerary.destinations?.[0] || 'Philippines'
@@ -152,7 +157,7 @@ export default async function PublicTripPage({ params }: PageProps) {
           </div>
 
           {/* Stats */}
-          <div className="flex gap-8 mb-8">
+          <div className="flex flex-wrap gap-6 md:gap-8 mb-8">
             <div>
               <p className="text-3xl font-bold">{totalDays}</p>
               <p className="text-sm text-teal-100">Days</p>
@@ -167,6 +172,24 @@ export default async function PublicTripPage({ params }: PageProps) {
               </p>
               <p className="text-sm text-teal-100">Est. Budget</p>
             </div>
+            {(itinerary.views_count || 0) > 0 && (
+              <div>
+                <p className="text-3xl font-bold flex items-center gap-2">
+                  <Eye className="w-6 h-6" />
+                  {itinerary.views_count?.toLocaleString()}
+                </p>
+                <p className="text-sm text-teal-100">Views</p>
+              </div>
+            )}
+            {(itinerary.copies_count || 0) > 0 && (
+              <div>
+                <p className="text-3xl font-bold flex items-center gap-2">
+                  <Copy className="w-6 h-6" />
+                  {itinerary.copies_count?.toLocaleString()}
+                </p>
+                <p className="text-sm text-teal-100">Copies</p>
+              </div>
+            )}
           </div>
 
           {/* CTA */}

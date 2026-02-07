@@ -1,0 +1,22 @@
+PWA Icons Placeholder
+=====================
+
+To complete PWA setup, add icon files in these sizes:
+- icon-72x72.png
+- icon-96x96.png
+- icon-128x128.png
+- icon-144x144.png
+- icon-152x152.png
+- icon-192x192.png
+- icon-384x384.png
+- icon-512x512.png
+
+And optionally:
+- shortcut-trip.png (96x96)
+- shortcut-discover.png (96x96)
+
+Screenshots for app store:
+- screenshots/home.png (1280x720)
+- screenshots/planner.png (390x844)
+
+Icons should use the Tara brand color (#14b8a6) and logo.

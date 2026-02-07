@@ -1,6 +1,21 @@
 // Pre-made trip templates for popular Philippine destinations
 // These will be used on the homepage hero and template selector
 
+export interface TemplateActivity {
+  name: string
+  time: string // e.g., "09:00 AM"
+  duration: string // e.g., "2 hours"
+  cost: number
+  category: 'see' | 'eat' | 'do' | 'stay'
+  description?: string
+}
+
+export interface TemplateDay {
+  dayNumber: number
+  title: string
+  activities: TemplateActivity[]
+}
+
 export interface TripTemplate {
   id: string
   slug: string
@@ -14,6 +29,7 @@ export interface TripTemplate {
   estimatedBudget: number // per person in PHP
   bestFor: string[] // e.g., ['couples', 'adventure', 'budget']
   bestMonths: string[] // e.g., ['Dec', 'Jan', 'Feb']
+  suggestedDays?: TemplateDay[]
 }
 
 export const TRIP_TEMPLATES: TripTemplate[] = [
@@ -30,6 +46,59 @@ export const TRIP_TEMPLATES: TripTemplate[] = [
     estimatedBudget: 15000,
     bestFor: ['couples', 'adventure', 'photography'],
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
+    suggestedDays: [
+      {
+        dayNumber: 1,
+        title: 'Arrival in El Nido',
+        activities: [
+          { name: 'Flight to Puerto Princesa', time: '06:00 AM', duration: '1.5 hours', cost: 3500, category: 'do' },
+          { name: 'Van Transfer to El Nido', time: '10:00 AM', duration: '5 hours', cost: 600, category: 'do' },
+          { name: 'Check-in at Resort', time: '04:00 PM', duration: '30 mins', cost: 0, category: 'stay' },
+          { name: 'Sunset at Las Cabanas Beach', time: '05:30 PM', duration: '2 hours', cost: 0, category: 'see' },
+          { name: 'Dinner at Trattoria Altrove', time: '07:30 PM', duration: '1.5 hours', cost: 800, category: 'eat' },
+        ],
+      },
+      {
+        dayNumber: 2,
+        title: 'Island Hopping Tour A',
+        activities: [
+          { name: 'Breakfast at Hotel', time: '07:00 AM', duration: '1 hour', cost: 0, category: 'eat' },
+          { name: 'Tour A Island Hopping', time: '09:00 AM', duration: '7 hours', cost: 1400, category: 'do', description: 'Big Lagoon, Small Lagoon, Secret Lagoon, Shimizu Island' },
+          { name: 'Seafood Dinner at El Nido Town', time: '06:00 PM', duration: '2 hours', cost: 600, category: 'eat' },
+        ],
+      },
+      {
+        dayNumber: 3,
+        title: 'Nacpan Beach Day',
+        activities: [
+          { name: 'Tricycle to Nacpan Beach', time: '08:00 AM', duration: '45 mins', cost: 400, category: 'do' },
+          { name: 'Beach Relaxation', time: '09:00 AM', duration: '4 hours', cost: 0, category: 'see' },
+          { name: 'Lunch at Beach Shack', time: '01:00 PM', duration: '1 hour', cost: 400, category: 'eat' },
+          { name: 'Twin Beach Walk', time: '03:00 PM', duration: '2 hours', cost: 0, category: 'see' },
+          { name: 'Return to El Nido', time: '05:00 PM', duration: '45 mins', cost: 400, category: 'do' },
+        ],
+      },
+      {
+        dayNumber: 4,
+        title: 'Underground River Day Trip',
+        activities: [
+          { name: 'Early Van to Sabang', time: '05:00 AM', duration: '4 hours', cost: 800, category: 'do' },
+          { name: 'Underground River Tour', time: '10:00 AM', duration: '2 hours', cost: 1500, category: 'see' },
+          { name: 'Lunch in Sabang', time: '01:00 PM', duration: '1 hour', cost: 400, category: 'eat' },
+          { name: 'Return to El Nido', time: '03:00 PM', duration: '4 hours', cost: 800, category: 'do' },
+        ],
+      },
+      {
+        dayNumber: 5,
+        title: 'Departure Day',
+        activities: [
+          { name: 'Breakfast & Packing', time: '07:00 AM', duration: '1.5 hours', cost: 0, category: 'eat' },
+          { name: 'Souvenir Shopping', time: '09:00 AM', duration: '1 hour', cost: 500, category: 'do' },
+          { name: 'Van Transfer to Puerto Princesa', time: '10:30 AM', duration: '5 hours', cost: 600, category: 'do' },
+          { name: 'Flight Back to Manila', time: '05:00 PM', duration: '1.5 hours', cost: 3500, category: 'do' },
+        ],
+      },
+    ],
   },
   {
     id: 'siargao-surf-chill',
