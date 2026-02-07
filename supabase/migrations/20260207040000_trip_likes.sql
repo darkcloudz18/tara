@@ -9,24 +9,25 @@ CREATE TABLE IF NOT EXISTS trip_likes (
   UNIQUE(itinerary_id, user_id)
 );
 
--- Indexes
-CREATE INDEX idx_trip_likes_itinerary ON trip_likes(itinerary_id);
-CREATE INDEX idx_trip_likes_user ON trip_likes(user_id);
+-- Indexes (with IF NOT EXISTS)
+CREATE INDEX IF NOT EXISTS idx_trip_likes_itinerary ON trip_likes(itinerary_id);
+CREATE INDEX IF NOT EXISTS idx_trip_likes_user ON trip_likes(user_id);
 
 -- Row Level Security
 ALTER TABLE trip_likes ENABLE ROW LEVEL SECURITY;
 
--- Anyone can see like counts (handled in app)
+-- Drop and recreate policies (idempotent)
+DROP POLICY IF EXISTS "Anyone can view likes" ON trip_likes;
 CREATE POLICY "Anyone can view likes"
   ON trip_likes FOR SELECT
   USING (true);
 
--- Authenticated users can like
+DROP POLICY IF EXISTS "Authenticated users can like" ON trip_likes;
 CREATE POLICY "Authenticated users can like"
   ON trip_likes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- Users can unlike (delete their own likes)
+DROP POLICY IF EXISTS "Users can unlike" ON trip_likes;
 CREATE POLICY "Users can unlike"
   ON trip_likes FOR DELETE
   USING (auth.uid() = user_id);
@@ -50,6 +51,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_trip_like_change ON trip_likes;
 CREATE TRIGGER on_trip_like_change
   AFTER INSERT OR DELETE ON trip_likes
   FOR EACH ROW
@@ -77,26 +79,30 @@ CREATE TABLE IF NOT EXISTS saved_trips (
   UNIQUE(itinerary_id, user_id)
 );
 
--- Indexes
-CREATE INDEX idx_saved_trips_user ON saved_trips(user_id);
-CREATE INDEX idx_saved_trips_itinerary ON saved_trips(itinerary_id);
+-- Indexes (with IF NOT EXISTS)
+CREATE INDEX IF NOT EXISTS idx_saved_trips_user ON saved_trips(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_trips_itinerary ON saved_trips(itinerary_id);
 
 -- Row Level Security
 ALTER TABLE saved_trips ENABLE ROW LEVEL SECURITY;
 
--- Users can only see their own saved trips
+-- Drop and recreate policies (idempotent)
+DROP POLICY IF EXISTS "Users can view own saved trips" ON saved_trips;
 CREATE POLICY "Users can view own saved trips"
   ON saved_trips FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can save trips" ON saved_trips;
 CREATE POLICY "Users can save trips"
   ON saved_trips FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can unsave trips" ON saved_trips;
 CREATE POLICY "Users can unsave trips"
   ON saved_trips FOR DELETE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update saved trip notes" ON saved_trips;
 CREATE POLICY "Users can update saved trip notes"
   ON saved_trips FOR UPDATE
   USING (auth.uid() = user_id);

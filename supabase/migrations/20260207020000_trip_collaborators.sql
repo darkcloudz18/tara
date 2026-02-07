@@ -15,27 +15,28 @@ CREATE TABLE IF NOT EXISTS trip_collaborators (
   UNIQUE(itinerary_id, user_id)
 );
 
--- Indexes
-CREATE INDEX idx_trip_collaborators_itinerary ON trip_collaborators(itinerary_id);
-CREATE INDEX idx_trip_collaborators_user ON trip_collaborators(user_id);
-CREATE INDEX idx_trip_collaborators_status ON trip_collaborators(status);
+-- Indexes (with IF NOT EXISTS)
+CREATE INDEX IF NOT EXISTS idx_trip_collaborators_itinerary ON trip_collaborators(itinerary_id);
+CREATE INDEX IF NOT EXISTS idx_trip_collaborators_user ON trip_collaborators(user_id);
+CREATE INDEX IF NOT EXISTS idx_trip_collaborators_status ON trip_collaborators(status);
 
 -- Row Level Security
 ALTER TABLE trip_collaborators ENABLE ROW LEVEL SECURITY;
 
--- Users can see collaborations they're part of
+-- Drop and recreate policies (idempotent)
+DROP POLICY IF EXISTS "Users can view their collaborations" ON trip_collaborators;
 CREATE POLICY "Users can view their collaborations"
   ON trip_collaborators FOR SELECT
   USING (
     auth.uid() = user_id
     OR auth.uid() = invited_by
     OR auth.uid() IN (
-      SELECT user_id FROM trip_collaborators
-      WHERE itinerary_id = trip_collaborators.itinerary_id AND status = 'accepted'
+      SELECT user_id FROM trip_collaborators tc2
+      WHERE tc2.itinerary_id = trip_collaborators.itinerary_id AND tc2.status = 'accepted'
     )
   );
 
--- Trip owners can invite collaborators
+DROP POLICY IF EXISTS "Owners can invite collaborators" ON trip_collaborators;
 CREATE POLICY "Owners can invite collaborators"
   ON trip_collaborators FOR INSERT
   WITH CHECK (
@@ -45,12 +46,12 @@ CREATE POLICY "Owners can invite collaborators"
     OR auth.uid() = invited_by
   );
 
--- Users can update their own collaboration status (accept/decline)
+DROP POLICY IF EXISTS "Users can update own collaboration" ON trip_collaborators;
 CREATE POLICY "Users can update own collaboration"
   ON trip_collaborators FOR UPDATE
   USING (auth.uid() = user_id OR auth.uid() = invited_by);
 
--- Owners can remove collaborators
+DROP POLICY IF EXISTS "Owners can remove collaborators" ON trip_collaborators;
 CREATE POLICY "Owners can remove collaborators"
   ON trip_collaborators FOR DELETE
   USING (
@@ -60,10 +61,16 @@ CREATE POLICY "Owners can remove collaborators"
     )
   );
 
--- Enable realtime for presence
-ALTER PUBLICATION supabase_realtime ADD TABLE trip_collaborators;
+-- Enable realtime for presence (ignore if already added)
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE trip_collaborators;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Trigger to update updated_at
+DROP TRIGGER IF EXISTS trip_collaborators_updated_at ON trip_collaborators;
 CREATE TRIGGER trip_collaborators_updated_at
   BEFORE UPDATE ON trip_collaborators
   FOR EACH ROW
@@ -89,6 +96,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_collaborator_invited ON trip_collaborators;
 CREATE TRIGGER on_collaborator_invited
   AFTER INSERT ON trip_collaborators
   FOR EACH ROW

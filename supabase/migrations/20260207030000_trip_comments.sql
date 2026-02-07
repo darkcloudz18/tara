@@ -10,16 +10,17 @@ CREATE TABLE IF NOT EXISTS trip_comments (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Indexes
-CREATE INDEX idx_trip_comments_itinerary ON trip_comments(itinerary_id);
-CREATE INDEX idx_trip_comments_user ON trip_comments(user_id);
-CREATE INDEX idx_trip_comments_parent ON trip_comments(parent_id);
-CREATE INDEX idx_trip_comments_created ON trip_comments(created_at DESC);
+-- Indexes (with IF NOT EXISTS)
+CREATE INDEX IF NOT EXISTS idx_trip_comments_itinerary ON trip_comments(itinerary_id);
+CREATE INDEX IF NOT EXISTS idx_trip_comments_user ON trip_comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_trip_comments_parent ON trip_comments(parent_id);
+CREATE INDEX IF NOT EXISTS idx_trip_comments_created ON trip_comments(created_at DESC);
 
 -- Row Level Security
 ALTER TABLE trip_comments ENABLE ROW LEVEL SECURITY;
 
--- Anyone can view comments on public trips
+-- Drop and recreate policies (idempotent)
+DROP POLICY IF EXISTS "Anyone can view comments on public trips" ON trip_comments;
 CREATE POLICY "Anyone can view comments on public trips"
   ON trip_comments FOR SELECT
   USING (
@@ -32,17 +33,17 @@ CREATE POLICY "Anyone can view comments on public trips"
     )
   );
 
--- Authenticated users can comment
+DROP POLICY IF EXISTS "Authenticated users can comment" ON trip_comments;
 CREATE POLICY "Authenticated users can comment"
   ON trip_comments FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- Users can edit their own comments
+DROP POLICY IF EXISTS "Users can edit own comments" ON trip_comments;
 CREATE POLICY "Users can edit own comments"
   ON trip_comments FOR UPDATE
   USING (auth.uid() = user_id);
 
--- Users can delete their own comments, owners can delete any
+DROP POLICY IF EXISTS "Users can delete comments" ON trip_comments;
 CREATE POLICY "Users can delete comments"
   ON trip_comments FOR DELETE
   USING (
@@ -51,6 +52,14 @@ CREATE POLICY "Users can delete comments"
       SELECT user_id FROM itineraries WHERE id = itinerary_id
     )
   );
+
+-- Enable realtime (ignore if already added)
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE trip_comments;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Trigger to update updated_at and mark as edited
 CREATE OR REPLACE FUNCTION update_trip_comment()
@@ -64,6 +73,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trip_comments_updated ON trip_comments;
 CREATE TRIGGER trip_comments_updated
   BEFORE UPDATE ON trip_comments
   FOR EACH ROW
@@ -109,6 +119,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_trip_comment ON trip_comments;
 CREATE TRIGGER on_trip_comment
   AFTER INSERT ON trip_comments
   FOR EACH ROW
