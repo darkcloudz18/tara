@@ -420,7 +420,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Creator/Supplier Sections */}
+        {/* Creator/Supplier Sections - Coming Soon */}
         {(creator || supplier) && (
           <div className="mt-6 grid lg:grid-cols-2 gap-6">
             {creator && (
@@ -450,12 +450,9 @@ export default function DashboardPage() {
                     <p className="text-xs text-white/70">Earnings</p>
                   </div>
                 </div>
-                <Link
-                  href="/creator"
-                  className="block w-full py-2 bg-white/20 hover:bg-white/30 rounded-xl text-center font-medium transition-colors"
-                >
-                  Go to Creator Hub
-                </Link>
+                <div className="w-full py-2 bg-white/20 rounded-xl text-center font-medium opacity-70">
+                  Creator Hub Coming Soon
+                </div>
               </div>
             )}
 
@@ -486,12 +483,9 @@ export default function DashboardPage() {
                     <p className="text-xs text-white/70">Revenue</p>
                   </div>
                 </div>
-                <Link
-                  href="/supplier"
-                  className="block w-full py-2 bg-white/20 hover:bg-white/30 rounded-xl text-center font-medium transition-colors"
-                >
-                  Manage Business
-                </Link>
+                <div className="w-full py-2 bg-white/20 rounded-xl text-center font-medium opacity-70">
+                  Supplier Portal Coming Soon
+                </div>
               </div>
             )}
           </div>
