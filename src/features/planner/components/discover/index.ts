@@ -1,6 +1,0 @@
-export { default as DiscoverScreen } from './DiscoverScreen'
-export { default as MyTripScreen } from './MyTripScreen'
-export { default as PlaceCard } from './PlaceCard'
-export { default as CategoryFilter } from './CategoryFilter'
-export { default as DestinationFilter } from './DestinationFilter'
-export { default as TripDateModal } from './TripDateModal'
