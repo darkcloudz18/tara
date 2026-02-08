@@ -6,6 +6,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { CheckCircle, Mail } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -27,6 +28,7 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -71,38 +73,41 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      // Sign up the user
+      // Determine primary role
+      let primaryRole = 'traveler'
+      if (formData.isSupplier) primaryRole = 'supplier'
+      else if (formData.isCreator) primaryRole = 'creator'
+
+      // Sign up the user with metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            role: primaryRole,
+            is_creator: formData.isCreator,
+            is_supplier: formData.isSupplier,
+            business_name: formData.businessName,
+            business_type: formData.businessType,
+            location: formData.location,
+          },
+        },
       })
 
       if (authError) throw authError
 
       if (authData.user) {
-        // Wait for session to be established (important for RLS policies)
-        // This ensures auth.uid() is available for subsequent queries
-        let session = authData.session
-        if (!session) {
-          // If no session returned (email confirmation might be pending),
-          // try to get the current session
-          const { data: sessionData } = await supabase.auth.getSession()
-          session = sessionData.session
-        }
-
-        // If still no session, user might need to confirm email first
-        if (!session) {
-          setError('Please check your email to confirm your account, then log in.')
-          setLoading(false)
+        // Check if email confirmation is required
+        if (!authData.session) {
+          // Email confirmation is enabled - show success message
+          setSuccess(true)
           return
         }
 
-        // Determine primary role (for backward compatibility)
-        let primaryRole = 'traveler'
-        if (formData.isSupplier) primaryRole = 'supplier'
-        else if (formData.isCreator) primaryRole = 'creator'
-
-        // Update profile with additional info
+        // Session exists - update profile and create records
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
@@ -115,26 +120,19 @@ export default function RegisterPage() {
 
         if (profileError) {
           console.error('Profile update error:', profileError)
-          throw profileError
         }
 
         // If user wants to be a creator, create creator record
         if (formData.isCreator) {
-          const { error: creatorError } = await supabase
+          await supabase
             .from('creators')
-            .insert({
-              id: authData.user.id,
-            })
-
-          if (creatorError) {
-            console.error('Creator insert error:', creatorError)
-            throw creatorError
-          }
+            .insert({ id: authData.user.id })
+            .single()
         }
 
         // If user wants to be a supplier, create supplier record
         if (formData.isSupplier) {
-          const { error: supplierError } = await supabase
+          await supabase
             .from('suppliers')
             .insert({
               id: authData.user.id,
@@ -142,11 +140,7 @@ export default function RegisterPage() {
               business_type: formData.businessType,
               location: formData.location || 'Philippines',
             })
-
-          if (supplierError) {
-            console.error('Supplier insert error:', supplierError)
-            throw supplierError
-          }
+            .single()
         }
 
         // Redirect to dashboard
@@ -157,6 +151,35 @@ export default function RegisterPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show success message when email confirmation is required
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Check your email</h2>
+          <p className="text-gray-600">
+            We've sent a confirmation link to <strong>{formData.email}</strong>
+          </p>
+          <p className="text-sm text-gray-500">
+            Click the link in the email to activate your account, then you can log in.
+          </p>
+          <div className="pt-4">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-500"
+            >
+              <Mail className="w-4 h-4" />
+              Go to login
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
