@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Share2, Download, Loader2, Copy, Check } from 'lucide-react'
+import { Share2, Download, Loader2, Copy, Check, CalendarPlus } from 'lucide-react'
 import { downloadItineraryPDF } from '@/features/planner/components/ItineraryPDF'
+import { generateICS, itineraryToEvents, downloadICS } from '@/lib/calendar'
 import { itineraryService } from '@/features/planner/services/itineraryService'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/contexts/ToastContext'
@@ -97,6 +98,19 @@ export default function TripActions({
     }
   }
 
+  const handleCalendarExport = () => {
+    try {
+      const events = itineraryToEvents(itinerary, days, activities)
+      const icsContent = generateICS(events, itinerary.title)
+      const filename = `${itinerary.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-itinerary.ics`
+      downloadICS(icsContent, filename)
+      success('Calendar file downloaded!')
+    } catch (error) {
+      console.error('Failed to export calendar:', error)
+      showError('Failed to export calendar. Please try again.')
+    }
+  }
+
   return (
     <div className="flex flex-col sm:flex-row gap-3">
       <button
@@ -122,6 +136,13 @@ export default function TripActions({
             Download PDF
           </>
         )}
+      </button>
+      <button
+        onClick={handleCalendarExport}
+        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-colors backdrop-blur-sm border border-white/20"
+      >
+        <CalendarPlus className="w-5 h-5" />
+        Add to Calendar
       </button>
       <button
         onClick={handleCopy}

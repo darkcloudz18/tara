@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 import { itineraryService } from '@/features/planner/services/itineraryService'
 import { TripComments, LikeButton } from '@/features/social'
+import { TripMap } from '@/components/maps'
+import { WeatherWidget } from '@/components/weather'
 import TripActions from './TripActions'
 
 interface PageProps {
@@ -242,6 +244,38 @@ export default async function PublicTripPage({ params }: PageProps) {
 
       {/* Itinerary Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Weather & Map Row */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Weather Widget */}
+          <WeatherWidget
+            destination={destination}
+            startDate={itinerary.start_date}
+            endDate={itinerary.end_date}
+          />
+
+          {/* Trip Map */}
+          <div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Trip Map</h3>
+              </div>
+              <TripMap
+                activities={activities.map((a, i) => ({
+                  id: a.id,
+                  title: a.title,
+                  location: a.location,
+                  coordinates: a.coordinates,
+                  day_number: days.find(d => d.id === a.day_id)?.day_number,
+                  start_time: a.start_time,
+                  place_type: a.place_type,
+                }))}
+                className="h-[280px]"
+                showRoute={true}
+              />
+            </div>
+          </div>
+        </div>
+
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Day-by-Day Itinerary</h2>
 
         <div className="space-y-6">
