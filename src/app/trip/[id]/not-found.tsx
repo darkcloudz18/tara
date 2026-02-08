@@ -21,7 +21,7 @@ export default function TripNotFound() {
         {/* CTAs */}
         <div className="space-y-3">
           <Link
-            href="/planner/new"
+            href="/trip/new"
             className="flex items-center justify-center gap-2 w-full py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors"
           >
             Plan Your Own Trip

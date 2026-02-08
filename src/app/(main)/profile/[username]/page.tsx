@@ -232,7 +232,7 @@ export default function ProfilePage() {
                   Add Video
                 </button>
                 <Link
-                  href="/planner/new"
+                  href="/trip/new"
                   className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-green-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
                 >
                   <Map className="w-5 h-5" />
@@ -299,7 +299,7 @@ export default function ProfilePage() {
                   <span className="font-medium text-gray-900 dark:text-white">Add Video</span>
                 </button>
                 <Link
-                  href="/planner/new"
+                  href="/trip/new"
                   onClick={() => setShowCreateMenu(false)}
                   className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >

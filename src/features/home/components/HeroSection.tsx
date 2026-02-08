@@ -88,7 +88,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
                 {recentTrips.slice(0, 2).map((trip) => (
                   <Link
                     key={trip.id}
-                    href={`/planner/${trip.id}`}
+                    href={`/trip/${trip.id}/edit`}
                     className="flex items-center justify-between p-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
@@ -107,7 +107,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
                 ))}
               </div>
               <Link
-                href="/planner/new"
+                href="/trip/new"
                 className="mt-3 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all w-full"
               >
                 <Plus className="w-5 h-5" />
@@ -117,7 +117,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
           ) : (
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
-                href="/planner/new"
+                href="/trip/new"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
               >
                 <Plus className="w-5 h-5" />
@@ -200,7 +200,7 @@ function TemplateCard({
 }) {
   return (
     <Link
-      href={`/planner/new?template=${template.slug}`}
+      href={`/trip/new?template=${template.slug}`}
       className="group relative aspect-[4/5] rounded-xl overflow-hidden"
       onMouseEnter={onHover}
       onMouseLeave={onLeave}

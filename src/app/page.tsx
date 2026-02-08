@@ -184,7 +184,7 @@ export default function HomePage() {
                   </button>
                 </div>
                 <Link
-                  href={`/planner/${activeTrip.id}`}
+                  href={`/trip/${activeTrip.id}/edit`}
                   className="text-xs text-white/80 hover:text-white underline"
                 >
                   {t.viewTrip}
@@ -216,7 +216,7 @@ export default function HomePage() {
                     </button>
                   ))}
                   <Link
-                    href="/planner/new"
+                    href="/trip/new"
                     className="block w-full px-3 py-2 text-sm text-teal-600 dark:text-teal-400 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700"
                   >
                     + Create New {t.trip}

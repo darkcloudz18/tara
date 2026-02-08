@@ -41,7 +41,7 @@ export default function MobileNav({ user }: MobileNavProps) {
   const navItems = [
     { icon: Compass, label: 'Discover', href: '/', badge: 0 },
     { icon: Search, label: 'Search', href: '/search', badge: 0 },
-    { icon: PlusCircle, label: t.planTrip, href: user ? '/planner/new' : '/login', badge: 0 },
+    { icon: PlusCircle, label: t.planTrip, href: user ? '/trip/new' : '/login', badge: 0 },
     { icon: Bell, label: 'Alerts', href: user ? '/notifications' : '/login', badge: unreadCount },
     { icon: User, label: 'Profile', href: user ? '/profile' : '/login', badge: 0 },
   ]

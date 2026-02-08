@@ -78,13 +78,13 @@ export default function AddToTripModal({
   const handleCreateNewTrip = () => {
     if (!place) return
     // Redirect to planner with place ID as query param
-    router.push(`/planner/new?place=${place.id}`)
+    router.push(`/trip/new?place=${place.id}`)
     onClose()
   }
 
   const handleViewTrip = () => {
     if (addedTripId) {
-      router.push(`/planner/${addedTripId}`)
+      router.push(`/trip/${addedTripId}/edit`)
     }
     onClose()
   }
@@ -258,7 +258,7 @@ export default function AddToTripModal({
                 <div className="text-center py-8">
                   <p className="text-gray-500 dark:text-gray-400">No days in this {t.trip.toLowerCase()} yet.</p>
                   <button
-                    onClick={() => router.push(`/planner/${selectedTrip.id}`)}
+                    onClick={() => router.push(`/trip/${selectedTrip.id}/edit`)}
                     className="mt-2 text-teal-600 dark:text-teal-400 hover:underline"
                   >
                     Go to {t.trip.toLowerCase()} to add days

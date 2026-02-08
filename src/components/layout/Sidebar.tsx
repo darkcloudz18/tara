@@ -109,8 +109,8 @@ export default function Sidebar({ user }: SidebarProps) {
   ]
 
   const tripNavItems: NavItem[] = [
-    { icon: Map, label: t.myTrips, href: '/planner', requiresAuth: true },
-    { icon: PlusCircle, label: `New ${t.trip}`, href: '/planner/new', requiresAuth: true },
+    { icon: Map, label: t.myTrips, href: '/dashboard', requiresAuth: true },
+    { icon: PlusCircle, label: `New ${t.trip}`, href: '/trip/new', requiresAuth: true },
   ]
 
   const accountNavItems: NavItem[] = [

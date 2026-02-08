@@ -254,7 +254,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
-              href="/planner/new"
+              href="/trip/new"
               className="group bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-5 text-white hover:shadow-lg transition-all"
             >
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -307,9 +307,6 @@ export default function DashboardPage() {
                 <Calendar className="w-5 h-5 text-teal-600" />
                 Upcoming Trips
               </h2>
-              <Link href="/planner" className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1">
-                View all <ChevronRight className="w-4 h-4" />
-              </Link>
             </div>
             <div className="p-5">
               {upcomingTrips.length > 0 ? (
@@ -317,7 +314,7 @@ export default function DashboardPage() {
                   {upcomingTrips.map((trip) => (
                     <Link
                       key={trip.id}
-                      href={`/planner/${trip.id}`}
+                      href={`/trip/${trip.id}/edit`}
                       className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -353,7 +350,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 mb-4">No upcoming trips</p>
                   <Link
-                    href="/planner/new"
+                    href="/trip/new"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
@@ -371,9 +368,6 @@ export default function DashboardPage() {
                 <Clock className="w-5 h-5 text-purple-600" />
                 Recent Trips
               </h2>
-              <Link href="/planner" className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1">
-                View all <ChevronRight className="w-4 h-4" />
-              </Link>
             </div>
             <div className="p-5">
               {recentTrips.length > 0 ? (
@@ -381,7 +375,7 @@ export default function DashboardPage() {
                   {recentTrips.map((trip) => (
                     <Link
                       key={trip.id}
-                      href={`/planner/${trip.id}`}
+                      href={`/trip/${trip.id}/edit`}
                       className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -414,7 +408,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 mb-4">No trips yet</p>
                   <Link
-                    href="/planner/new"
+                    href="/trip/new"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />

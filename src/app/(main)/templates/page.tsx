@@ -158,7 +158,7 @@ export default function TemplatesPage() {
 
     if (itinerary) {
       success(`${t.trip} created from template!`)
-      router.push(`/planner/${itinerary.id}`)
+      router.push(`/trip/${itinerary.id}/edit`)
     }
   }
 

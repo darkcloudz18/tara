@@ -131,7 +131,7 @@ export default function ItineraryDetailPage() {
     try {
       if (deleteTarget.type === 'itinerary') {
         await deleteItinerary()
-        router.push('/planner')
+        router.push('/dashboard')
       } else if (deleteTarget.type === 'day') {
         await dayService.delete(deleteTarget.id)
         await refetch()
@@ -173,7 +173,7 @@ export default function ItineraryDetailPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             {error || 'Itinerary not found'}
           </h2>
-          <Link href="/planner" className="text-primary-600 hover:text-primary-700">
+          <Link href="/dashboard" className="text-primary-600 hover:text-primary-700">
             Back to My Trips
           </Link>
         </div>
@@ -186,7 +186,7 @@ export default function ItineraryDetailPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Link */}
         <Link
-          href="/planner"
+          href="/dashboard"
           className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
         >
           <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

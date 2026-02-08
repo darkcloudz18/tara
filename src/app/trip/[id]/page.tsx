@@ -198,7 +198,7 @@ export default async function PublicTripPage({ params }: PageProps) {
           {/* CTA */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
-              href={`/planner/new?destination=${encodeURIComponent(destination)}`}
+              href={`/trip/new?destination=${encodeURIComponent(destination)}`}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-colors"
             >
               Plan Your Own Trip
@@ -305,7 +305,7 @@ export default async function PublicTripPage({ params }: PageProps) {
             Create your own trip plan for free with Tara
           </p>
           <Link
-            href="/planner/new"
+            href="/trip/new"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-colors"
           >
             Start Planning Your Trip

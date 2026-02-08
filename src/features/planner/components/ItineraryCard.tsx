@@ -24,7 +24,7 @@ export default function ItineraryCard({ itinerary, onDelete }: ItineraryCardProp
   }
 
   return (
-    <Link href={`/planner/${itinerary.id}`}>
+    <Link href={`/trip/${itinerary.id}/edit`}>
       <div className="card hover:shadow-lg transition-shadow cursor-pointer group">
         {/* Cover Image */}
         {itinerary.cover_image_url ? (

@@ -54,7 +54,7 @@ export function NoItinerariesState() {
       title="No trips planned yet"
       description="Start planning your next adventure! Create your first itinerary and organize your perfect Philippine getaway."
       actionLabel="Create Your First Trip"
-      actionHref="/planner/new"
+      actionHref="/trip/new"
     />
   )
 }
