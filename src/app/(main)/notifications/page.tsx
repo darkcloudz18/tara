@@ -112,7 +112,7 @@ export default function NotificationsPage() {
     if (notification.data?.action_url) {
       router.push(notification.data.action_url)
     } else if (notification.data?.trip_id) {
-      router.push(`/planner/${notification.data.trip_id}`)
+      router.push(`/trip/${notification.data.trip_id}/edit`)
     }
   }
 

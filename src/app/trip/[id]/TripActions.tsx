@@ -85,7 +85,7 @@ export default function TripActions({
         setCopied(true)
         success('Trip copied to your itineraries!')
         setTimeout(() => {
-          router.push(`/planner/${newItinerary.id}`)
+          router.push(`/trip/${newItinerary.id}/edit`)
         }, 1500)
       } else {
         showError('Failed to copy trip. Please try again.')

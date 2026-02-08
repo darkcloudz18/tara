@@ -79,7 +79,7 @@ export default function AiPlannerPage() {
       }
 
       success(`${t.trip} created successfully!`)
-      router.push(`/planner/${itinerary.id}`)
+      router.push(`/trip/${itinerary.id}/edit`)
     } catch (error) {
       console.error('Error creating trip:', error)
     } finally {

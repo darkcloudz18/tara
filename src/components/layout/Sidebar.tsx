@@ -184,7 +184,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {user && activeTrip && !collapsed && (
         <div className="px-3 mb-4">
           <Link
-            href={`/planner/${activeTrip.id}`}
+            href={`/trip/${activeTrip.id}/edit`}
             className="block p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl text-white hover:from-teal-600 hover:to-teal-700 transition-all group"
           >
             <div className="flex items-center justify-between mb-2">
@@ -219,7 +219,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {user && !activeTrip && !collapsed && (
         <div className="px-3 mb-4">
           <Link
-            href="/planner/new"
+            href="/trip/new"
             className="block p-4 border-2 border-dashed border-teal-300 dark:border-teal-700 rounded-xl text-center hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
           >
             <PlusCircle className="w-8 h-8 text-teal-500 mx-auto mb-2" />
