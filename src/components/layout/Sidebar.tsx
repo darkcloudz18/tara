@@ -12,7 +12,6 @@ import {
   Moon,
   Sun,
   HelpCircle,
-  LayoutDashboard,
   ChevronRight,
   MapPin,
   Calendar,
@@ -116,7 +115,6 @@ export default function Sidebar({ user }: SidebarProps) {
   const accountNavItems: NavItem[] = [
     { icon: Bell, label: 'Notifications', href: '/notifications', requiresAuth: true, badge: unreadNotifications },
     { icon: User, label: 'Profile', href: '/profile', requiresAuth: true },
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', requiresAuth: true },
   ]
 
   const NavLink = ({ item }: { item: NavItem }) => {
