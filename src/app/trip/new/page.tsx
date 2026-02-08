@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Save, Share2, Download } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Share2, Download, Pencil, MapPin, Check, X } from 'lucide-react'
 import { Sidebar, MobileNav } from '@/components/layout'
 import { supabase } from '@/lib/supabase'
 import TripWizard, { TripWizardData } from '@/features/planner/components/TripWizard'
@@ -19,6 +19,7 @@ import { useItineraries } from '@/features/planner/hooks/useItineraries'
 import { getTemplateBySlug } from '@/features/planner/data/tripTemplates'
 import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
 import { BudgetSummary, CategoryBudget } from '@/features/planner/hooks/useBudgetCalculations'
+import { WeatherWidget } from '@/components/weather'
 
 type ViewMode = 'wizard' | 'itinerary'
 
@@ -363,15 +364,28 @@ function NewItineraryContent() {
           )}
 
           {viewMode === 'itinerary' && tripData && (
-            <div className="max-w-4xl mx-auto">
-              {/* Trip Summary Card */}
-              <div className="bg-gradient-to-r from-teal-500 to-blue-500 rounded-2xl p-6 mb-8 text-white">
+            <div className="max-w-7xl mx-auto">
+              {/* Trip Summary Card with Editable Title */}
+              <div className="bg-gradient-to-r from-teal-500 to-blue-500 rounded-2xl p-6 mb-6 text-white">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-bold">
-                      {tripData.origin} → {tripData.destination}
-                    </h2>
-                    <p className="text-teal-100 mt-1">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold">
+                        {tripData.origin} → {tripData.destination}
+                      </h2>
+                      <button
+                        onClick={() => setViewMode('wizard')}
+                        className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                        title="Edit trip details"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-teal-100 mt-1 flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      {tripData.destination}
+                    </p>
+                    <p className="text-teal-100 text-sm mt-1">
                       {new Date(tripData.startDate).toLocaleDateString('en-US', {
                         month: 'long',
                         day: 'numeric',
@@ -401,64 +415,92 @@ function NewItineraryContent() {
                 </div>
               </div>
 
-              {/* Edit Button */}
-              <div className="flex justify-end mb-4">
-                <button
-                  onClick={() => setViewMode('wizard')}
-                  className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
-                >
-                  Edit trip details
-                </button>
-              </div>
+              {/* Two Column Layout */}
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Main Content - Itinerary */}
+                <div className="lg:col-span-2">
+                  {/* Timeline */}
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-900 rounded-2xl">
+                      <Loader2 className="w-8 h-8 text-teal-500 animate-spin mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400">
+                        Generating your perfect itinerary...
+                      </p>
+                    </div>
+                  ) : (
+                    <ItineraryTimeline
+                      days={itinerary}
+                      onSelectSuggestion={handleSelectSuggestion}
+                      onBookItem={handleBookItem}
+                    />
+                  )}
 
-              {/* Timeline */}
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 className="w-8 h-8 text-teal-500 animate-spin mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Generating your perfect itinerary...
-                  </p>
+                  {/* Bottom Actions */}
+                  <div className="mt-6 flex flex-col sm:flex-row gap-4">
+                    <button
+                      onClick={handleSaveItinerary}
+                      disabled={saving}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-50"
+                    >
+                      {saving ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Save className="w-5 h-5" />
+                      )}
+                      Save Itinerary
+                    </button>
+                    <button
+                      onClick={() => setViewMode('wizard')}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Pencil className="w-5 h-5" />
+                      Edit Details
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  <ItineraryTimeline
-                    days={itinerary}
-                    onSelectSuggestion={handleSelectSuggestion}
-                    onBookItem={handleBookItem}
+
+                {/* Sidebar - Weather, Map, Budget */}
+                <div className="space-y-6">
+                  {/* Weather Widget */}
+                  <WeatherWidget
+                    destination={tripData.destination}
+                    startDate={tripData.startDate}
+                    endDate={tripData.endDate}
                   />
 
+                  {/* Destination Map */}
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                      <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-teal-500" />
+                        Destination
+                      </h3>
+                    </div>
+                    <div className="aspect-video bg-gray-100 dark:bg-gray-800 relative">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        allowFullScreen
+                        referrerPolicy="no-referrer-when-downgrade"
+                        src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}&q=${encodeURIComponent(tripData.destination + ', Philippines')}`}
+                      />
+                    </div>
+                  </div>
+
                   {/* Budget Breakdown */}
-                  <div className="mt-8">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
                       Budget Breakdown
-                    </h2>
+                    </h3>
                     <BudgetBreakdown
                       budget={calculateBudgetBreakdown()}
                       travelers={tripData?.travelers || 1}
-                      showTips={true}
+                      showTips={false}
                     />
                   </div>
-                </>
-              )}
-
-              {/* Bottom Actions */}
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={handleSaveItinerary}
-                  disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-50"
-                >
-                  {saving ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Save className="w-5 h-5" />
-                  )}
-                  Save Itinerary
-                </button>
-                <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                  <Share2 className="w-5 h-5" />
-                  Share
-                </button>
+                </div>
               </div>
             </div>
           )}
