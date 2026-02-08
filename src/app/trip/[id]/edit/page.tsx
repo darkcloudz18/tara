@@ -18,6 +18,7 @@ import DownloadPDFButton from '@/features/planner/components/DownloadPDFButton'
 import { NoDaysState } from '@/features/planner/components/EmptyState'
 import { DayFormData } from '@/features/planner/components/DayForm'
 import { ActivityFormData } from '@/features/planner/components/ActivityForm'
+import { WeatherWidget } from '@/components/weather'
 
 export default function ItineraryDetailPage() {
   const router = useRouter()
@@ -324,6 +325,13 @@ export default function ItineraryDetailPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Weather Widget */}
+              <WeatherWidget
+                destination={itinerary.destinations?.[0] || 'Philippines'}
+                startDate={itinerary.start_date}
+                endDate={itinerary.end_date}
+              />
+
               <BudgetBreakdown budget={budget} showTips={false} />
 
               {/* Mini Map */}
