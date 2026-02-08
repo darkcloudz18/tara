@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://tara.ph'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://tara-letsgo.vercel.app'),
   title: {
     default: 'Tara - Free Trip Planner for the Philippines',
     template: '%s | Tara',
