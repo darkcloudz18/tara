@@ -1,4 +1,8 @@
 export { socialService } from './services/socialService'
+export { followService } from './services/followService'
 export { default as TripComments } from './components/TripComments'
 export { default as LikeButton } from './components/LikeButton'
+export { default as FollowButton } from './components/FollowButton'
+export { default as FollowersModal } from './components/FollowersModal'
 export type { TripComment, TripLike } from './services/socialService'
+export type { FollowUser, FollowStats } from './services/followService'
