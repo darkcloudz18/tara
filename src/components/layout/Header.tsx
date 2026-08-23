@@ -76,9 +76,10 @@ export default function Header({ selectedCategory, onCategoryChange, onSearch }:
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-teal-500 hover:bg-teal-600 rounded-full transition-colors"
+                aria-label="Search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-full transition-colors"
               >
-                <Search className="w-4 h-4 text-white" />
+                <Search className="w-4 h-4 text-gray-700 dark:text-gray-200" />
               </button>
             </div>
           </form>

@@ -125,14 +125,14 @@ export default function Sidebar({ user }: SidebarProps) {
         href={href}
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
           active
-            ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
+            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
         }`}
       >
         <div className="relative">
           <Icon
             className={`w-6 h-6 transition-transform group-hover:scale-110 ${
-              active ? 'text-teal-600 dark:text-teal-400' : ''
+              active ? 'text-gray-900 dark:text-white' : ''
             }`}
           />
           {item.badge && item.badge > 0 && (

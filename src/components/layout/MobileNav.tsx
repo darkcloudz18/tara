@@ -58,7 +58,7 @@ export default function MobileNav({ user }: MobileNavProps) {
               href={item.href}
               className={`flex flex-col items-center justify-center min-w-[64px] min-h-[56px] px-2 py-2 rounded-xl transition-colors active:bg-gray-100 dark:active:bg-gray-800 ${
                 active
-                  ? 'text-teal-600 dark:text-teal-400'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
                   : 'text-gray-500 dark:text-gray-400'
               }`}
             >

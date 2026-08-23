@@ -225,7 +225,7 @@ function TemplateCard({
           {template.highlights.slice(0, 2).join(' • ')}
         </p>
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-teal-300 text-xs font-semibold">
+          <span className="text-white text-xs font-semibold">
             from ₱{(template.estimatedBudget / 1000).toFixed(0)}k
           </span>
           <span className="text-white/60 text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
