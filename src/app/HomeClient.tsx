@@ -165,12 +165,17 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
     }
   }
 
+  const homepageState: 'anonymous' | 'no-trips' | 'has-trip' =
+    !user ? 'anonymous'
+    : userTrips.length === 0 ? 'no-trips'
+    : 'has-trip'
+
   return (
     <div className="min-h-screen bg-white dark:bg-black">
       <Sidebar user={user} />
 
       <div className="lg:ml-[260px]">
-        <HeroSection user={user} />
+        <HeroSection user={user} trips={userTrips} homepageState={homepageState} />
 
         <Header
           selectedCategory={selectedCategory}

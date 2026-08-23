@@ -1,37 +1,35 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, MapPin, Calendar, Sparkles, Plus, ChevronRight } from 'lucide-react'
+import { ArrowRight, Calendar, Sparkles, Plus } from 'lucide-react'
 import { getFeaturedTemplates, TripTemplate } from '@/features/planner/data/tripTemplates'
-import { supabase } from '@/lib/supabase'
 import { Itinerary } from '@/types/database'
-import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
+import { tripPhaseCopy } from '@/lib/countdown'
+
+export type HomepageState = 'anonymous' | 'no-trips' | 'has-trip'
 
 interface HeroSectionProps {
   user: any
+  trips: Itinerary[]
+  homepageState: HomepageState
 }
 
-export default function HeroSection({ user }: HeroSectionProps) {
+export default function HeroSection({ user, trips, homepageState }: HeroSectionProps) {
   const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null)
-  const [recentTrips, setRecentTrips] = useState<Itinerary[]>([])
   const templates = getFeaturedTemplates()
-  const t = useLocalizedTrip()
 
-  // Fetch user's recent trips
-  useEffect(() => {
-    if (user) {
-      supabase
-        .from('itineraries')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(3)
-        .then(({ data }) => {
-          if (data) setRecentTrips(data)
-        })
-    }
-  }, [user])
+  const activeTrip = trips[0]
+
+  const countdownCopy = useMemo(() => {
+    if (!activeTrip) return null
+    const destination = activeTrip.destinations?.[0] || activeTrip.title
+    return tripPhaseCopy(activeTrip.start_date, activeTrip.end_date, destination)
+  }, [activeTrip])
+
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0]
+
+  const showTemplatesSection = homepageState !== 'has-trip'
 
   return (
     <section className="relative overflow-hidden">
@@ -53,75 +51,56 @@ export default function HeroSection({ user }: HeroSectionProps) {
       <div className="relative px-4 py-10 md:py-16">
         {/* Main Hero Content */}
         <div className="max-w-3xl mx-auto text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6">
-            <Sparkles className="w-4 h-4" />
-            <span>Build & share your lakad</span>
-          </div>
+          {homepageState === 'has-trip' && activeTrip ? (
+            <>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6">
+                <Sparkles className="w-4 h-4" />
+                <span>Welcome back{firstName ? `, ${firstName}` : ''}</span>
+              </div>
 
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
-            {user ? (
-              <>
-                Continue building
-                <br />
-                <span className="text-teal-200">your dream lakad</span>
-              </>
-            ) : (
-              <>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
+                {activeTrip.destinations?.[0] || activeTrip.title}
+              </h1>
+
+              <p className="text-lg text-teal-100 mb-8 max-w-xl mx-auto">
+                {countdownCopy}
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href={`/trip/${activeTrip.id}/edit`}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                >
+                  Continue building
+                </Link>
+                <Link
+                  href="/trip/new"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm border border-white/20"
+                >
+                  <Plus className="w-5 h-5" />
+                  Start another lakad
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6">
+                <Sparkles className="w-4 h-4" />
+                <span>Build & share your lakad</span>
+              </div>
+
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
                 Plan your next
                 <br />
                 <span className="text-teal-200">Philippine adventure</span>
-              </>
-            )}
-          </h1>
+              </h1>
 
-          <p className="text-lg text-teal-100 mb-8 max-w-xl mx-auto">
-            {user ? (
-              `Browse places below and tap + to add them to your ${t.trip.toLowerCase()}. Share your itinerary with friends when ready!`
-            ) : (
-              <>
+              <p className="text-lg text-teal-100 mb-8 max-w-xl mx-auto">
                 Build your{' '}
                 <strong className="font-semibold text-white">lakad</strong>
                 {' '}&mdash; a day-by-day Philippine itinerary you can share with your barkada.
-              </>
-            )}
-          </p>
+              </p>
 
-          {/* User has trips - show them */}
-          {user && recentTrips.length > 0 ? (
-            <div className="max-w-md mx-auto">
-              <p className="text-white/70 text-sm mb-3">Your {t.trips}</p>
-              <div className="space-y-2">
-                {recentTrips.slice(0, 2).map((trip) => (
-                  <Link
-                    key={trip.id}
-                    href={`/trip/${trip.id}/edit`}
-                    className="flex items-center justify-between p-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-white font-semibold text-sm">{trip.title}</p>
-                        <p className="text-white/60 text-xs">
-                          {trip.destinations?.slice(0, 2).join(', ')}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
-                  </Link>
-                ))}
-              </div>
-              <Link
-                href="/trip/new"
-                className="mt-3 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all w-full"
-              >
-                <Plus className="w-5 h-5" />
-                Create new lakad
-              </Link>
-            </div>
-          ) : (
-            <>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="#templates"
@@ -137,24 +116,25 @@ export default function HeroSection({ user }: HeroSectionProps) {
                   Create your lakad
                 </Link>
               </div>
-              <div className="mt-4 text-center">
-                <Link
-                  href="/login"
-                  className="text-white/80 hover:text-white text-sm underline underline-offset-2"
-                >
-                  Sign in
-                </Link>
-              </div>
+              {homepageState === 'anonymous' && (
+                <div className="mt-4 text-center">
+                  <Link
+                    href="/login"
+                    className="text-white/80 hover:text-white text-sm underline underline-offset-2"
+                  >
+                    Sign in
+                  </Link>
+                </div>
+              )}
             </>
           )}
-
         </div>
 
-        {/* Featured Templates - collapsed for logged-in users with trips */}
-        {(!user || recentTrips.length === 0) && (
+        {/* Featured Templates - hidden for returning users with a trip */}
+        {showTemplatesSection && (
           <div id="templates" className="max-w-4xl mx-auto">
             <h2 className="text-center text-white/80 text-sm font-medium uppercase tracking-wider mb-4">
-              Start with a Template
+              Start with a template
             </h2>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
