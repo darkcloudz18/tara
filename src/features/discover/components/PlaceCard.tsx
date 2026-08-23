@@ -5,6 +5,7 @@ import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, Utensi
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { FeatureTooltip } from '@/features/onboarding'
+import { seededInt } from '@/lib/seed'
 
 interface PlaceCardProps {
   place: DiscoverPlace
@@ -12,14 +13,6 @@ interface PlaceCardProps {
   activeTripTitle?: string
   isAddingToTrip?: boolean
   wasJustAdded?: boolean
-}
-
-function seededLikeCount(id: string): number {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) | 0
-  }
-  return 50 + (Math.abs(hash) % 500)
 }
 
 export default function PlaceCard({
@@ -31,7 +24,7 @@ export default function PlaceCard({
 }: PlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(() => seededLikeCount(place.id))
+  const [likeCount, setLikeCount] = useState(() => seededInt(place.id, 50, 550))
   const [showAddedFeedback, setShowAddedFeedback] = useState(false)
   const t = useLocalizedTrip()
 
