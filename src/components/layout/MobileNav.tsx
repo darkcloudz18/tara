@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Compass, Search, PlusCircle, User, Bell } from 'lucide-react'
+import { Compass, PlusCircle, User, Bell } from 'lucide-react'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { notificationService } from '@/features/notifications/services/notificationService'
 
@@ -40,7 +40,6 @@ export default function MobileNav({ user }: MobileNavProps) {
 
   const navItems = [
     { icon: Compass, label: 'Discover', href: '/', badge: 0 },
-    { icon: Search, label: 'Search', href: '/search', badge: 0 },
     { icon: PlusCircle, label: t.planTrip, href: user ? '/trip/new' : '/login', badge: 0 },
     { icon: Bell, label: 'Alerts', href: user ? '/notifications' : '/login', badge: unreadCount },
     { icon: User, label: 'Profile', href: user ? '/profile' : '/login', badge: 0 },

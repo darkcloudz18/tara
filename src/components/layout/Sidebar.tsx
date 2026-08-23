@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Compass,
-  Search,
   Map,
   PlusCircle,
   Bell,
@@ -104,7 +103,6 @@ export default function Sidebar({ user }: SidebarProps) {
 
   const mainNavItems: NavItem[] = [
     { icon: Compass, label: 'Discover', href: '/' },
-    { icon: Search, label: 'Search', href: '/search' },
   ]
 
   const tripNavItems: NavItem[] = [
