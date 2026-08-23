@@ -75,9 +75,15 @@ export default function HeroSection({ user }: HeroSectionProps) {
           </h1>
 
           <p className="text-lg text-teal-100 mb-8 max-w-xl mx-auto">
-            {user
-              ? `Browse places below and tap + to add them to your ${t.trip.toLowerCase()}. Share your itinerary with friends when ready!`
-              : `Create beautiful day-by-day itineraries. Browse places and build your perfect ${t.trip.toLowerCase()}.`}
+            {user ? (
+              `Browse places below and tap + to add them to your ${t.trip.toLowerCase()}. Share your itinerary with friends when ready!`
+            ) : (
+              <>
+                Build your{' '}
+                <strong className="font-semibold text-white">lakad</strong>
+                {' '}&mdash; a day-by-day Philippine itinerary you can share with your barkada.
+              </>
+            )}
           </p>
 
           {/* User has trips - show them */}
