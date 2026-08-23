@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Compass, Map, PlusCircle, ChevronRight, ChevronLeft, X } from 'lucide-react'
 import { useOnboarding } from '@/hooks/useOnboarding'
 
@@ -32,8 +32,17 @@ const STEPS = [
 export default function WelcomeModal({ onComplete }: WelcomeModalProps) {
   const { shouldShowOnboarding, completeOnboarding } = useOnboarding()
   const [currentStep, setCurrentStep] = useState(0)
+  const [isErrorRoute, setIsErrorRoute] = useState(false)
 
-  if (!shouldShowOnboarding) return null
+  useEffect(() => {
+    const check = () => setIsErrorRoute(document.body.dataset.errorRoute === '1')
+    check()
+    const observer = new MutationObserver(check)
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-error-route'] })
+    return () => observer.disconnect()
+  }, [])
+
+  if (!shouldShowOnboarding || isErrorRoute) return null
 
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
