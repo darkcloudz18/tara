@@ -187,7 +187,7 @@ export default function Sidebar({ user }: SidebarProps) {
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-teal-100 uppercase tracking-wide">
-                Building {t.trip}
+                Building lakad
               </span>
               <ChevronRight className="w-4 h-4 text-teal-200 group-hover:translate-x-0.5 transition-transform" />
             </div>
@@ -222,7 +222,7 @@ export default function Sidebar({ user }: SidebarProps) {
           >
             <PlusCircle className="w-8 h-8 text-teal-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-teal-600 dark:text-teal-400">
-              Start Your {t.trip}
+              Start your lakad
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Browse & add places

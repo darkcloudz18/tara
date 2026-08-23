@@ -24,7 +24,7 @@ export default function GlobalError({
             <AlertTriangle className="w-8 h-8 text-red-400" />
           </div>
 
-          <h1 className="text-2xl font-bold mb-2">Critical Error</h1>
+          <h1 className="text-2xl font-bold mb-2">Critical error</h1>
           <p className="text-gray-400 mb-8">
             The application encountered a critical error. Please refresh the page.
           </p>
@@ -34,7 +34,7 @@ export default function GlobalError({
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors"
           >
             <RefreshCcw className="w-5 h-5" />
-            Refresh Page
+            Refresh page
           </button>
         </div>
       </body>

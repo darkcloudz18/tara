@@ -14,7 +14,7 @@ export default function TripNotFound() {
 
         {/* Message */}
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Trip Not Found
+          Lakad not found
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mb-8">
           This trip may have been deleted or made private by its owner.
@@ -26,7 +26,7 @@ export default function TripNotFound() {
             href="/trip/new"
             className="flex items-center justify-center gap-2 w-full py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors"
           >
-            Plan Your Own Trip
+            Plan your own lakad
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
@@ -34,7 +34,7 @@ export default function TripNotFound() {
             className="flex items-center justify-center gap-2 w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             <Sparkles className="w-5 h-5" />
-            Explore Destinations
+            Explore destinations
           </Link>
         </div>
 

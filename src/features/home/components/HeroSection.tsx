@@ -55,21 +55,21 @@ export default function HeroSection({ user }: HeroSectionProps) {
         <div className="max-w-3xl mx-auto text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            <span>Build & Share Your {t.trip}</span>
+            <span>Build & share your lakad</span>
           </div>
 
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
             {user ? (
               <>
-                Continue Building
+                Continue building
                 <br />
-                <span className="text-teal-200">Your Dream {t.trip}</span>
+                <span className="text-teal-200">your dream lakad</span>
               </>
             ) : (
               <>
-                Plan Your Next
+                Plan your next
                 <br />
-                <span className="text-teal-200">Philippine Adventure</span>
+                <span className="text-teal-200">Philippine adventure</span>
               </>
             )}
           </h1>
@@ -117,7 +117,7 @@ export default function HeroSection({ user }: HeroSectionProps) {
                 className="mt-3 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all w-full"
               >
                 <Plus className="w-5 h-5" />
-                Create New {t.trip}
+                Create new lakad
               </Link>
             </div>
           ) : (
