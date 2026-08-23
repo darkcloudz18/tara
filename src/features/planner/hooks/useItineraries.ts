@@ -67,9 +67,13 @@ export function useItineraries() {
         await dayService.bulkCreate(daysToCreate)
       }
 
-      // Signal for PWA install prompt eligibility
+      // Signal for PWA install prompt eligibility. Dispatch a custom
+      // event so InstallPrompt can re-check without waiting for a page
+      // reload — storage events don't fire in the same window that
+      // wrote the value.
       if (typeof window !== 'undefined') {
         localStorage.setItem('tara-lakad-created', '1')
+        window.dispatchEvent(new Event('tara:pwa-eligibility-changed'))
       }
 
       // Refresh the list

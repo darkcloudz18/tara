@@ -34,42 +34,66 @@ export default function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
+  const [hasInstallableSignal, setHasInstallableSignal] = useState(false)
 
   useEffect(() => {
-    // Check if already installed (standalone mode)
     const standalone = window.matchMedia('(display-mode: standalone)').matches
-    setIsStandalone(standalone)
-
-    // Check if iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    const installable = localStorage.getItem('tara-pwa-installable') === '1'
+    setIsStandalone(standalone)
     setIsIOS(iOS)
+    setHasInstallableSignal(installable)
 
-    // Listen for install prompt event (Chrome, Edge, etc.)
-    // Gate the visible prompt on isEligible() at fire time, not at mount time,
-    // so route changes and localStorage updates between mount and fire are respected.
+    // Chrome/Edge fire beforeinstallprompt but throttle re-fires within a
+    // session and sometimes skip it entirely on subsequent sessions once
+    // the user has dismissed it. Persist the "we were installable at least
+    // once" fact so a later eligible session can still surface manual
+    // install UI even without a live event.
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
+      localStorage.setItem('tara-pwa-installable', '1')
+      setHasInstallableSignal(true)
       if (isEligible()) setShowPrompt(true)
     }
-
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
-    // For iOS, show manual install instructions after a delay
-    if (iOS && !standalone) {
-      const timer = setTimeout(() => {
+    // For platforms we can't drive natively (iOS always, Chrome once
+    // throttled), schedule a delayed check so a manual install hint can
+    // still appear when the visitor becomes eligible.
+    const shouldOfferManual = !standalone && (iOS || installable)
+    let timer: ReturnType<typeof setTimeout> | null = null
+    if (shouldOfferManual) {
+      timer = setTimeout(() => {
         if (isEligible()) setShowPrompt(true)
       }, 3000)
-      return () => {
-        clearTimeout(timer)
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-      }
     }
 
     return () => {
+      if (timer) clearTimeout(timer)
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     }
   }, [])
+
+  // Re-check eligibility when it can change mid-session (a lakad gets
+  // created, another tab bumps localStorage, or the user returns focus).
+  useEffect(() => {
+    if (isStandalone) return
+    const recheck = () => {
+      if (!isEligible()) return
+      if (deferredPrompt || isIOS || hasInstallableSignal) {
+        setShowPrompt(true)
+      }
+    }
+    window.addEventListener('tara:pwa-eligibility-changed', recheck)
+    window.addEventListener('storage', recheck)
+    window.addEventListener('focus', recheck)
+    return () => {
+      window.removeEventListener('tara:pwa-eligibility-changed', recheck)
+      window.removeEventListener('storage', recheck)
+      window.removeEventListener('focus', recheck)
+    }
+  }, [deferredPrompt, isIOS, isStandalone, hasInstallableSignal])
 
   const handleInstall = async () => {
     if (!deferredPrompt) return
@@ -125,7 +149,7 @@ export default function InstallPrompt() {
                 </span> then &quot;Add to Home Screen&quot;
               </p>
             </div>
-          ) : (
+          ) : deferredPrompt ? (
             <button
               onClick={handleInstall}
               className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
@@ -133,6 +157,10 @@ export default function InstallPrompt() {
               <Download className="w-4 h-4" />
               Install
             </button>
+          ) : (
+            <p className="mt-3 text-xs text-gray-600 dark:text-gray-300">
+              Open your browser menu and choose &quot;Install Tara app&quot;.
+            </p>
           )}
         </div>
       </div>
