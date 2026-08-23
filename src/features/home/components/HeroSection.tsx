@@ -148,24 +148,6 @@ export default function HeroSection({ user }: HeroSectionProps) {
             </>
           )}
 
-          {/* Social proof - only show for non-logged in users */}
-          {!user && (
-            <div className="mt-8 flex items-center justify-center gap-6 text-teal-100 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-300 to-blue-300 border-2 border-teal-600 flex items-center justify-center text-xs font-bold text-teal-700"
-                    >
-                      {['J', 'M', 'A', 'K'][i - 1]}
-                    </div>
-                  ))}
-                </div>
-                <span>500+ {t.trips.toLowerCase()} created & shared</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Featured Templates - collapsed for logged-in users with trips */}
