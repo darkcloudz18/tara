@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { Itinerary } from '@/types/database'
 import { itineraryService, CreateItineraryData } from '../services/itineraryService'
 import { dayService } from '../services/dayService'
@@ -17,9 +17,7 @@ export function useItineraries() {
       setLoading(true)
       setError(null)
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const user = await getUserSafe()
 
       if (!user) {
         setItineraries([])

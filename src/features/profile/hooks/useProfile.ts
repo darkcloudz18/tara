@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import {
   UserProfile,
   ProfileContent,
@@ -43,7 +43,7 @@ export function useProfile({ username }: UseProfileOptions): UseProfileReturn {
     setError(null)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
       setCurrentUserId(user?.id || null)
 
       const profileData = await fetchUserProfile(username, user?.id)

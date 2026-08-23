@@ -11,7 +11,7 @@ import CuratedVideoCard from '@/features/discover/components/CuratedVideoCard'
 import AddToTripModal from '@/features/planner/components/AddToTripModal'
 import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
 import { NoResults } from '@/components/illustrations'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { fetchTaraPlaces, DiscoverPlace } from '@/features/planner/services/placeService'
 import { fetchCuratedVideos, FeedVideo } from '@/features/discover/services/videoService'
 import { Itinerary } from '@/types/database'
@@ -54,9 +54,7 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
   const t = useLocalizedTrip()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
+    getUserSafe().then(setUser)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null)

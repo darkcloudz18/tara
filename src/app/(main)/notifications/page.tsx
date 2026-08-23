@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { notificationService } from '@/features/notifications/services/notificationService'
 import { Notification, NotificationType } from '@/features/notifications/types'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
 
 const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
@@ -38,7 +38,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
       if (user) {
         setUserId(user.id)
         fetchNotifications(user.id)

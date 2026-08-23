@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { Loader2 } from 'lucide-react'
 
 export default function ProfileIndexPage() {
@@ -17,7 +17,7 @@ export default function ProfileIndexPage() {
 
   const redirectToProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
 
       if (!user) {
         router.push('/login')

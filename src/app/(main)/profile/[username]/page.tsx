@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { ArrowLeft, Loader2, Plus, Image, Play, Map, X } from 'lucide-react'
 import { Sidebar, MobileNav } from '@/components/layout'
 import ProfileHeader from '@/features/profile/components/ProfileHeader'
@@ -49,7 +49,7 @@ export default function ProfilePage() {
 
     try {
       // Get current user
-      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const authUser = await getUserSafe()
       setUser(authUser)
       setCurrentUserId(authUser?.id || null)
 

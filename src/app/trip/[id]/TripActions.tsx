@@ -6,7 +6,7 @@ import { Share2, Download, Loader2, Copy, Check, CalendarPlus } from 'lucide-rea
 import { downloadItineraryPDF } from '@/features/planner/components/ItineraryPDF'
 import { generateICS, itineraryToEvents, downloadICS } from '@/lib/calendar'
 import { itineraryService } from '@/features/planner/services/itineraryService'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { useToast } from '@/contexts/ToastContext'
 
 interface TripActionsProps {
@@ -32,9 +32,7 @@ export default function TripActions({
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
+    getUserSafe().then(setUser)
   }, [])
 
   const handleShare = async () => {

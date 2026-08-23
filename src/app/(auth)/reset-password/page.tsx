@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase, getSessionSafe } from '@/lib/supabase'
 import { Lock, CheckCircle, Eye, EyeOff } from 'lucide-react'
 
 export default function ResetPasswordPage() {
@@ -18,7 +18,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // Check if we have a valid session from the reset link
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const session = await getSessionSafe()
       if (!session) {
         // No session means invalid or expired link
         setError('Invalid or expired reset link. Please request a new one.')
