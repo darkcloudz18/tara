@@ -319,7 +319,7 @@ export default async function PublicTripPage({ params }: PageProps) {
             <Sparkles className="w-5 h-5" />
             <span className="font-bold">Planned with Tara</span>
           </Link>
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             The free trip planner for the Philippines
           </p>
         </footer>
@@ -374,7 +374,7 @@ function DayCard({ day }: { day: any }) {
       {/* Activities */}
       <div className="p-6">
         {day.activities.length === 0 ? (
-          <p className="text-gray-400 text-center py-4">No activities planned for this day</p>
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">No activities planned for this day</p>
         ) : (
           <div className="space-y-4">
             {day.activities.map((activity: any, index: number) => {

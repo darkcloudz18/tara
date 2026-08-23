@@ -154,7 +154,7 @@ export default function BudgetWidget({
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
                       ₱{values.actual.toLocaleString()}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
                       / ₱{values.estimated.toLocaleString()}
                     </span>
                   </div>
