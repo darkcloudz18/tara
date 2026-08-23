@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -8,6 +8,7 @@ import {
   SlidersHorizontal,
   MapPin,
   X,
+  Bell,
   Palmtree,
   Waves,
   Mountain,
@@ -18,6 +19,7 @@ import {
   Sunrise
 } from 'lucide-react'
 import TaraLogo from '@/components/icons/TaraLogo'
+import { notificationService } from '@/features/notifications/services/notificationService'
 
 const categories = [
   { id: 'all', label: 'All', icon: Compass },
@@ -34,12 +36,26 @@ interface HeaderProps {
   selectedCategory: string
   onCategoryChange: (category: string) => void
   onSearch?: (query: string) => void
+  user?: any
 }
 
-export default function Header({ selectedCategory, onCategoryChange, onSearch }: HeaderProps) {
+export default function Header({ selectedCategory, onCategoryChange, onSearch, user }: HeaderProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0)
+      return
+    }
+    notificationService.getUnreadCount(user.id).then(setUnreadCount)
+    const unsubscribe = notificationService.subscribeToNotifications(user.id, () => {
+      notificationService.getUnreadCount(user.id).then(setUnreadCount)
+    })
+    return () => unsubscribe()
+  }, [user])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,17 +100,34 @@ export default function Header({ selectedCategory, onCategoryChange, onSearch }:
             </div>
           </form>
 
-          {/* Mobile Search Toggle */}
-          <button
-            onClick={() => setShowSearch(!showSearch)}
-            className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-          >
-            {showSearch ? (
-              <X className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-            ) : (
-              <Search className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+          {/* Mobile Search Toggle + optional Bell */}
+          <div className="md:hidden flex items-center gap-1">
+            <button
+              onClick={() => setShowSearch(!showSearch)}
+              aria-label={showSearch ? 'Close search' : 'Open search'}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+            >
+              {showSearch ? (
+                <X className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+              ) : (
+                <Search className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+              )}
+            </button>
+            {user && (
+              <Link
+                href="/notifications"
+                aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+              >
+                <Bell className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-coral-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
             )}
-          </button>
+          </div>
 
           {/* Filter Button */}
           <button className="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">

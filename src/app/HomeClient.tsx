@@ -180,6 +180,7 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
         <Header
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
+          user={user}
         />
 
         {user && activeTrip && (
