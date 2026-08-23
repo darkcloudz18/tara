@@ -26,6 +26,15 @@ interface HomeClientProps {
   initialError: boolean
 }
 
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), ms)
+    ),
+  ])
+}
+
 export default function HomeClient({ initialItems, initialError }: HomeClientProps) {
   const [user, setUser] = useState<any>(null)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
@@ -88,10 +97,10 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
     setLoading(true)
     setHasError(false)
     try {
-      const [placesData, videosData] = await Promise.all([
-        fetchTaraPlaces(30),
-        fetchCuratedVideos(10),
-      ])
+      const [placesData, videosData] = await withTimeout(
+        Promise.all([fetchTaraPlaces(30), fetchCuratedVideos(10)]),
+        5000
+      )
 
       let filteredPlaces = placesData
       if (selectedCategory !== 'all') {
@@ -267,14 +276,24 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
           ) : feedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-4">
               <NoResults className="mb-6" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No places found</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-center mb-4">Try selecting a different category</p>
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className="text-teal-600 dark:text-teal-400 font-medium hover:underline"
-              >
-                Show all places
-              </button>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {selectedCategory === 'all'
+                  ? 'No places yet'
+                  : `No ${selectedCategory} match these filters`}
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-center mb-4">
+                {selectedCategory === 'all'
+                  ? 'Check back soon.'
+                  : 'Try another category or clear filters.'}
+              </p>
+              {selectedCategory !== 'all' && (
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className="px-6 py-3 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-colors"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           ) : (
             <div>
