@@ -313,10 +313,10 @@ export default function Sidebar({ user }: SidebarProps) {
         ) : (
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 px-4 py-3 mt-2 bg-teal-500 hover:bg-teal-600 text-white rounded-xl font-medium transition-colors"
+            className="flex items-center gap-3 px-4 py-3 mt-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            {!collapsed && <span>Sign In</span>}
-            {collapsed && <User className="w-5 h-5" />}
+            <User className="w-6 h-6" />
+            {!collapsed && <span className="text-sm font-medium">Sign in</span>}
           </Link>
         )}
       </div>

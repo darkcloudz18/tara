@@ -115,21 +115,31 @@ export default function HeroSection({ user }: HeroSectionProps) {
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/trip/new"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-              >
-                <Plus className="w-5 h-5" />
-                Create Your {t.trip}
-              </Link>
-              <Link
-                href="#templates"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm border border-white/20"
-              >
-                Use a Template
-              </Link>
-            </div>
+            <>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href="#templates"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-bold rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                >
+                  Use a template
+                </Link>
+                <Link
+                  href="/trip/new"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm border border-white/20"
+                >
+                  <Plus className="w-5 h-5" />
+                  Create your lakad
+                </Link>
+              </div>
+              <div className="mt-4 text-center">
+                <Link
+                  href="/login"
+                  className="text-white/80 hover:text-white text-sm underline underline-offset-2"
+                >
+                  Sign in
+                </Link>
+              </div>
+            </>
           )}
 
           {/* Social proof - only show for non-logged in users */}
