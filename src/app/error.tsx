@@ -56,14 +56,14 @@ export default function Error({
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors"
           >
             <RefreshCcw className="w-5 h-5" />
-            Try Again
+            Try again
           </button>
           <Link
             href="/"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             <Home className="w-5 h-5" />
-            Go Home
+            Go home
           </Link>
         </div>
       </div>
