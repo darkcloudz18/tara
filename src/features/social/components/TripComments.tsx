@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, Trash2, Loader2 } from 'lucide-react'
 import { socialService, TripComment } from '../services/socialService'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
 
 interface TripCommentsProps {
@@ -21,9 +21,7 @@ export default function TripComments({ itineraryId, isPublic }: TripCommentsProp
 
   useEffect(() => {
     // Get current user
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
+    getUserSafe().then(setUser)
 
     // Load comments
     loadComments()

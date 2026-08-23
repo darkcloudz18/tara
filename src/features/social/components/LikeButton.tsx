@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Heart, Loader2 } from 'lucide-react'
 import { socialService } from '../services/socialService'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface LikeButtonProps {
@@ -32,9 +32,7 @@ export default function LikeButton({
   }
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
+    getUserSafe().then(setUser)
 
     loadLikes()
   }, [itineraryId])

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { Itinerary, ItineraryDay } from '@/types/database'
 import { activityService, CreateActivityData } from '../services/activityService'
 import { DiscoverPlace } from '../services/placeService'
@@ -20,7 +20,7 @@ export function useTripDrafts() {
     setError(null)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
       if (!user) {
         throw new Error('You must be logged in to view trips')
       }

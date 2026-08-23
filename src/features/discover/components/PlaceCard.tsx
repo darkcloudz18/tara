@@ -5,6 +5,7 @@ import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, Utensi
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { FeatureTooltip } from '@/features/onboarding'
+import { seededInt } from '@/lib/seed'
 
 interface PlaceCardProps {
   place: DiscoverPlace
@@ -23,7 +24,7 @@ export default function PlaceCard({
 }: PlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 500) + 50)
+  const [likeCount, setLikeCount] = useState(() => seededInt(place.id, 50, 550))
   const [showAddedFeedback, setShowAddedFeedback] = useState(false)
   const t = useLocalizedTrip()
 

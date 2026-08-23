@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Save, Share2, Download, Pencil, MapPin, Check, X } from 'lucide-react'
 import { Sidebar, MobileNav } from '@/components/layout'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import TripWizard, { TripWizardData } from '@/features/planner/components/TripWizard'
 import ItineraryTimeline from '@/features/planner/components/ItineraryTimeline'
 import {
@@ -57,9 +57,7 @@ function NewItineraryContent() {
   const { createItinerary } = useItineraries()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
+    getUserSafe().then(setUser)
   }, [])
 
   // Load template if specified in URL

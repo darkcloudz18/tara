@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { Profile, Creator, Supplier } from '@/types/database'
 import {
   MapPin,
@@ -72,7 +72,7 @@ export default function DashboardPage() {
 
   const loadDashboard = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
 
       if (!user) {
         router.push('/login')

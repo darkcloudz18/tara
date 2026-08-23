@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MapPin, Star, Bookmark, BookmarkCheck, Heart, MessageCircle, Send, MoreHorizontal } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
+import { seededInt } from '@/lib/seed'
 
 interface FeedPlaceCardProps {
   place: DiscoverPlace
@@ -21,7 +22,7 @@ export default function FeedPlaceCard({
 }: FeedPlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 500) + 50)
+  const [likeCount, setLikeCount] = useState(() => seededInt(place.id, 50, 550))
 
   const mainPhoto = place.photos?.[0] || 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800'
 

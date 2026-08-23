@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MapPin, Heart, MessageCircle, Send, MoreHorizontal, Play, Eye, Video, Camera, Bookmark } from 'lucide-react'
 import { FeedVideo, getYouTubeEmbedUrl } from '../services/videoService'
+import { seededInt } from '@/lib/seed'
 
 interface CuratedVideoCardProps {
   video: FeedVideo
@@ -14,7 +15,7 @@ export default function CuratedVideoCard({ video, onLike, onSave }: CuratedVideo
   const [isPlaying, setIsPlaying] = useState(false)
   const [liked, setLiked] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [likeCount, setLikeCount] = useState(video.likes || Math.floor(Math.random() * 1000) + 100)
+  const [likeCount, setLikeCount] = useState(video.likes || seededInt(video.id, 100, 1100))
 
   const handlePlay = () => {
     // Only embed if we have a valid YouTube ID
@@ -113,7 +114,7 @@ export default function CuratedVideoCard({ video, onLike, onSave }: CuratedVideo
             {/* Views Badge */}
             <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/70 backdrop-blur-sm text-white text-xs font-medium rounded-lg">
               <Eye className="w-3.5 h-3.5" />
-              {video.views > 0 ? video.views.toLocaleString() : Math.floor(Math.random() * 50000 + 10000).toLocaleString()} views
+              {video.views > 0 ? video.views.toLocaleString() : seededInt(video.id, 10000, 60000).toLocaleString()} views
             </div>
             {/* Featured Badge */}
             {video.isFeatured && (

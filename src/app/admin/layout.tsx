@@ -16,7 +16,7 @@ import {
   X,
   Shield,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { adminService } from '@/features/admin/services/adminService'
 
 const NAV_ITEMS = [
@@ -39,7 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
 
       if (!user) {
         router.push('/login?redirect=/admin')
