@@ -25,7 +25,9 @@ Use these terms in code and UI. They are brand, not decoration.
 
 Next.js (App Router) · Supabase (Postgres + Auth + Storage) · Tailwind · Vercel · PWA
 
-Supabase project region: Singapore. Vercel functions **must** be pinned to `sin1` in `vercel.json` — default `iad1` adds a Pacific round trip to every server render.
+**Region:** Supabase is in `us-east-1` (N. Virginia). Vercel's default function region `iad1` is co-located with it — **leave it alone, do not pin to `sin1`.** Splitting functions to Singapore while the DB stays in Virginia would add a Pacific round trip per query.
+
+Users are in the Philippines, so client→DB latency is ~230ms. Mitigate with server rendering plus edge caching, not by moving functions. A future migration of the Supabase project to `ap-southeast-1` is worth planning separately; region cannot be changed in place.
 
 ## Two architectural laws
 
