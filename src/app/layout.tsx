@@ -93,7 +93,7 @@ export default function RootLayout({
                 try {
                   var theme = localStorage.getItem('theme');
                   var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var isDark = theme === 'dark' || (theme === 'system' && systemDark) || (!theme && systemDark);
+                  var isDark = theme === 'dark' || (theme === 'system' && systemDark);
                   document.documentElement.classList.add(isDark ? 'dark' : 'light');
                 } catch (e) {}
               })();
