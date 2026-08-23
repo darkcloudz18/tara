@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { AlertTriangle, RefreshCcw, Home } from 'lucide-react'
 import Link from 'next/link'
+import * as Sentry from '@sentry/nextjs'
 import ErrorRouteFlag from '@/components/pwa/ErrorRouteFlag'
 
 export default function Error({
@@ -13,7 +14,7 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
+    Sentry.captureException(error)
     console.error('Application error:', error)
   }, [error])
 

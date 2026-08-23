@@ -105,4 +105,19 @@ const nextConfig = {
   },
 }
 
-module.exports = withPWA(nextConfig)
+const { withSentryConfig } = require('@sentry/nextjs')
+
+const sentryOptions = {
+  silent: !process.env.CI,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  widenClientFileUpload: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+}
+
+module.exports = withSentryConfig(withPWA(nextConfig), sentryOptions)
