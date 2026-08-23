@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { Collaborator, CollaboratorRole, InviteCollaboratorInput, PresenceState } from '../types'
 
 export const collaborationService = {
@@ -27,7 +27,7 @@ export const collaborationService = {
   // Invite a collaborator by email
   async inviteByEmail(input: InviteCollaboratorInput): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
       if (!user) return { success: false, error: 'Not authenticated' }
 
       // Find user by email
@@ -153,7 +153,7 @@ export const collaborationService = {
   // Get pending invitations for current user
   async getPendingInvitations(): Promise<Collaborator[]> {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
       if (!user) return []
 
       const { data, error } = await supabase

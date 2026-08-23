@@ -153,7 +153,7 @@ export function useCurrentUserProfile() {
   useEffect(() => {
     const loadCurrentUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const user = await getUserSafe()
 
         if (!user) {
           setLoading(false)

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { DiscoverPlace } from './placeService'
 
 export interface BucketListItem {
@@ -37,7 +37,7 @@ export async function addToBucketList(
   referredByCreatorId?: string | null,
   referredFromVideoId?: string | null
 ): Promise<BucketListItem> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUserSafe()
   if (!user) throw new Error('Must be logged in to add to bucket list')
 
   // Use sourceId (actual UUID) for database foreign key, but store full id for external sources
@@ -116,7 +116,7 @@ export async function getBucketListByLocation(location: string): Promise<BucketL
 }
 
 export async function isInBucketList(placeId: string, source: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUserSafe()
   if (!user) return false
 
   let query = supabase

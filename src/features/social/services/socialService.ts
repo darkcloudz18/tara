@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 
 export interface TripComment {
   id: string
@@ -78,7 +78,7 @@ export const socialService = {
 
   // Likes
   async getLikes(itineraryId: string): Promise<{ count: number; userLiked: boolean }> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
 
     const { count, error: countError } = await supabase
       .from('trip_likes')

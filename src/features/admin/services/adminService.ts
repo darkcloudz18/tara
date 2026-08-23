@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 
 export interface AdminStats {
   totalUsers: number
@@ -48,7 +48,7 @@ export const adminService = {
    * Check if current user is admin
    */
   async isAdmin(): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
     if (!user) return false
 
     const { data } = await supabase
@@ -196,7 +196,7 @@ export const adminService = {
    * Update report status
    */
   async updateReport(reportId: string, status: string, actionTaken?: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
 
     const { error } = await supabase
       .from('content_reports')
@@ -339,7 +339,7 @@ export const adminService = {
    * Log admin activity
    */
   async logActivity(action: string, targetType?: string, targetId?: string, details?: any): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
     if (!user) return
 
     await supabase.from('admin_activity_log').insert({

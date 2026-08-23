@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Star, ThumbsUp, User, Send, Loader2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
 import { useToast } from '@/contexts/ToastContext'
 
@@ -42,7 +42,7 @@ export default function PlaceReviews({ placeId, placeName }: PlaceReviewsProps) 
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getUserSafe()
       if (user) {
         setUserId(user.id)
       }

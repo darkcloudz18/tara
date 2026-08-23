@@ -64,7 +64,7 @@ export function useTripDrafts() {
     dayId: string,
     place: DiscoverPlace
   ): Promise<void> => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
     if (!user) {
       throw new Error('You must be logged in to add places to trips')
     }

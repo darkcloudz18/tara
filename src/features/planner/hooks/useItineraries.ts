@@ -41,9 +41,7 @@ export function useItineraries() {
     try {
       setError(null)
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const user = await getUserSafe()
 
       if (!user) {
         setError('You must be logged in to create an itinerary')

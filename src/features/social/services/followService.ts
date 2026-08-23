@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSafe } from '@/lib/supabase'
 
 export interface UserFollow {
   id: string
@@ -27,7 +27,7 @@ export const followService = {
    * Follow a user
    */
   async follow(userId: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
     if (!user) return false
 
     const { error } = await supabase
@@ -44,7 +44,7 @@ export const followService = {
    * Unfollow a user
    */
   async unfollow(userId: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
     if (!user) return false
 
     const { error } = await supabase
@@ -75,7 +75,7 @@ export const followService = {
    * Check if current user is following another user
    */
   async isFollowing(userId: string): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
     if (!user) return false
 
     const { data, error } = await supabase
@@ -111,7 +111,7 @@ export const followService = {
    * Get followers of a user
    */
   async getFollowers(userId: string): Promise<FollowUser[]> {
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    const currentUser = await getUserSafe()
 
     const { data, error } = await supabase
       .from('user_follows')
@@ -148,7 +148,7 @@ export const followService = {
    * Get users that a user is following
    */
   async getFollowing(userId: string): Promise<FollowUser[]> {
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    const currentUser = await getUserSafe()
 
     const { data, error } = await supabase
       .from('user_follows')
@@ -198,7 +198,7 @@ export const followService = {
    * Get suggested users to follow
    */
   async getSuggestedUsers(limit: number = 5): Promise<FollowUser[]> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUserSafe()
     if (!user) return []
 
     // Get users the current user is already following
