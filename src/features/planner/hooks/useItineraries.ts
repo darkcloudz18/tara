@@ -69,6 +69,11 @@ export function useItineraries() {
         await dayService.bulkCreate(daysToCreate)
       }
 
+      // Signal for PWA install prompt eligibility
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('tara-lakad-created', '1')
+      }
+
       // Refresh the list
       await fetchItineraries()
 

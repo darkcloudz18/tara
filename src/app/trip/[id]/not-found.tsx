@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { MapPin, ArrowRight, Sparkles } from 'lucide-react'
+import ErrorRouteFlag from '@/components/pwa/ErrorRouteFlag'
 
 export default function TripNotFound() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center p-4">
+      <ErrorRouteFlag />
       <div className="max-w-md w-full text-center">
         {/* Icon */}
         <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">

@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { AlertTriangle, RefreshCcw, Home } from 'lucide-react'
 import Link from 'next/link'
+import ErrorRouteFlag from '@/components/pwa/ErrorRouteFlag'
 
 export default function Error({
   error,
@@ -18,6 +19,7 @@ export default function Error({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+      <ErrorRouteFlag />
       <div className="max-w-md w-full text-center">
         {/* Error Icon */}
         <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30">

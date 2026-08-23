@@ -8,6 +8,27 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+const DISMISS_DAYS = 30
+const MIN_VISITS = 2
+
+// Prompt fires only when the visitor has some intent signal: they've been
+// here before, or they've created a lakad. First-time landings on 404 or
+// error routes never see it.
+function isEligible(): boolean {
+  if (typeof window === 'undefined') return false
+  if (document.body.dataset.errorRoute === '1') return false
+
+  const dismissedAt = localStorage.getItem('pwa-install-dismissed')
+  if (dismissedAt) {
+    const days = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24)
+    if (days < DISMISS_DAYS) return false
+  }
+
+  const visits = parseInt(localStorage.getItem('tara-visit-count') || '0', 10)
+  const hasLakad = localStorage.getItem('tara-lakad-created') === '1'
+  return visits >= MIN_VISITS || hasLakad
+}
+
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
@@ -23,21 +44,13 @@ export default function InstallPrompt() {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
     setIsIOS(iOS)
 
-    // Check if user dismissed prompt recently
-    const dismissedAt = localStorage.getItem('pwa-install-dismissed')
-    if (dismissedAt) {
-      const dismissedTime = parseInt(dismissedAt, 10)
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
-      if (daysSinceDismissed < 7) {
-        return // Don't show if dismissed within 7 days
-      }
-    }
-
     // Listen for install prompt event (Chrome, Edge, etc.)
+    // Gate the visible prompt on isEligible() at fire time, not at mount time,
+    // so route changes and localStorage updates between mount and fire are respected.
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      setShowPrompt(true)
+      if (isEligible()) setShowPrompt(true)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -45,7 +58,7 @@ export default function InstallPrompt() {
     // For iOS, show manual install instructions after a delay
     if (iOS && !standalone) {
       const timer = setTimeout(() => {
-        setShowPrompt(true)
+        if (isEligible()) setShowPrompt(true)
       }, 3000)
       return () => {
         clearTimeout(timer)
