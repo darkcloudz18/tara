@@ -179,7 +179,7 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
 
         {user && activeTrip && (
           <div className="sticky top-0 z-40 bg-teal-500 dark:bg-teal-600 shadow-md">
-            <div className="max-w-[470px] mx-auto px-4 py-2">
+            <div className="max-w-7xl mx-auto px-4 py-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white">
                   <CalendarPlus className="w-4 h-4" />
@@ -235,7 +235,7 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
           </div>
         )}
 
-        <div className="max-w-[470px] mx-auto px-4 pt-6 pb-2">
+        <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
             {user ? `Add places to your ${t.trip.toLowerCase()}` : 'Discover & plan'}
           </h2>
@@ -246,7 +246,7 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
           </p>
         </div>
 
-        <main className="max-w-[470px] mx-auto pb-20 lg:pb-8">
+        <main className="max-w-7xl mx-auto px-4 pb-20 lg:pb-8">
           {hasError ? (
             <div className="flex flex-col items-center justify-center py-20 px-4">
               <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mb-4">
@@ -266,8 +266,8 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
               </button>
             </div>
           ) : loading ? (
-            <div className="px-4 space-y-4 py-4">
-              {[1, 2, 3].map((i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
                 <PlaceCardSkeleton key={i} />
               ))}
             </div>
@@ -294,21 +294,26 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
               )}
             </div>
           ) : (
-            <div>
-              {feedItems.map((item) => (
-                <div key={item.type === 'place' ? item.data.id : item.data.id} className="border-b border-gray-100 dark:border-gray-800">
-                  {item.type === 'place' ? (
-                    <PlaceCard
-                      place={item.data}
-                      onAddToTrip={() => handleAddToTrip(item.data)}
-                      activeTripTitle={activeTrip?.title}
-                      wasJustAdded={recentlyAdded === item.data.id}
-                    />
-                  ) : (
-                    <CuratedVideoCard video={item.data} />
-                  )}
-                </div>
-              ))}
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-4">
+                {feedItems.map((item) => (
+                  <div
+                    key={item.type === 'place' ? item.data.id : item.data.id}
+                    className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800"
+                  >
+                    {item.type === 'place' ? (
+                      <PlaceCard
+                        place={item.data}
+                        onAddToTrip={() => handleAddToTrip(item.data)}
+                        activeTripTitle={activeTrip?.title}
+                        wasJustAdded={recentlyAdded === item.data.id}
+                      />
+                    ) : (
+                      <CuratedVideoCard video={item.data} />
+                    )}
+                  </div>
+                ))}
+              </div>
 
               <div className="text-center py-8">
                 <button
@@ -318,7 +323,7 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
                   Load more
                 </button>
               </div>
-            </div>
+            </>
           )}
         </main>
       </div>
