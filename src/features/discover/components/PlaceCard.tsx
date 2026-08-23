@@ -14,6 +14,14 @@ interface PlaceCardProps {
   wasJustAdded?: boolean
 }
 
+function seededLikeCount(id: string): number {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) | 0
+  }
+  return 50 + (Math.abs(hash) % 500)
+}
+
 export default function PlaceCard({
   place,
   onAddToTrip,
@@ -23,7 +31,7 @@ export default function PlaceCard({
 }: PlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 500) + 50)
+  const [likeCount, setLikeCount] = useState(() => seededLikeCount(place.id))
   const [showAddedFeedback, setShowAddedFeedback] = useState(false)
   const t = useLocalizedTrip()
 
