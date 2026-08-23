@@ -64,6 +64,7 @@ async function fetchPartnerListings(
       .select('*')
       .eq('is_active', true)
       .order('average_rating', { ascending: false })
+      .order('id', { ascending: true })
       .limit(20)
 
     if (destination && destination !== 'all') {
@@ -119,6 +120,7 @@ export async function fetchTaraPlaces(
       .eq('is_active', true)
       .order('is_featured', { ascending: false })
       .order('average_rating', { ascending: false })
+      .order('id', { ascending: true })
       .limit(limit)
 
     if (destination && destination !== 'all') {

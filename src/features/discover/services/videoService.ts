@@ -58,6 +58,7 @@ export async function fetchCuratedVideos(
       .eq('is_short', false)
       .order('is_featured', { ascending: false })
       .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .limit(limit)
 
     if (category && category !== 'see') {
@@ -92,6 +93,7 @@ export async function fetchShortVideos(
       .eq('is_short', true)
       .order('is_featured', { ascending: false })
       .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .limit(limit)
 
     if (category) {
@@ -119,6 +121,7 @@ export async function fetchFeaturedVideos(limit: number = 5): Promise<FeedVideo[
       .eq('is_featured', true)
       .eq('is_short', false)
       .order('display_order', { ascending: true })
+      .order('id', { ascending: true })
       .limit(limit)
 
     if (error) throw error
