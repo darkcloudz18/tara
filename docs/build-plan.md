@@ -148,15 +148,20 @@ Edge function: log click → resolve current deeplink → append affiliate + sub
 
 Never put raw partner URLs in HTML. Nightly cron HEAD-checks every active deeplink, stamps `verified_at`, deactivates on repeated failure. Dead links are worse than no links.
 
-## 1.6b Region — later, deliberately
+## 1.6b Region — migrate now, before launch
 
-Supabase is in `us-east-1` (N. Virginia). Users are in the Philippines: ~230ms client→DB round trip versus ~40–60ms if the project were in `ap-southeast-1`.
+Supabase is in `us-east-1` (N. Virginia); users are in the Philippines. That's ~230ms client→DB round trip versus ~40–60ms from `ap-southeast-1` (Singapore).
 
-**Do not pin Vercel functions to `sin1`.** Default `iad1` is co-located with the database; splitting them is strictly worse.
+**Earlier guidance said defer this. That was based on assuming production data. It's reversed:** pre-launch, with only seed data, this is a fresh project and a schema push — not a migration project. The window closes the moment you have real users.
 
-Near-term mitigation is caching, not relocation — server-render the anonymous surfaces (Discover, templates, shared lakad) and cache at the edge so most Filipino visitors are served from a nearby PoP and never reach Virginia.
+Sequence:
+1. New Supabase project in `ap-southeast-1`
+2. Push schema, RLS policies, and seed data
+3. Swap env vars in Vercel
+4. **Then** pin Vercel functions to `sin1` in `vercel.json` to match
+5. Delete the old project once verified
 
-**Migration to `ap-southeast-1`** is worth doing eventually. Supabase cannot change region in place: it means a new project plus migration of database, storage, and auth users. Treat it as its own project with its own rollback plan. Do it before traffic scales — migration cost grows with data volume. Not now, and never bundled with a bug fix.
+Do this before the domain goes live. Edge caching of anonymous surfaces still matters afterward, but co-locating removes the underlying penalty rather than papering over it.
 
 ## 1.7 Still not building
 
@@ -363,21 +368,60 @@ outbound_redirect   { productId, partner, lakadId }
 
 ---
 
-## Build order
+## Status — updated after tasks 01–06
 
-| # | Work | Time |
+### Shipped
+
+| # | Task | Branch |
 |---|---|---|
-| 1 | Phase 0 defects + Discover auth fix | 1 day |
-| 2 | Phase 1 IA and copy | 2 days |
-| 3 | Phase 1.5 homepage hierarchy + state-aware variants | 1 day |
-| 4 | Phase 1.6 light default, teal discipline, photo hero, contrast | 2 days |
-| 5 | Mobile-first: sidebar → bottom tabs, 44px targets | 3 days |
-| 6 | Bucket list with anonymous save + date prompt | 3 days |
-| 7 | Template matching query + recommendation UI | 1 day |
-| 8 | `partner_products`, `/go`, Boracay's 2 slots, untracked | 2 days |
-| 9 | **Measure 2 weeks** | — |
-| 10 | Trip lifecycle cron + emails | 2 days |
+| 01 | Discover feed resilience | `fix/discover-feed` |
+| 02 | IA + copy cleanup | `chore/ia-cleanup` |
+| 03 | Light default + teal discipline | `style/light-mode` |
+| 04 | State-aware homepage | `feat/state-aware-homepage` |
+| 05 | Mobile bottom tabs (core routes) | `feat/mobile-nav` |
+| 06 | Bucket list, anonymous capture | `feat/bucket-list` |
 
-Steps 1–5 are fixes to what exists. 6–8 are the new model. Do not start 10 until 9 says the model works.
+Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts.
 
-Do step 4 before step 8 — booking CTAs need a colour that still means something.
+**Correction on record:** Task 01's root cause was a paused free-tier Supabase project, not the LockManager theory in the original task file. The fixes were still correct — they make any future stall degrade gracefully rather than white-screen — but the diagnosis was wrong.
+
+### Blocking
+
+**Apply `supabase/migrations/20260824010000_bucket_list_anonymous.sql`.** Until then anonymous saves fail with an RLS error and the entire capture funnel is dead in production. Verify `current_setting('request.headers')` actually forwards `x-anon-id` on the project; use the JWT fallback in the task file if not.
+
+### Do this week
+
+1. **Apply the migration** — blocks everything downstream
+2. **Supabase Pro (~$25/mo)** — the keep-alive cron is a workaround that makes GitHub Actions load-bearing for uptime. Pay for the tier before a real domain points here.
+3. **Disconnect the dormant `tara` Vercel project** — auto-deploys on every push, can claim a domain assignment, splits analytics
+4. **Pick and wire analytics** (PostHog free tier is the default) — must precede Task 07, which carries the funnel's most important metric
+5. **Region migration to `ap-southeast-1`** — window narrowing now that bucket_list rows exist
+
+### Then
+
+| # | Work |
+|---|---|
+| 07 | Bucket → dated conversion (**instrumented**) |
+| #29 | AppShell retrofit: trip/new, trip/[id], edit, search, templates, ai-planner |
+| — | Save affordance on search + template views |
+| — | Un-save from PlaceCard (needs bucket-item-id caching) |
+| — | Sidebar duplicate itineraries fetch |
+| 08 | Template matching (SQL overlap) |
+
+### Content — starts now, runs in parallel
+
+15–20 destination guides, written by you. No code dependency. One per day alongside whatever is being built.
+
+This is the only work that generates traffic, the slowest to compound, and the only piece that cannot be delegated. Two weeks of engineering with zero content written is the drift pattern — engineering always supplies more legitimate-looking urgent work.
+
+### Launch gate
+
+Migration applied · Supabase Pro · duplicate Vercel project removed · region migrated · analytics live · AppShell on all routes · no false metrics · Sentry DSN set · domain pointed
+
+### Post-launch
+
+Boracay booking test (`partner_products`, `/go`, two slots) — needs traffic to be measurable. Then trip lifecycle cron, only if the booking test converts.
+
+### Why this order
+
+Domain before content, or SEO authority accrues to a URL you're abandoning. Region before real users, or the migration becomes a real project. Analytics before Task 07, or the funnel's key conversion ships blind. Booking test after traffic, or the result is noise.
