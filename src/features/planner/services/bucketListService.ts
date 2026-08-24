@@ -1,9 +1,11 @@
 import { supabase, getUserSafe } from '@/lib/supabase'
+import { getAnonId } from '@/lib/anonId'
 import { DiscoverPlace } from './placeService'
 
 export interface BucketListItem {
   id: string
-  user_id: string
+  user_id: string | null
+  anon_id: string | null
   place_id: string | null
   external_place_id: string | null
   place_name: string
@@ -38,11 +40,13 @@ export async function addToBucketList(
   referredFromVideoId?: string | null
 ): Promise<BucketListItem> {
   const user = await getUserSafe()
-  if (!user) throw new Error('Must be logged in to add to bucket list')
+  const anonId = user ? null : getAnonId()
 
-  // Use sourceId (actual UUID) for database foreign key, but store full id for external sources
-  const bucketItem = {
-    user_id: user.id,
+  if (!user && !anonId) {
+    throw new Error('Unable to identify visitor — anon_id unavailable (SSR?)')
+  }
+
+  const baseItem = {
     place_id: place.source === 'tara' ? place.sourceId : null,
     external_place_id: place.source !== 'tara' ? place.id : null,
     place_name: place.name,
@@ -55,19 +59,37 @@ export async function addToBucketList(
     referred_from_video_id: referredFromVideoId || null,
   }
 
-  const { data, error } = await supabase
-    .from('bucket_list')
-    .upsert(bucketItem, {
-      onConflict: place.source === 'tara' ? 'user_id,place_id' : 'user_id,external_place_id',
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error adding to bucket list:', error)
-    throw error
+  if (user) {
+    // Authenticated: upsert dedupes on the (user_id, place_id) unique constraint
+    const { data, error } = await supabase
+      .from('bucket_list')
+      .upsert(
+        { ...baseItem, user_id: user.id, anon_id: null },
+        {
+          onConflict: place.source === 'tara' ? 'user_id,place_id' : 'user_id,external_place_id',
+        }
+      )
+      .select()
+      .single()
+    if (error) {
+      console.error('Error adding to bucket list:', error)
+      throw error
+    }
+    return data
   }
 
+  // Anonymous: no unique constraint on (anon_id, place_id) — callers guard
+  // with isInBucketList before invoking, but a duplicate insert is safe and
+  // low-harm if it slips through.
+  const { data, error } = await supabase
+    .from('bucket_list')
+    .insert({ ...baseItem, user_id: null, anon_id: anonId })
+    .select()
+    .single()
+  if (error) {
+    console.error('Error adding to bucket list (anon):', error)
+    throw error
+  }
   return data
 }
 
@@ -117,12 +139,16 @@ export async function getBucketListByLocation(location: string): Promise<BucketL
 
 export async function isInBucketList(placeId: string, source: string): Promise<boolean> {
   const user = await getUserSafe()
-  if (!user) return false
 
-  let query = supabase
-    .from('bucket_list')
-    .select('id')
-    .eq('user_id', user.id)
+  let query = supabase.from('bucket_list').select('id')
+
+  if (user) {
+    query = query.eq('user_id', user.id)
+  } else {
+    // Anonymous visitor — RLS scopes to the anon_id header, so we can select
+    // without a where-clause on user or anon_id.
+    query = query.is('user_id', null)
+  }
 
   if (source === 'tara') {
     query = query.eq('place_id', placeId)
@@ -130,7 +156,7 @@ export async function isInBucketList(placeId: string, source: string): Promise<b
     query = query.eq('external_place_id', placeId)
   }
 
-  const { data, error } = await query.single()
+  const { data, error } = await query.maybeSingle()
 
   if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
     console.error('Error checking bucket list:', error)
