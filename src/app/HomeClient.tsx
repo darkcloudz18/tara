@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { X, CalendarPlus, MapPin, ChevronDown, Check, AlertCircle } from 'lucide-react'
-import { Sidebar, MobileNav } from '@/components/layout'
+import { AppShell } from '@/components/layout'
 import Header from '@/components/layout/Header'
 import { HeroSection } from '@/features/home/components'
 import PlaceCard from '@/features/discover/components/PlaceCard'
@@ -171,11 +171,8 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
     : 'has-trip'
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
-      <Sidebar user={user} />
-
-      <div className="lg:ml-[260px]">
-        <HeroSection user={user} trips={userTrips} homepageState={homepageState} />
+    <AppShell user={user}>
+      <HeroSection user={user} trips={userTrips} homepageState={homepageState} />
 
         <Header
           selectedCategory={selectedCategory}
@@ -332,9 +329,6 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
             </>
           )}
         </main>
-      </div>
-
-      <MobileNav user={user} />
 
       {showLoginPrompt && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -382,6 +376,6 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
         place={selectedPlace}
         onSuccess={handleTripAddSuccess}
       />
-    </div>
+    </AppShell>
   )
 }

@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase, getUserSafe } from '@/lib/supabase'
 import { ArrowLeft, Loader2, Plus, Image, Play, Map, X } from 'lucide-react'
-import { Sidebar, MobileNav } from '@/components/layout'
+import { AppShell } from '@/components/layout'
 import ProfileHeader from '@/features/profile/components/ProfileHeader'
 import ProfileContentGrid from '@/features/profile/components/ProfileContentGrid'
 import EditProfileModal from '@/features/profile/components/EditProfileModal'
@@ -141,21 +141,18 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black">
-        <Sidebar user={user} />
-        <div className="lg:ml-[260px] flex items-center justify-center min-h-screen">
+      <AppShell user={user}>
+        <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
         </div>
-        <MobileNav user={user} />
-      </div>
+      </AppShell>
     )
   }
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black">
-        <Sidebar user={user} />
-        <div className="lg:ml-[260px] flex flex-col items-center justify-center min-h-screen p-4">
+      <AppShell user={user}>
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {error || 'User not found'}
           </h1>
@@ -166,23 +163,19 @@ export default function ProfilePage() {
             href="/"
             className="px-6 py-2.5 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600 transition-colors"
           >
-            Go Home
+            Go home
           </Link>
         </div>
-        <MobileNav user={user} />
-      </div>
+      </AppShell>
     )
   }
 
   const isOwnProfile = currentUserId === profile.id
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
-      {/* Sidebar - Desktop */}
-      <Sidebar user={user} />
-
+    <AppShell user={user}>
       {/* Main Content */}
-      <div className="lg:ml-[260px] pb-20 lg:pb-8">
+      <div className="pb-20 lg:pb-8">
         {/* Top Bar (Mobile) */}
         <div className="sticky top-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
@@ -341,8 +334,6 @@ export default function ProfilePage() {
         />
       )}
 
-      {/* Mobile Navigation */}
-      <MobileNav user={user} />
-    </div>
+    </AppShell>
   )
 }

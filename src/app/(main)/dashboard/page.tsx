@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase, getUserSafe } from '@/lib/supabase'
+import { AppShell } from '@/components/layout'
 import { Profile, Creator, Supplier } from '@/types/database'
 import {
   MapPin,
@@ -65,6 +66,7 @@ export default function DashboardPage() {
     stats: { totalTrips: 0, publicTrips: 0, totalLikes: 0, followers: 0 }
   })
   const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
     loadDashboard()
@@ -72,12 +74,15 @@ export default function DashboardPage() {
 
   const loadDashboard = async () => {
     try {
-      const user = await getUserSafe()
+      const currentUser = await getUserSafe()
 
-      if (!user) {
+      if (!currentUser) {
         router.push('/login')
         return
       }
+
+      setUser(currentUser)
+      const user = currentUser
 
       // Fetch all data in parallel
       const [
@@ -137,16 +142,19 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
-      </div>
+      <AppShell user={user}>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
+        </div>
+      </AppShell>
     )
   }
 
   const { profile, creator, supplier, recentTrips, upcomingTrips, stats } = data
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20 lg:pb-8">
+    <AppShell user={user}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
@@ -519,6 +527,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AppShell>
   )
 }

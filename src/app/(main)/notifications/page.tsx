@@ -19,6 +19,7 @@ import {
 import { notificationService } from '@/features/notifications/services/notificationService'
 import { Notification, NotificationType } from '@/features/notifications/types'
 import { supabase, getUserSafe } from '@/lib/supabase'
+import { AppShell } from '@/components/layout'
 import { formatDistanceToNow } from 'date-fns'
 
 const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
@@ -35,13 +36,15 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
-      const user = await getUserSafe()
-      if (user) {
-        setUserId(user.id)
-        fetchNotifications(user.id)
+      const currentUser = await getUserSafe()
+      if (currentUser) {
+        setUser(currentUser)
+        setUserId(currentUser.id)
+        fetchNotifications(currentUser.id)
       } else {
         setLoading(false)
       }
@@ -120,17 +123,20 @@ export default function NotificationsPage() {
 
   if (!userId && !loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Sign in to view notifications</p>
+      <AppShell user={user}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">Sign in to view notifications</p>
+          </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <AppShell user={user}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-2xl mx-auto px-4 py-4">
@@ -269,6 +275,7 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </AppShell>
   )
 }
