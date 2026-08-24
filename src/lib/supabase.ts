@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js'
+import { getAnonId } from './anonId'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -14,7 +15,14 @@ export const getSupabase = (): SupabaseClient => {
   }
 
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
+    // Attach the visitor's anon_id as a header on every request so the
+    // bucket_list RLS policies can scope anonymous rows to this browser.
+    // Only in the browser — server renders don't have localStorage and
+    // must not send an anon-scoped header.
+    const anonId = typeof window !== 'undefined' ? getAnonId() : ''
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      global: anonId ? { headers: { 'x-anon-id': anonId } } : undefined,
+    })
   }
 
   return supabaseInstance
