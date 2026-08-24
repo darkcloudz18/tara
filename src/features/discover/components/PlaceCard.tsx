@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, Plus, Check, Loader2 } from 'lucide-react'
+import { MapPin, Star, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, Plus, Check, Loader2 } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
+import { addToBucketList, removeFromBucketList, isInBucketList } from '@/features/planner/services/bucketListService'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
+import { useToast } from '@/contexts/ToastContext'
 import { FeatureTooltip } from '@/features/onboarding'
 import { seededInt } from '@/lib/seed'
 
@@ -26,7 +28,55 @@ export default function PlaceCard({
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(() => seededInt(place.id, 50, 550))
   const [showAddedFeedback, setShowAddedFeedback] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [savingBucket, setSavingBucket] = useState(false)
   const t = useLocalizedTrip()
+  const toast = useToast()
+
+  useEffect(() => {
+    // Check bucket-list state for this place. RLS scopes anon and auth
+    // queries automatically; caller doesn't need to branch.
+    let cancelled = false
+    const sourceId = place.source === 'tara' ? place.sourceId : place.id
+    isInBucketList(sourceId, place.source).then((present) => {
+      if (!cancelled) setSaved(present)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [place.id, place.source, place.sourceId])
+
+  const handleSaveToBucket = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (savingBucket) return
+    setSavingBucket(true)
+    const nextSaved = !saved
+    setSaved(nextSaved) // optimistic
+    try {
+      if (nextSaved) {
+        const item = await addToBucketList(place)
+        // First anonymous save: one-time toast nudging signup.
+        const shown = localStorage.getItem('tara-first-save-toast-shown')
+        if (!shown) {
+          toast.success('Saved', 'Sign in anytime to keep your list.')
+          localStorage.setItem('tara-first-save-toast-shown', '1')
+        }
+      } else {
+        // We don't have the bucket item id here — fetch from state? MVP:
+        // re-query. isInBucketList returns bool, not id, so we'd need a
+        // helper. For now, disable un-save until the /bucket view where
+        // ids are known. Revert optimistic toggle.
+        setSaved(true)
+        toast.info('Remove from bucket', 'Open your bucket list to remove saved places.')
+      }
+    } catch (err) {
+      console.error('Failed to save/unsave:', err)
+      setSaved(!nextSaved) // revert
+      toast.error('Couldn\u2019t save', 'Try again in a moment.')
+    } finally {
+      setSavingBucket(false)
+    }
+  }
 
   // Show feedback when wasJustAdded changes to true
   useEffect(() => {
@@ -185,6 +235,18 @@ export default function PlaceCard({
             {/* Share */}
             <button className="hover:opacity-60 transition-opacity">
               <Send className="w-7 h-7 text-gray-900 dark:text-white" />
+            </button>
+            {/* Save to bucket */}
+            <button
+              onClick={handleSaveToBucket}
+              disabled={savingBucket}
+              aria-label={saved ? 'Saved to bucket list' : 'Save to bucket list'}
+              aria-pressed={saved}
+              className="hover:opacity-60 transition-opacity disabled:opacity-50"
+            >
+              <Bookmark
+                className={`w-7 h-7 ${saved ? 'fill-gray-900 text-gray-900 dark:fill-white dark:text-white' : 'text-gray-900 dark:text-white'}`}
+              />
             </button>
           </div>
 
