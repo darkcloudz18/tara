@@ -4,35 +4,33 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, getUserSafe } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import { useUser } from '@/contexts/UserContext'
 import { Loader2 } from 'lucide-react'
 
 export default function ProfileIndexPage() {
   const router = useRouter()
+  const { user, loading: userLoading } = useUser()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    redirectToProfile()
-  }, [])
+    if (userLoading) return
+    if (!user) {
+      router.push('/login')
+      return
+    }
+    redirectToProfile(user)
+  }, [user, userLoading])
 
-  const redirectToProfile = async () => {
+  const redirectToProfile = async (currentUser: NonNullable<typeof user>) => {
     try {
-      const user = await getUserSafe()
-
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      // Get user's profile to find username
       const { data: profile } = await supabase
         .from('profiles')
         .select('username')
-        .eq('id', user.id)
+        .eq('id', currentUser.id)
         .single()
 
-      // Redirect to profile page using username or ID
-      const identifier = profile?.username || user.id
+      const identifier = profile?.username || currentUser.id
       router.replace(`/profile/${identifier}`)
     } catch (error) {
       console.error('Error redirecting to profile:', error)

@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Save, Share2, Download, Pencil, MapPin, Check, X } from 'lucide-react'
 import { Sidebar, MobileNav } from '@/components/layout'
-import { supabase, getUserSafe } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import { useUser } from '@/contexts/UserContext'
 import TripWizard, { TripWizardData } from '@/features/planner/components/TripWizard'
 import ItineraryTimeline from '@/features/planner/components/ItineraryTimeline'
 import {
@@ -45,7 +46,7 @@ function NewItineraryContent() {
   const searchParams = useSearchParams()
   const templateSlug = searchParams.get('template')
 
-  const [user, setUser] = useState<any>(null)
+  const { user } = useUser()
   const [viewMode, setViewMode] = useState<ViewMode>('wizard')
   const [tripData, setTripData] = useState<TripWizardData | null>(null)
   const [itinerary, setItinerary] = useState<DaySuggestion[]>([])
@@ -56,9 +57,6 @@ function NewItineraryContent() {
 
   const { createItinerary } = useItineraries()
 
-  useEffect(() => {
-    getUserSafe().then(setUser)
-  }, [])
 
   // Load template if specified in URL
   useEffect(() => {

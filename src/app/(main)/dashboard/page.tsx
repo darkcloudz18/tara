@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase, getUserSafe } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { AppShell } from '@/components/layout'
+import { useUser } from '@/contexts/UserContext'
 import { Profile, Creator, Supplier } from '@/types/database'
 import {
   MapPin,
@@ -66,23 +67,20 @@ export default function DashboardPage() {
     stats: { totalTrips: 0, publicTrips: 0, totalLikes: 0, followers: 0 }
   })
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
+  const { user, loading: userLoading } = useUser()
 
   useEffect(() => {
+    if (userLoading) return
+    if (!user) {
+      router.push('/login')
+      return
+    }
     loadDashboard()
-  }, [])
+  }, [user, userLoading])
 
   const loadDashboard = async () => {
+    if (!user) return
     try {
-      const currentUser = await getUserSafe()
-
-      if (!currentUser) {
-        router.push('/login')
-        return
-      }
-
-      setUser(currentUser)
-      const user = currentUser
 
       // Fetch all data in parallel
       const [

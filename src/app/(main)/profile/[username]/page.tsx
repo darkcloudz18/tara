@@ -5,9 +5,10 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase, getUserSafe } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Loader2, Plus, Image, Play, Map, X } from 'lucide-react'
 import { AppShell } from '@/components/layout'
+import { useUser } from '@/contexts/UserContext'
 import ProfileHeader from '@/features/profile/components/ProfileHeader'
 import ProfileContentGrid from '@/features/profile/components/ProfileContentGrid'
 import EditProfileModal from '@/features/profile/components/EditProfileModal'
@@ -27,7 +28,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const username = params.username as string
 
-  const [user, setUser] = useState<any>(null)
+  const { user } = useUser()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [content, setContent] = useState<ProfileContent | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -48,13 +49,10 @@ export default function ProfilePage() {
     setError('')
 
     try {
-      // Get current user
-      const authUser = await getUserSafe()
-      setUser(authUser)
-      setCurrentUserId(authUser?.id || null)
+      setCurrentUserId(user?.id || null)
 
       // Fetch profile
-      const profileData = await fetchUserProfile(username, authUser?.id)
+      const profileData = await fetchUserProfile(username, user?.id)
 
       if (!profileData) {
         setError('User not found')

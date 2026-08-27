@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Heart, Loader2 } from 'lucide-react'
 import { socialService } from '../services/socialService'
-import { supabase, getUserSafe } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import { useUser } from '@/contexts/UserContext'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface LikeButtonProps {
@@ -23,7 +24,7 @@ export default function LikeButton({
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [animating, setAnimating] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const { user } = useUser()
 
   const sizeClasses = {
     sm: 'w-4 h-4',
@@ -32,8 +33,6 @@ export default function LikeButton({
   }
 
   useEffect(() => {
-    getUserSafe().then(setUser)
-
     loadLikes()
   }, [itineraryId])
 

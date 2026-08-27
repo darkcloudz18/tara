@@ -18,8 +18,9 @@ import {
 } from 'lucide-react'
 import { notificationService } from '@/features/notifications/services/notificationService'
 import { Notification, NotificationType } from '@/features/notifications/types'
-import { supabase, getUserSafe } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { AppShell } from '@/components/layout'
+import { useUser } from '@/contexts/UserContext'
 import { formatDistanceToNow } from 'date-fns'
 
 const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
@@ -35,22 +36,17 @@ export default function NotificationsPage() {
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
+  const { user, loading: userLoading } = useUser()
+  const userId = user?.id ?? null
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const currentUser = await getUserSafe()
-      if (currentUser) {
-        setUser(currentUser)
-        setUserId(currentUser.id)
-        fetchNotifications(currentUser.id)
-      } else {
-        setLoading(false)
-      }
+    if (userLoading) return
+    if (!user) {
+      setLoading(false)
+      return
     }
-    fetchUser()
-  }, [])
+    fetchNotifications(user.id)
+  }, [user, userLoading])
 
   // Real-time subscription
   useEffect(() => {

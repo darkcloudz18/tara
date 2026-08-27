@@ -16,7 +16,8 @@ import {
   X,
   Shield,
 } from 'lucide-react'
-import { supabase, getUserSafe } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import { useUser } from '@/contexts/UserContext'
 import { adminService } from '@/features/admin/services/adminService'
 
 const NAV_ITEMS = [
@@ -35,31 +36,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const { user, loading: userLoading } = useUser()
 
   useEffect(() => {
+    if (userLoading) return
+    if (!user) {
+      router.push('/login?redirect=/admin')
+      return
+    }
     const checkAdmin = async () => {
-      const user = await getUserSafe()
-
-      if (!user) {
-        router.push('/login?redirect=/admin')
-        return
-      }
-
-      setUser(user)
       const admin = await adminService.isAdmin()
-
       if (!admin) {
         router.push('/')
         return
       }
-
       setIsAdmin(true)
       setLoading(false)
     }
-
     checkAdmin()
-  }, [router])
+  }, [user, userLoading, router])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
