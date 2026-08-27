@@ -214,7 +214,7 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                  First Name
+                  First name
                 </label>
                 <input
                   id="firstName"
@@ -228,7 +228,7 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Name
+                  Last name
                 </label>
                 <input
                   id="lastName"
@@ -260,7 +260,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
+                Phone number
               </label>
               <input
                 id="phone"
@@ -302,7 +302,7 @@ export default function RegisterPage() {
                     className="mt-1"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Content Creator</div>
+                    <div className="font-medium text-gray-900">Content creator</div>
                     <div className="text-sm text-gray-500">Share travel content & earn affiliate commissions</div>
                   </div>
                 </label>
@@ -316,7 +316,7 @@ export default function RegisterPage() {
                     className="mt-1"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Supplier / Business</div>
+                    <div className="font-medium text-gray-900">Supplier or business</div>
                     <div className="text-sm text-gray-500">List your hotel, resort, tours, or transport services</div>
                   </div>
                 </label>
@@ -326,10 +326,10 @@ export default function RegisterPage() {
             {/* Supplier-specific fields */}
             {formData.isSupplier && (
               <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-medium text-gray-900">Business Information</h3>
+                <h3 className="font-medium text-gray-900">Business information</h3>
                 <div>
                   <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Business Name
+                    Business name
                   </label>
                   <input
                     id="businessName"
@@ -344,7 +344,7 @@ export default function RegisterPage() {
                 </div>
                 <div>
                   <label htmlFor="businessType" className="block text-sm font-medium text-gray-700 mb-1">
-                    Business Type
+                    Business type
                   </label>
                   <select
                     id="businessType"
@@ -356,9 +356,9 @@ export default function RegisterPage() {
                     <option value="hotel">Hotel</option>
                     <option value="resort">Resort</option>
                     <option value="hostel">Hostel</option>
-                    <option value="tour">Tour Operator</option>
-                    <option value="activity">Activity Provider</option>
-                    <option value="transport">Transport Service</option>
+                    <option value="tour">Tour operator</option>
+                    <option value="activity">Activity provider</option>
+                    <option value="transport">Transport service</option>
                   </select>
                 </div>
                 <div>
