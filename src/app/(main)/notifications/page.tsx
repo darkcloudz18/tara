@@ -123,7 +123,7 @@ export default function NotificationsPage() {
 
   if (!userId && !loading) {
     return (
-      <AppShell user={user}>
+      <AppShell>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -135,7 +135,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <AppShell user={user}>
+    <AppShell>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">

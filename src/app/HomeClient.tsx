@@ -11,7 +11,8 @@ import CuratedVideoCard from '@/features/discover/components/CuratedVideoCard'
 import AddToTripModal from '@/features/planner/components/AddToTripModal'
 import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
 import { NoResults } from '@/components/illustrations'
-import { supabase, getUserSafe } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import { useUser } from '@/contexts/UserContext'
 import { fetchTaraPlaces, DiscoverPlace } from '@/features/planner/services/placeService'
 import { fetchCuratedVideos, FeedVideo } from '@/features/discover/services/videoService'
 import { Itinerary } from '@/types/database'
@@ -36,7 +37,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 export default function HomeClient({ initialItems, initialError }: HomeClientProps) {
-  const [user, setUser] = useState<any>(null)
+  const { user } = useUser()
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [feedItems, setFeedItems] = useState<FeedItem[]>(initialItems)
@@ -52,16 +53,6 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
   const [recentlyAdded, setRecentlyAdded] = useState<string | null>(null)
 
   const t = useLocalizedTrip()
-
-  useEffect(() => {
-    getUserSafe().then(setUser)
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
 
   useEffect(() => {
     if (user) {
@@ -171,13 +162,12 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
     : 'has-trip'
 
   return (
-    <AppShell user={user}>
+    <AppShell>
       <HeroSection user={user} trips={userTrips} homepageState={homepageState} />
 
         <Header
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
-          user={user}
         />
 
         {user && activeTrip && (

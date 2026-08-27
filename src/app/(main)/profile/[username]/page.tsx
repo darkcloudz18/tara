@@ -141,7 +141,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <AppShell user={user}>
+      <AppShell>
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
         </div>
@@ -151,7 +151,7 @@ export default function ProfilePage() {
 
   if (error || !profile) {
     return (
-      <AppShell user={user}>
+      <AppShell>
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {error || 'User not found'}
@@ -173,7 +173,7 @@ export default function ProfilePage() {
   const isOwnProfile = currentUserId === profile.id
 
   return (
-    <AppShell user={user}>
+    <AppShell>
       {/* Main Content */}
       <div className="pb-20 lg:pb-8">
         {/* Top Bar (Mobile) */}

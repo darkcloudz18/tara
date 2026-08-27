@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useUser } from '@/contexts/UserContext'
 import TaraLogo from '@/components/icons/TaraLogo'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { supabase } from '@/lib/supabase'
@@ -31,11 +32,8 @@ interface NavItem {
   badge?: number
 }
 
-interface SidebarProps {
-  user: any
-}
-
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar() {
+  const { user } = useUser()
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const { resolvedTheme, toggleTheme } = useTheme()

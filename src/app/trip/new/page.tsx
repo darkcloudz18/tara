@@ -299,7 +299,7 @@ function NewItineraryContent() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Sidebar */}
-      <Sidebar user={user} />
+      <Sidebar />
 
       {/* Main Content */}
       <div className="lg:ml-[260px] pb-20 lg:pb-8">
@@ -506,7 +506,7 @@ function NewItineraryContent() {
       </div>
 
       {/* Mobile Navigation */}
-      <MobileNav user={user} />
+      <MobileNav />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ToastProvider } from '@/contexts/ToastContext'
+import { UserProvider } from '@/contexts/UserContext'
 import InstallPrompt from '@/components/pwa/InstallPrompt'
 import { WelcomeModal } from '@/features/onboarding'
 import { getSupabase } from '@/lib/supabase'
@@ -39,9 +40,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <ToastProvider>
-        {children}
-        <WelcomeModal />
-        <InstallPrompt />
+        <UserProvider>
+          {children}
+          <WelcomeModal />
+          <InstallPrompt />
+        </UserProvider>
       </ToastProvider>
     </ThemeProvider>
   )

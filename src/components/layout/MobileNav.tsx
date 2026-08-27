@@ -3,10 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Compass, Map, PlusCircle, User } from 'lucide-react'
-
-interface MobileNavProps {
-  user: any
-}
+import { useUser } from '@/contexts/UserContext'
 
 type NavItem = {
   icon: typeof Compass
@@ -21,7 +18,8 @@ const navItems: NavItem[] = [
   { icon: User, label: 'Profile', realHref: '/profile' },
 ]
 
-export default function MobileNav({ user }: MobileNavProps) {
+export default function MobileNav() {
+  const { user } = useUser()
   const pathname = usePathname()
 
   const isActive = (realHref: string) => {

@@ -5,13 +5,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { CalendarDays, MapPin, Bookmark, AlertCircle, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
-import { getUserSafe } from '@/lib/supabase'
+import { useUser } from '@/contexts/UserContext'
 import { getBucketList, removeFromBucketList, BucketListItem } from '@/features/planner/services/bucketListService'
 import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/contexts/ToastContext'
 
 export default function BucketClient() {
-  const [user, setUser] = useState<any>(null)
+  const { user } = useUser()
   const [items, setItems] = useState<BucketListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
@@ -19,7 +19,6 @@ export default function BucketClient() {
   const toast = useToast()
 
   useEffect(() => {
-    getUserSafe().then(setUser)
     loadBucket()
   }, [])
 
@@ -53,7 +52,7 @@ export default function BucketClient() {
   }
 
   return (
-    <AppShell user={user}>
+    <AppShell>
       <main className="max-w-7xl mx-auto px-4 py-6 pb-20 lg:pb-8">
         {/* Section title */}
         <div className="mb-6">

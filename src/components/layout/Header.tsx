@@ -19,6 +19,7 @@ import {
   Sunrise
 } from 'lucide-react'
 import TaraLogo from '@/components/icons/TaraLogo'
+import { useUser } from '@/contexts/UserContext'
 import { notificationService } from '@/features/notifications/services/notificationService'
 
 const categories = [
@@ -36,10 +37,10 @@ interface HeaderProps {
   selectedCategory: string
   onCategoryChange: (category: string) => void
   onSearch?: (query: string) => void
-  user?: any
 }
 
-export default function Header({ selectedCategory, onCategoryChange, onSearch, user }: HeaderProps) {
+export default function Header({ selectedCategory, onCategoryChange, onSearch }: HeaderProps) {
+  const { user } = useUser()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
