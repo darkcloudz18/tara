@@ -29,9 +29,7 @@ Use these terms in code and UI. They are brand, not decoration.
 
 Next.js (App Router) · Supabase (Postgres + Auth + Storage) · Tailwind · Vercel · PWA
 
-**Region:** Supabase is currently `us-east-1` (N. Virginia). Users are in the Philippines — this is wrong and should be migrated to `ap-southeast-1` (Singapore) **before launch**, while there is no production data to move.
-
-Until that migration happens, Vercel's default `iad1` is co-located with the DB — **do not pin to `sin1`**, that would split functions from the database. After migrating to Singapore, pin functions to `sin1` to match.
+**Region:** Supabase is `ap-southeast-1` (Singapore), co-located with users in the Philippines. Vercel functions pinned to `sin1` via `vercel.json` — do not remove the pin, that would split functions from the database.
 
 ## Two architectural laws
 

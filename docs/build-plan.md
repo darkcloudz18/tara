@@ -368,7 +368,7 @@ outbound_redirect   { productId, partner, lakadId }
 
 ---
 
-## Status — updated after tasks 01–06
+## Status — updated after tasks 01–08
 
 ### Shipped
 
@@ -380,6 +380,7 @@ outbound_redirect   { productId, partner, lakadId }
 | 04 | State-aware homepage | `feat/state-aware-homepage` |
 | 05 | Mobile bottom tabs (core routes) | `feat/mobile-nav` |
 | 06 | Bucket list, anonymous capture | `feat/bucket-list` |
+| 08 | PostHog analytics install | `feat/analytics-posthog` |
 
 Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts.
 
@@ -394,19 +395,21 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 1. **Apply the migration** — blocks everything downstream
 2. **Supabase Pro (~$25/mo)** — the keep-alive cron is a workaround that makes GitHub Actions load-bearing for uptime. Pay for the tier before a real domain points here.
 3. **Disconnect the dormant `tara` Vercel project** — auto-deploys on every push, can claim a domain assignment, splits analytics
-4. **Pick and wire analytics** (PostHog free tier is the default) — must precede Task 07, which carries the funnel's most important metric
-5. **Region migration to `ap-southeast-1`** — window narrowing now that bucket_list rows exist
+4. ~~**Pick and wire analytics** (PostHog free tier is the default) — must precede Task 07, which carries the funnel's most important metric~~ — **done, Task 08 shipped**
+5. ~~**Region migration to `ap-southeast-1`**~~ — **done, DB + Vercel functions in Singapore**
 
 ### Then
 
 | # | Work |
 |---|---|
 | 07 | Bucket → dated conversion (**instrumented**) |
+| 09 | Discover personalization strip (bucket / dated-lakad signal) |
+| 10 | Itinerary builder suggests bucket list first (blocked by 07) |
 | #29 | AppShell retrofit: trip/new, trip/[id], edit, search, templates, ai-planner |
 | — | Save affordance on search + template views |
 | — | Un-save from PlaceCard (needs bucket-item-id caching) |
 | — | Sidebar duplicate itineraries fetch |
-| 08 | Template matching (SQL overlap) |
+| 11 | Template matching (SQL overlap) |
 
 ### Content — starts now, runs in parallel
 
