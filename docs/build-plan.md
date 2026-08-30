@@ -368,7 +368,7 @@ outbound_redirect   { productId, partner, lakadId }
 
 ---
 
-## Status — updated after tasks 01–08 and Task 07
+## Status — updated after tasks 01–10
 
 ### Shipped
 
@@ -382,8 +382,10 @@ outbound_redirect   { productId, partner, lakadId }
 | 06 | Bucket list, anonymous capture | `feat/bucket-list` |
 | 08 | PostHog analytics install | `feat/analytics-posthog` |
 | 07 | Bucket → dated lakad conversion | `feat/dated-conversion` |
+| 09 | Discover personalization strip | `feat/discover-personalization` |
+| 10 | Builder suggests bucket list first | `feat/itinerary-suggests-bucket` |
 
-Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts, Supabase migration to `ap-southeast-1` (Singapore) with Vercel functions pinned to `sin1`, custom `BucketPin` icon replacing the generic Bookmark across nav + place cards, PlaceCard UX cleanup (removed dominant "+ Add to Trip" overlay, promoted bucket save to primary affordance), `?redirect=` support on `/register` for the bucket→dated auth handoff.
+Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts, Supabase migration to `ap-southeast-1` (Singapore) with Vercel functions pinned to `sin1`, custom `BucketPin` icon replacing the generic Bookmark across nav + place cards, PlaceCard UX cleanup (removed dominant "+ Add to Trip" overlay, promoted bucket save to primary affordance), `?redirect=` support on `/register` for the bucket→dated auth handoff, `next/image` remote hosts configured for Unsplash / Wikimedia / Supabase Storage / Google avatars, Suspense wrap on `/register` so `useSearchParams` doesn't bail out of static export.
 
 **Correction on record:** Task 01's root cause was a paused free-tier Supabase project, not the LockManager theory in the original task file. The fixes were still correct — they make any future stall degrade gracefully rather than white-screen — but the diagnosis was wrong.
 
@@ -397,12 +399,11 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 
 | # | Work |
 |---|---|
-| 09 | Discover personalization strip (bucket / dated-lakad signal) |
-| 10 | Itinerary builder suggests bucket list first (unblocked now that 07 shipped) |
 | #29 | AppShell retrofit: trip/new, trip/[id], edit, search, templates, ai-planner |
 | — | Save affordance on search + template views |
 | — | Un-save from PlaceCard (needs bucket-item-id caching) |
 | — | Sidebar duplicate itineraries fetch |
+| — | Add `bucket_list_id` fk on `itinerary_activities` — Task 10 currently matches added-state on `(title, location)`; a real fk makes it robust to renames and clarifies attribution for future features |
 | 11 | Template matching (SQL overlap) |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
 
