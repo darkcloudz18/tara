@@ -368,7 +368,7 @@ outbound_redirect   { productId, partner, lakadId }
 
 ---
 
-## Status — updated after tasks 01–10
+## Status — updated after tasks 01–11
 
 ### Shipped
 
@@ -384,6 +384,7 @@ outbound_redirect   { productId, partner, lakadId }
 | 07 | Bucket → dated lakad conversion | `feat/dated-conversion` |
 | 09 | Discover personalization strip | `feat/discover-personalization` |
 | 10 | Builder suggests bucket list first | `feat/itinerary-suggests-bucket` |
+| 11 | Template matching on /bucket | `feat/template-matching` |
 
 Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts, Supabase migration to `ap-southeast-1` (Singapore) with Vercel functions pinned to `sin1`, custom `BucketPin` icon replacing the generic Bookmark across nav + place cards, PlaceCard UX cleanup (removed dominant "+ Add to Trip" overlay, promoted bucket save to primary affordance), `?redirect=` support on `/register` for the bucket→dated auth handoff, `next/image` remote hosts configured for Unsplash / Wikimedia / Supabase Storage / Google avatars, Suspense wrap on `/register` so `useSearchParams` doesn't bail out of static export.
 
@@ -404,7 +405,6 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | — | Un-save from PlaceCard (needs bucket-item-id caching) |
 | — | Sidebar duplicate itineraries fetch |
 | — | Add `bucket_list_id` fk on `itinerary_activities` — Task 10 currently matches added-state on `(title, location)`; a real fk makes it robust to renames and clarifies attribution for future features |
-| 11 | Template matching (SQL overlap) |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
 
 ### Content — starts now, runs in parallel
