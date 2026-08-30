@@ -368,7 +368,7 @@ outbound_redirect   { productId, partner, lakadId }
 
 ---
 
-## Status — updated after tasks 01–08
+## Status — updated after tasks 01–08 and Task 07
 
 ### Shipped
 
@@ -381,35 +381,30 @@ outbound_redirect   { productId, partner, lakadId }
 | 05 | Mobile bottom tabs (core routes) | `feat/mobile-nav` |
 | 06 | Bucket list, anonymous capture | `feat/bucket-list` |
 | 08 | PostHog analytics install | `feat/analytics-posthog` |
+| 07 | Bucket → dated lakad conversion | `feat/dated-conversion` |
 
-Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts.
+Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts, Supabase migration to `ap-southeast-1` (Singapore) with Vercel functions pinned to `sin1`, custom `BucketPin` icon replacing the generic Bookmark across nav + place cards, PlaceCard UX cleanup (removed dominant "+ Add to Trip" overlay, promoted bucket save to primary affordance), `?redirect=` support on `/register` for the bucket→dated auth handoff.
 
 **Correction on record:** Task 01's root cause was a paused free-tier Supabase project, not the LockManager theory in the original task file. The fixes were still correct — they make any future stall degrade gracefully rather than white-screen — but the diagnosis was wrong.
 
-### Blocking
-
-**Apply `supabase/migrations/20260824010000_bucket_list_anonymous.sql`.** Until then anonymous saves fail with an RLS error and the entire capture funnel is dead in production. Verify `current_setting('request.headers')` actually forwards `x-anon-id` on the project; use the JWT fallback in the task file if not.
-
 ### Do this week
 
-1. **Apply the migration** — blocks everything downstream
-2. **Supabase Pro (~$25/mo)** — the keep-alive cron is a workaround that makes GitHub Actions load-bearing for uptime. Pay for the tier before a real domain points here.
-3. **Disconnect the dormant `tara` Vercel project** — auto-deploys on every push, can claim a domain assignment, splits analytics
-4. ~~**Pick and wire analytics** (PostHog free tier is the default) — must precede Task 07, which carries the funnel's most important metric~~ — **done, Task 08 shipped**
-5. ~~**Region migration to `ap-southeast-1`**~~ — **done, DB + Vercel functions in Singapore**
+1. **Supabase Pro (~$25/mo)** — the keep-alive cron is a workaround that makes GitHub Actions load-bearing for uptime. Pay for the tier before a real domain points here.
+2. **Verify the funnel end-to-end in prod PostHog** — with Task 07 shipped, `bucket_dated` should now fire against real traffic. Confirm it lands, confirm `wasAnonymous` splits the two paths correctly, then set up the `place_saved → bucket_dated` funnel view in PostHog.
+3. **Content** — 15–20 destination guides. Starts now, runs in parallel with everything below.
 
 ### Then
 
 | # | Work |
 |---|---|
-| 07 | Bucket → dated conversion (**instrumented**) |
 | 09 | Discover personalization strip (bucket / dated-lakad signal) |
-| 10 | Itinerary builder suggests bucket list first (blocked by 07) |
+| 10 | Itinerary builder suggests bucket list first (unblocked now that 07 shipped) |
 | #29 | AppShell retrofit: trip/new, trip/[id], edit, search, templates, ai-planner |
 | — | Save affordance on search + template views |
 | — | Un-save from PlaceCard (needs bucket-item-id caching) |
 | — | Sidebar duplicate itineraries fetch |
 | 11 | Template matching (SQL overlap) |
+| — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
 
 ### Content — starts now, runs in parallel
 
@@ -419,12 +414,14 @@ This is the only work that generates traffic, the slowest to compound, and the o
 
 ### Launch gate
 
-Migration applied · Supabase Pro · duplicate Vercel project removed · region migrated · analytics live · AppShell on all routes · no false metrics · Sentry DSN set · domain pointed
+Supabase Pro · AppShell on all routes · no false metrics · Sentry DSN set · domain pointed
+
+(Struck from the launch gate since shipped: migration applied · duplicate Vercel project removed · region migrated · analytics live.)
 
 ### Post-launch
 
-Boracay booking test (`partner_products`, `/go`, two slots) — needs traffic to be measurable. Then trip lifecycle cron, only if the booking test converts.
+Boracay booking test (`partner_products`, `/go`, two slots) — needs traffic to be measurable. Then trip lifecycle cron, only if the booking test converts. The lifecycle cron will read the `itineraries.status + start_date` index Task 07 added.
 
 ### Why this order
 
-Domain before content, or SEO authority accrues to a URL you're abandoning. Region before real users, or the migration becomes a real project. Analytics before Task 07, or the funnel's key conversion ships blind. Booking test after traffic, or the result is noise.
+Domain before content, or SEO authority accrues to a URL you're abandoning. Booking test after traffic, or the result is noise. Task 10 (builder suggests bucket) before Task 11 (template matching), so the builder's suggestion surface exists before templates layer on top of it.
