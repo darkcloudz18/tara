@@ -12,6 +12,7 @@ import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/contexts/ToastContext'
 import { capture } from '@/lib/analytics'
 import DatePromptCard from '@/features/planner/components/DatePromptCard'
+import MatchingTemplateCard from '@/features/planner/components/MatchingTemplateCard'
 
 export default function BucketClient() {
   const { user } = useUser()
@@ -66,10 +67,14 @@ export default function BucketClient() {
           </p>
         </div>
 
-        {/* Date prompt — only meaningful once there's at least one saved
-            place. Empty-state message below handles the zero case. */}
+        {/* Matching template + date prompt — only surface when the
+            bucket has at least one saved place. Empty-state message
+            below handles the zero case. */}
         {!loading && !hasError && items.length > 0 && (
-          <DatePromptCard itemCount={items.length} />
+          <>
+            <MatchingTemplateCard />
+            <DatePromptCard itemCount={items.length} />
+          </>
         )}
 
         {/* Template matching placeholder — filled in a later task */}
