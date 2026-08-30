@@ -8,6 +8,7 @@ import InstallPrompt from '@/components/pwa/InstallPrompt'
 import { WelcomeModal } from '@/features/onboarding'
 import { getSupabase } from '@/lib/supabase'
 import { claimAnonBucket } from '@/lib/claimBucket'
+import { initAnalytics, identifyUser, resetAnalytics } from '@/lib/analytics'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -20,17 +21,22 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     localStorage.setItem('tara-visit-count', String(visits + 1))
   }, [])
 
-  // Merge anonymous bucket items into the user's account whenever they
-  // sign in from any surface (login, register, magic link). Idempotent
-  // — subsequent SIGNED_IN events after the anon_id has been cleared
-  // are no-ops.
+  // Analytics init + auth-boundary bookkeeping. One subscription drives
+  // both claimAnonBucket (merge anon rows) and identify (fold the anon
+  // distinct_id into the user in PostHog). SIGNED_OUT clears PostHog so
+  // the next anonymous session gets a fresh identity.
   useEffect(() => {
+    initAnalytics()
+
     const { data: { subscription } } = getSupabase().auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
           claimAnonBucket(session.user.id).catch((err) => {
             console.error('claimAnonBucket failed:', err)
           })
+          identifyUser(session.user.id, session.user.email ?? undefined)
+        } else if (event === 'SIGNED_OUT') {
+          resetAnalytics()
         }
       }
     )

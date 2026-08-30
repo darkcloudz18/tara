@@ -9,6 +9,7 @@ import { useUser } from '@/contexts/UserContext'
 import { getBucketList, removeFromBucketList, BucketListItem } from '@/features/planner/services/bucketListService'
 import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/contexts/ToastContext'
+import { capture } from '@/lib/analytics'
 
 export default function BucketClient() {
   const { user } = useUser()
@@ -28,6 +29,7 @@ export default function BucketClient() {
     try {
       const data = await getBucketList()
       setItems(data)
+      capture('date_prompt_shown', { itemCount: data.length })
     } catch (err) {
       console.error('Failed to load bucket list:', err)
       setHasError(true)

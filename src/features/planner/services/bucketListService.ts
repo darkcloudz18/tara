@@ -1,5 +1,6 @@
 import { supabase, getUserSafe } from '@/lib/supabase'
 import { getAnonId } from '@/lib/anonId'
+import { capture } from '@/lib/analytics'
 import { DiscoverPlace } from './placeService'
 
 export interface BucketListItem {
@@ -75,6 +76,12 @@ export async function addToBucketList(
       console.error('Error adding to bucket list:', error)
       throw error
     }
+    capture('place_saved', {
+      placeId: place.source === 'tara' ? place.sourceId : place.id,
+      category: place.category,
+      source: place.source,
+      isAnon: false,
+    })
     return data
   }
 
@@ -90,6 +97,12 @@ export async function addToBucketList(
     console.error('Error adding to bucket list (anon):', error)
     throw error
   }
+  capture('place_saved', {
+    placeId: place.source === 'tara' ? place.sourceId : place.id,
+    category: place.category,
+    source: place.source,
+    isAnon: true,
+  })
   return data
 }
 
@@ -103,6 +116,7 @@ export async function removeFromBucketList(itemId: string): Promise<void> {
     console.error('Error removing from bucket list:', error)
     throw error
   }
+  capture('place_removed', { itemId })
 }
 
 export async function markAsVisited(itemId: string, visited: boolean): Promise<void> {
