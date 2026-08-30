@@ -16,6 +16,16 @@ export function initAnalytics(): void {
     bootstrap: { distinctID: getAnonId() },
     capture_pageview: true,
     capture_pageleave: true,
+    // advanced_disable_decide: skips the remote /decide fetch that
+    // was hanging in this project, leaving __loaded undefined and
+    // silently swallowing every capture() call. We don't use PostHog
+    // feature flags or A/B tests, so /decide contributes nothing.
+    advanced_disable_decide: true,
+    // Assign window.posthog once the SDK actually finishes async
+    // init. Makes debugging in the browser console reliable.
+    loaded: (ph) => {
+      ;(window as any).posthog = ph
+    },
   })
   initialized = true
 }
