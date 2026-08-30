@@ -19,6 +19,7 @@ import { TripComments, LikeButton } from '@/features/social'
 import { TripMap } from '@/components/maps'
 import { WeatherWidget } from '@/components/weather'
 import TripActions from './TripActions'
+import { AppShell } from '@/components/layout'
 
 interface PageProps {
   params: { id: string }
@@ -106,6 +107,7 @@ export default async function PublicTripPage({ params }: PageProps) {
   }))
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Hero Header */}
       <div className="relative bg-gradient-to-br from-teal-500 via-teal-600 to-blue-600 text-white">
@@ -325,6 +327,7 @@ export default async function PublicTripPage({ params }: PageProps) {
         </footer>
       </div>
     </div>
+    </AppShell>
   )
 }
 

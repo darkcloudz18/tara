@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Save, Share2, Download, Pencil, MapPin, Check, X } from 'lucide-react'
-import { Sidebar, MobileNav } from '@/components/layout'
+import { AppShell } from '@/components/layout'
 import { supabase } from '@/lib/supabase'
 import { useUser } from '@/contexts/UserContext'
 import TripWizard, { TripWizardData } from '@/features/planner/components/TripWizard'
@@ -295,12 +295,8 @@ function NewItineraryContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Main Content */}
-      <div className="lg:ml-[260px] pb-20 lg:pb-8">
+    <AppShell>
+      <div className="min-h-screen bg-gray-50 dark:bg-black">
         {/* Header */}
         <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
           <div className="px-4 md:px-8 py-4">
@@ -502,9 +498,6 @@ function NewItineraryContent() {
           )}
         </main>
       </div>
-
-      {/* Mobile Navigation */}
-      <MobileNav />
-    </div>
+    </AppShell>
   )
 }

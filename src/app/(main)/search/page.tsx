@@ -8,6 +8,7 @@ import SearchFiltersComponent from '@/features/search/components/SearchFilters'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import AddToTripModal from '@/features/planner/components/AddToTripModal'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
+import { AppShell } from '@/components/layout'
 
 const POPULAR_SEARCHES = [
   'Boracay',
@@ -117,6 +118,7 @@ function SearchPageContent() {
   }
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -322,6 +324,7 @@ function SearchPageContent() {
         onSuccess={() => setShowAddModal(false)}
       />
     </div>
+    </AppShell>
   )
 }
 

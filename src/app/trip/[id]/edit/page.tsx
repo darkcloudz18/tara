@@ -10,6 +10,7 @@ import { dayService } from '@/features/planner/services/dayService'
 import { activityService } from '@/features/planner/services/activityService'
 import DayCard from '@/features/planner/components/DayCard'
 import BucketSuggestions from '@/features/planner/components/BucketSuggestions'
+import { AppShell } from '@/components/layout'
 import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
 import ItineraryMap from '@/features/planner/components/ItineraryMap'
 import ItineraryForm, { ItineraryFormData } from '@/features/planner/components/ItineraryForm'
@@ -149,6 +150,7 @@ export default function ItineraryDetailPage() {
 
   if (loading) {
     return (
+      <AppShell>
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
@@ -165,11 +167,13 @@ export default function ItineraryDetailPage() {
           </div>
         </div>
       </div>
+      </AppShell>
     )
   }
 
   if (error || !itinerary) {
     return (
+      <AppShell>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -180,10 +184,12 @@ export default function ItineraryDetailPage() {
           </Link>
         </div>
       </div>
+      </AppShell>
     )
   }
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Link */}
@@ -211,9 +217,9 @@ export default function ItineraryDetailPage() {
           </div>
         ) : (
           <div className="mb-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{itinerary.title}</h1>
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 break-words">{itinerary.title}</h1>
                 <div className="flex items-center gap-2 text-gray-600 mt-1">
                   <span>
                     {format(new Date(itinerary.start_date), 'MMM d')} -{' '}
@@ -236,7 +242,7 @@ export default function ItineraryDetailPage() {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <ShareTripButton
                   itineraryId={itinerary.id}
                   isPublic={itinerary.is_public}
@@ -403,5 +409,6 @@ export default function ItineraryDetailPage() {
         }
       />
     </div>
+    </AppShell>
   )
 }

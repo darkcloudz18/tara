@@ -10,6 +10,7 @@ import { useItineraries } from '@/features/planner/hooks/useItineraries'
 import { dayService } from '@/features/planner/services/dayService'
 import { activityService } from '@/features/planner/services/activityService'
 import { useToast } from '@/contexts/ToastContext'
+import { AppShell } from '@/components/layout'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 
 export default function AiPlannerPage() {
@@ -92,6 +93,7 @@ export default function AiPlannerPage() {
   }
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -188,6 +190,7 @@ export default function AiPlannerPage() {
         </div>
       )}
     </div>
+    </AppShell>
   )
 }
 

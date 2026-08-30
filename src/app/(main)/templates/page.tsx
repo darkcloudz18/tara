@@ -17,6 +17,7 @@ import TemplatePreviewModal from '@/features/planner/components/TemplatePreviewM
 import { useItineraries } from '@/features/planner/hooks/useItineraries'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { useToast } from '@/contexts/ToastContext'
+import { AppShell } from '@/components/layout'
 
 const DESTINATIONS = ['All', ...new Set(TRIP_TEMPLATES.map((t) => t.destination))]
 const DURATIONS = [
@@ -169,6 +170,7 @@ export default function TemplatesPage() {
   ].filter(Boolean).length
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -311,5 +313,6 @@ export default function TemplatesPage() {
         onUseTemplate={handleUseTemplate}
       />
     </div>
+    </AppShell>
   )
 }
