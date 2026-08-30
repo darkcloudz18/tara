@@ -2,13 +2,24 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle, Mail } from 'lucide-react'
 
+// Next requires useSearchParams() consumers to sit inside a Suspense
+// boundary; without one, `next build` bails out of static generation
+// with a CSR-bailout error even when the page is force-dynamic.
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
+  )
+}
+
+function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   // Only allow same-origin, path-only redirects — never absolute URLs, so a
