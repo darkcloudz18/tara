@@ -405,7 +405,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | — | Un-save from PlaceCard (needs bucket-item-id caching) |
 | — | Sidebar duplicate itineraries fetch |
 | — | Add `bucket_list_id` fk on `itinerary_activities` — Task 10 currently matches added-state on `(title, location)`; a real fk makes it robust to renames and clarifies attribution for future features |
-| — | Unify template entry points — `/templates` modal creates the lakad immediately and lands on `/edit`, while `/bucket`'s template card uses `?template=<slug>` and lands in the wizard. Consolidate on `?template=` so both flows go through date picking first (avoids stray no-date lakads) |
+| ~~—~~ | ~~Unify template entry points~~ — **done, both `/templates` and `/bucket` now route through `/trip/new?template=<slug>`** |
 | — | Sidebar auth-state flash — sidebar renders signed-out on first paint, then swaps to signed-in state after UserContext hydrates. Needs an SSR-primed auth hint (e.g., localStorage → cookie, or Supabase session cookie) so first paint matches final state |
 | — | Sidebar polish — Bohol template card image 404, ACCOUNT label gets clipped mid-text at ~719px viewport height |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |

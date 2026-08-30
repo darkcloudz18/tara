@@ -14,9 +14,7 @@ import {
 } from 'lucide-react'
 import { TRIP_TEMPLATES, TripTemplate } from '@/features/planner/data/tripTemplates'
 import TemplatePreviewModal from '@/features/planner/components/TemplatePreviewModal'
-import { useItineraries } from '@/features/planner/hooks/useItineraries'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
-import { useToast } from '@/contexts/ToastContext'
 import { AppShell } from '@/components/layout'
 
 const DESTINATIONS = ['All', ...new Set(TRIP_TEMPLATES.map((t) => t.destination))]
@@ -112,8 +110,6 @@ function TemplateCard({
 export default function TemplatesPage() {
   const router = useRouter()
   const t = useLocalizedTrip()
-  const { success } = useToast()
-  const { createItinerary } = useItineraries()
 
   const [selectedDestination, setSelectedDestination] = useState('All')
   const [selectedDuration, setSelectedDuration] = useState(DURATIONS[0])
@@ -142,25 +138,13 @@ export default function TemplatesPage() {
     })
   }, [selectedDestination, selectedDuration, selectedBudget])
 
-  const handleUseTemplate = async (template: TripTemplate) => {
-    // Create a new trip from the template
-    const startDate = new Date()
-    const endDate = new Date()
-    endDate.setDate(startDate.getDate() + template.duration - 1)
-
-    const itinerary = await createItinerary({
-      title: template.title,
-      description: template.description,
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
-      destinations: [template.destination],
-      total_budget: template.estimatedBudget,
-    })
-
-    if (itinerary) {
-      success(`${t.trip} created from template!`)
-      router.push(`/trip/${itinerary.id}/edit`)
-    }
+  // Both template entry points (this page and /bucket's MatchingTemplateCard)
+  // now route through the wizard so the user picks dates before we create
+  // the row. The old direct-create path skipped date picking and defaulted
+  // start_date to "today", which produced no-date-real lakads and diverged
+  // from the /bucket flow.
+  const handleUseTemplate = (template: TripTemplate) => {
+    router.push(`/trip/new?template=${template.slug}`)
   }
 
   const activeFiltersCount = [
