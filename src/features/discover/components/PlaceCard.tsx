@@ -1,36 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MapPin, Star, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass, Plus, Check, Loader2 } from 'lucide-react'
+import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import { addToBucketList, removeFromBucketList, isInBucketList } from '@/features/planner/services/bucketListService'
-import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { useToast } from '@/contexts/ToastContext'
-import { FeatureTooltip } from '@/features/onboarding'
 import { seededInt } from '@/lib/seed'
+import BucketPin from '@/components/icons/BucketPin'
 
 interface PlaceCardProps {
   place: DiscoverPlace
-  onAddToTrip: () => void
-  activeTripTitle?: string
-  isAddingToTrip?: boolean
-  wasJustAdded?: boolean
 }
 
-export default function PlaceCard({
-  place,
-  onAddToTrip,
-  activeTripTitle,
-  isAddingToTrip = false,
-  wasJustAdded = false,
-}: PlaceCardProps) {
+export default function PlaceCard({ place }: PlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(() => seededInt(place.id, 50, 550))
-  const [showAddedFeedback, setShowAddedFeedback] = useState(false)
   const [saved, setSaved] = useState(false)
   const [savingBucket, setSavingBucket] = useState(false)
-  const t = useLocalizedTrip()
   const toast = useToast()
 
   useEffect(() => {
@@ -54,7 +41,7 @@ export default function PlaceCard({
     setSaved(nextSaved) // optimistic
     try {
       if (nextSaved) {
-        const item = await addToBucketList(place)
+        await addToBucketList(place)
         // First anonymous save: one-time toast nudging signup.
         const shown = localStorage.getItem('tara-first-save-toast-shown')
         if (!shown) {
@@ -62,10 +49,9 @@ export default function PlaceCard({
           localStorage.setItem('tara-first-save-toast-shown', '1')
         }
       } else {
-        // We don't have the bucket item id here — fetch from state? MVP:
-        // re-query. isInBucketList returns bool, not id, so we'd need a
-        // helper. For now, disable un-save until the /bucket view where
-        // ids are known. Revert optimistic toggle.
+        // Un-save requires the bucket item id, which this component doesn't
+        // hold. /bucket owns the remove flow. Revert the optimistic toggle
+        // and point users there.
         setSaved(true)
         toast.info('Remove from bucket', 'Open your bucket list to remove saved places.')
       }
@@ -78,21 +64,7 @@ export default function PlaceCard({
     }
   }
 
-  // Show feedback when wasJustAdded changes to true
-  useEffect(() => {
-    if (wasJustAdded) {
-      setShowAddedFeedback(true)
-      const timer = setTimeout(() => setShowAddedFeedback(false), 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [wasJustAdded])
-
   const mainPhoto = place.photos?.[0] || 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800'
-
-  const handleAddToTrip = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onAddToTrip()
-  }
 
   const handleLike = () => {
     setLiked(!liked)
@@ -167,48 +139,17 @@ export default function PlaceCard({
           </div>
         )}
 
-        {/* Add to Trip Button - Prominent on image */}
-        <div className="absolute top-3 right-3">
-          <FeatureTooltip
-            id="add-to-trip-button"
-            title="Build Your Trip"
-            description="Tap here to add this place to your trip itinerary"
-            position="left"
-          >
-            <button
-              onClick={handleAddToTrip}
-              disabled={isAddingToTrip}
-              className={`flex items-center gap-1.5 px-3 py-2 text-white text-sm font-semibold rounded-lg shadow-lg transition-all ${
-                showAddedFeedback
-                  ? 'bg-green-500'
-                  : isAddingToTrip
-                  ? 'bg-teal-400 cursor-wait'
-                  : 'bg-teal-500 hover:bg-teal-600'
-              }`}
-            >
-              {showAddedFeedback ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Added!
-                </>
-              ) : isAddingToTrip ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  {activeTripTitle ? (
-                    <span className="max-w-[100px] truncate">+ {activeTripTitle}</span>
-                  ) : (
-                    t.addToTrip
-                  )}
-                </>
-              )}
-            </button>
-          </FeatureTooltip>
-        </div>
+        {/* Save-to-bucket overlay — primary action, matches the pattern
+            travellers already know from Instagram / Airbnb saves. */}
+        <button
+          onClick={handleSaveToBucket}
+          disabled={savingBucket}
+          aria-label={saved ? 'Saved to bucket list' : 'Save to bucket list'}
+          aria-pressed={saved}
+          className="absolute top-3 right-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/55 transition-colors disabled:opacity-50 text-white"
+        >
+          <BucketPin filled={saved} className="w-6 h-6" />
+        </button>
 
         {/* Price Tag */}
         {place.estimatedCost !== undefined && (
@@ -220,54 +161,20 @@ export default function PlaceCard({
 
       {/* Action Buttons */}
       <div className="px-4 pt-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Like */}
-            <button onClick={handleLike} className="hover:opacity-60 transition-opacity">
-              <Heart
-                className={`w-7 h-7 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-900 dark:text-white'}`}
-              />
-            </button>
-            {/* Comment */}
-            <button className="hover:opacity-60 transition-opacity">
-              <MessageCircle className="w-7 h-7 text-gray-900 dark:text-white" />
-            </button>
-            {/* Share */}
-            <button className="hover:opacity-60 transition-opacity">
-              <Send className="w-7 h-7 text-gray-900 dark:text-white" />
-            </button>
-            {/* Save to bucket */}
-            <button
-              onClick={handleSaveToBucket}
-              disabled={savingBucket}
-              aria-label={saved ? 'Saved to bucket list' : 'Save to bucket list'}
-              aria-pressed={saved}
-              className="hover:opacity-60 transition-opacity disabled:opacity-50"
-            >
-              <Bookmark
-                className={`w-7 h-7 ${saved ? 'fill-gray-900 text-gray-900 dark:fill-white dark:text-white' : 'text-gray-900 dark:text-white'}`}
-              />
-            </button>
-          </div>
-
-          {/* Secondary Add to Trip (icon only) */}
-          <button
-            onClick={handleAddToTrip}
-            disabled={isAddingToTrip}
-            className={`p-2 rounded-full transition-colors ${
-              showAddedFeedback
-                ? 'bg-green-100 dark:bg-green-900/30'
-                : 'hover:bg-teal-50 dark:hover:bg-teal-900/30'
-            }`}
-            title={activeTripTitle ? `Add to ${activeTripTitle}` : t.addToTrip}
-          >
-            {showAddedFeedback ? (
-              <Check className="w-6 h-6 text-green-600 dark:text-green-400" />
-            ) : isAddingToTrip ? (
-              <Loader2 className="w-6 h-6 text-teal-600 dark:text-teal-400 animate-spin" />
-            ) : (
-              <Plus className="w-6 h-6 text-teal-600 dark:text-teal-400" />
-            )}
+        <div className="flex items-center gap-4">
+          {/* Like */}
+          <button onClick={handleLike} className="hover:opacity-60 transition-opacity">
+            <Heart
+              className={`w-7 h-7 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-900 dark:text-white'}`}
+            />
+          </button>
+          {/* Comment */}
+          <button className="hover:opacity-60 transition-opacity">
+            <MessageCircle className="w-7 h-7 text-gray-900 dark:text-white" />
+          </button>
+          {/* Share */}
+          <button className="hover:opacity-60 transition-opacity">
+            <Send className="w-7 h-7 text-gray-900 dark:text-white" />
           </button>
         </div>
 

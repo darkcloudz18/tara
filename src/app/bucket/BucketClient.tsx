@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { CalendarDays, MapPin, Bookmark, AlertCircle, Trash2 } from 'lucide-react'
+import { MapPin, AlertCircle, Trash2 } from 'lucide-react'
+import BucketPin from '@/components/icons/BucketPin'
 import { AppShell } from '@/components/layout'
 import { useUser } from '@/contexts/UserContext'
 import { getBucketList, removeFromBucketList, BucketListItem } from '@/features/planner/services/bucketListService'
 import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/contexts/ToastContext'
 import { capture } from '@/lib/analytics'
+import DatePromptCard from '@/features/planner/components/DatePromptCard'
 
 export default function BucketClient() {
   const { user } = useUser()
@@ -64,37 +66,11 @@ export default function BucketClient() {
           </p>
         </div>
 
-        {/* Date prompt — disabled placeholder, real picker lands in Task 07 */}
-        <section
-          aria-label="Date prompt"
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-5 mb-6"
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center flex-shrink-0">
-              <CalendarDays className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="font-semibold text-gray-900 dark:text-white">
-                  Planning this trip? When are you going?
-                </h2>
-                <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                  Coming soon
-                </span>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Pick dates to turn your bucket list into a day-by-day lakad.
-              </p>
-              <button
-                type="button"
-                disabled
-                className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm font-semibold cursor-not-allowed"
-              >
-                Pick dates
-              </button>
-            </div>
-          </div>
-        </section>
+        {/* Date prompt — only meaningful once there's at least one saved
+            place. Empty-state message below handles the zero case. */}
+        {!loading && !hasError && items.length > 0 && (
+          <DatePromptCard itemCount={items.length} />
+        )}
 
         {/* Template matching placeholder — filled in a later task */}
         {/* TODO: template matching — recommend templates that overlap with saved places */}
@@ -127,7 +103,7 @@ export default function BucketClient() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4">
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-900 rounded-2xl flex items-center justify-center mb-4">
-              <Bookmark className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+              <BucketPin className="w-8 h-8 text-gray-400 dark:text-gray-500" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               No places saved yet

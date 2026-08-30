@@ -4,12 +4,20 @@ export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle, Mail } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // Only allow same-origin, path-only redirects — never absolute URLs, so a
+  // ?redirect= param can't be used to send a signed-in user off-site.
+  const redirectParam = searchParams.get('redirect')
+  const redirectTo =
+    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/dashboard'
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -143,8 +151,10 @@ export default function RegisterPage() {
             .single()
         }
 
-        // Redirect to dashboard
-        router.push('/dashboard')
+        // Redirect. Honors ?redirect= for flows that bounce through
+        // sign-up (e.g. the /bucket → dated-lakad handoff). Providers'
+        // pending-dates resume may push the user onward from there.
+        router.push(redirectTo)
       }
     } catch (err: any) {
       setError(err.message || 'Failed to create account')

@@ -3,20 +3,26 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Compass, Map, PlusCircle, User } from 'lucide-react'
+import BucketPin from '@/components/icons/BucketPin'
 import { useUser } from '@/contexts/UserContext'
 
 type NavItem = {
-  icon: typeof Compass
+  icon: React.ComponentType<{ className?: string }>
   label: string
   realHref: string
 }
 
 const navItems: NavItem[] = [
   { icon: Compass, label: 'Discover', realHref: '/' },
+  { icon: BucketPin, label: 'Bucket', realHref: '/bucket' },
   { icon: PlusCircle, label: 'Create', realHref: '/trip/new' },
   { icon: Map, label: 'My lakad', realHref: '/dashboard' },
   { icon: User, label: 'Profile', realHref: '/profile' },
 ]
+
+// Routes that work without auth — don't redirect anonymous visitors
+// through /login for these.
+const ANON_ALLOWED = new Set(['/', '/bucket'])
 
 export default function MobileNav() {
   const { user } = useUser()
@@ -28,7 +34,7 @@ export default function MobileNav() {
   }
 
   const hrefFor = (realHref: string) => {
-    if (realHref === '/' || user) return realHref
+    if (ANON_ALLOWED.has(realHref) || user) return realHref
     return `/login?redirect=${encodeURIComponent(realHref)}`
   }
 

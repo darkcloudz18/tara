@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ToastProvider } from '@/contexts/ToastContext'
 import { UserProvider } from '@/contexts/UserContext'
@@ -8,9 +9,16 @@ import InstallPrompt from '@/components/pwa/InstallPrompt'
 import { WelcomeModal } from '@/features/onboarding'
 import { getSupabase } from '@/lib/supabase'
 import { claimAnonBucket } from '@/lib/claimBucket'
-import { initAnalytics, identifyUser, resetAnalytics } from '@/lib/analytics'
+import { initAnalytics, identifyUser, resetAnalytics, capture } from '@/lib/analytics'
+import {
+  createDatedLakadFromBucket,
+  readPendingDates,
+  clearPendingDates,
+} from '@/features/planner/services/datedLakadService'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+
   useEffect(() => {
     // Increment once per session (tab lifetime). SessionStorage guard
     // survives React StrictMode's dev-time effect double-invocation,
@@ -31,17 +39,45 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = getSupabase().auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
-          claimAnonBucket(session.user.id).catch((err) => {
-            console.error('claimAnonBucket failed:', err)
-          })
           identifyUser(session.user.id, session.user.email ?? undefined)
+          // Sequenced: claim anon bucket rows first so the freshly-signed-in
+          // user actually owns those items, THEN resume the pending dated
+          // lakad flow if the user left one queued before signup. Running
+          // in parallel would race — the lakad creation would read an
+          // empty bucket if claim hasn't landed yet.
+          void (async () => {
+            try {
+              await claimAnonBucket(session.user.id)
+            } catch (err) {
+              console.error('claimAnonBucket failed:', err)
+            }
+            const pending = readPendingDates()
+            if (!pending) return
+            try {
+              const result = await createDatedLakadFromBucket(
+                pending.startDate,
+                pending.endDate
+              )
+              clearPendingDates()
+              capture('bucket_dated', {
+                itemCount: result.itemCount,
+                daysUntilTrip: result.daysUntilTrip,
+                durationDays: result.durationDays,
+                wasAnonymous: true,
+              })
+              router.push(`/trip/${result.itineraryId}/edit`)
+            } catch (err) {
+              console.error('pending dated lakad resume failed:', err)
+              clearPendingDates()
+            }
+          })()
         } else if (event === 'SIGNED_OUT') {
           resetAnalytics()
         }
       }
     )
     return () => subscription.unsubscribe()
-  }, [])
+  }, [router])
 
   return (
     <ThemeProvider>

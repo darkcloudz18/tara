@@ -15,6 +15,7 @@ import {
   MapPin,
   Calendar,
 } from 'lucide-react'
+import BucketPin from '@/components/icons/BucketPin'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useUser } from '@/contexts/UserContext'
@@ -101,6 +102,9 @@ export default function Sidebar() {
 
   const mainNavItems: NavItem[] = [
     { icon: Compass, label: 'Discover', href: '/' },
+    // Bucket list works logged-out — no requiresAuth. Placed in main nav
+    // because the funnel is Discover → Bucket → dated lakad.
+    { icon: BucketPin, label: 'Bucket list', href: '/bucket' },
   ]
 
   const tripNavItems: NavItem[] = [
