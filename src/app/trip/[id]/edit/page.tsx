@@ -9,6 +9,7 @@ import { useBudgetCalculations } from '@/features/planner/hooks/useBudgetCalcula
 import { dayService } from '@/features/planner/services/dayService'
 import { activityService } from '@/features/planner/services/activityService'
 import DayCard from '@/features/planner/components/DayCard'
+import BucketSuggestions from '@/features/planner/components/BucketSuggestions'
 import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
 import ItineraryMap from '@/features/planner/components/ItineraryMap'
 import ItineraryForm, { ItineraryFormData } from '@/features/planner/components/ItineraryForm'
@@ -304,6 +305,28 @@ export default function ItineraryDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Days */}
             <div className="lg:col-span-2 space-y-4">
+              {days.length > 0 && (
+                <BucketSuggestions
+                  lakadId={itineraryId}
+                  destinations={itinerary.destinations ?? []}
+                  days={days.map((d) => ({
+                    id: d.id,
+                    day_number: d.day_number,
+                    date: d.date,
+                  }))}
+                  activities={activities}
+                  onAddToDay={async (dayId, activity) => {
+                    await activityService.create({
+                      day_id: dayId,
+                      title: activity.title,
+                      location: activity.location,
+                      place_type: activity.place_type,
+                      estimated_cost: activity.estimated_cost,
+                    })
+                    await refetch()
+                  }}
+                />
+              )}
               {days.length === 0 ? (
                 <NoDaysState onAddDay={() => {}} />
               ) : (
