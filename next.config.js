@@ -100,8 +100,20 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost'],
-    // Add your image hosting domains here later (e.g., cloudinary, s3)
+    remotePatterns: [
+      // Unsplash — seed photos on places
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      // Supabase Storage — user-uploaded photos on any project
+      { protocol: 'https', hostname: '**.supabase.co' },
+      // Google user avatars (OAuth profile pics)
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      // Wikimedia Commons — seed photos on places via fetch-places-wikidata.
+      // Special:FilePath serves over http first then redirects to
+      // upload.wikimedia.org, so we allow both.
+      { protocol: 'https', hostname: 'commons.wikimedia.org' },
+      { protocol: 'http', hostname: 'commons.wikimedia.org' },
+      { protocol: 'https', hostname: 'upload.wikimedia.org' },
+    ],
   },
 }
 

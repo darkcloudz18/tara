@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header'
 import { HeroSection } from '@/features/home/components'
 import PlaceCard from '@/features/discover/components/PlaceCard'
 import CuratedVideoCard from '@/features/discover/components/CuratedVideoCard'
+import PersonalizedStrip from '@/features/discover/components/PersonalizedStrip'
 import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
 import { NoResults } from '@/components/illustrations'
 import { supabase } from '@/lib/supabase'
@@ -140,6 +141,8 @@ export default function HomeClient({ initialItems, initialError }: HomeClientPro
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
         />
+
+        <PersonalizedStrip />
 
         <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
