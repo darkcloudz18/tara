@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
-import { addToBucketList, removeFromBucketList, isInBucketList } from '@/features/planner/services/bucketListService'
+import { addToBucketList, removeFromBucketByPlace, isInBucketList } from '@/features/planner/services/bucketListService'
 import { useToast } from '@/contexts/ToastContext'
 import { seededInt } from '@/lib/seed'
 import BucketPin from '@/components/icons/BucketPin'
@@ -39,6 +39,7 @@ export default function PlaceCard({ place }: PlaceCardProps) {
     setSavingBucket(true)
     const nextSaved = !saved
     setSaved(nextSaved) // optimistic
+    const sourceId = place.source === 'tara' ? place.sourceId : place.id
     try {
       if (nextSaved) {
         await addToBucketList(place)
@@ -49,11 +50,7 @@ export default function PlaceCard({ place }: PlaceCardProps) {
           localStorage.setItem('tara-first-save-toast-shown', '1')
         }
       } else {
-        // Un-save requires the bucket item id, which this component doesn't
-        // hold. /bucket owns the remove flow. Revert the optimistic toggle
-        // and point users there.
-        setSaved(true)
-        toast.info('Remove from bucket', 'Open your bucket list to remove saved places.')
+        await removeFromBucketByPlace(sourceId, place.source)
       }
     } catch (err) {
       console.error('Failed to save/unsave:', err)

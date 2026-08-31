@@ -151,6 +151,39 @@ export async function getBucketListByLocation(location: string): Promise<BucketL
   return data || []
 }
 
+// Un-save by place identity rather than by bucket-item id. PlaceCard /
+// SearchResultRow only know the place they're rendering — they don't
+// hold the bucket_list.id. This resolves it via an RLS-scoped select
+// and deletes in one round-trip, so callers can un-save inline instead
+// of routing users to /bucket.
+export async function removeFromBucketByPlace(
+  placeId: string,
+  source: string
+): Promise<void> {
+  const user = await getUserSafe()
+
+  let query = supabase.from('bucket_list').select('id')
+  if (user) {
+    query = query.eq('user_id', user.id)
+  } else {
+    query = query.is('user_id', null)
+  }
+  if (source === 'tara') {
+    query = query.eq('place_id', placeId)
+  } else {
+    query = query.eq('external_place_id', placeId)
+  }
+
+  const { data, error } = await query.maybeSingle()
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error resolving bucket item for un-save:', error)
+    throw error
+  }
+  if (!data) return // already gone
+
+  await removeFromBucketList(data.id)
+}
+
 export async function isInBucketList(placeId: string, source: string): Promise<boolean> {
   const user = await getUserSafe()
 

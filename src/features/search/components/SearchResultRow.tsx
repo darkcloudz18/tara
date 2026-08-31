@@ -5,6 +5,7 @@ import { MapPin, Star } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import {
   addToBucketList,
+  removeFromBucketByPlace,
   isInBucketList,
 } from '@/features/planner/services/bucketListService'
 import { useToast } from '@/contexts/ToastContext'
@@ -38,22 +39,24 @@ export default function SearchResultRow({ place, onOpen }: SearchResultRowProps)
   async function handleSave(e: React.MouseEvent) {
     e.stopPropagation()
     if (saving) return
-    if (saved) {
-      toast.info('Remove from bucket', 'Open your bucket list to remove saved places.')
-      return
-    }
     setSaving(true)
-    setSaved(true)
+    const nextSaved = !saved
+    setSaved(nextSaved) // optimistic
+    const sourceId = place.source === 'tara' ? place.sourceId : place.id
     try {
-      await addToBucketList(place)
-      const shown = localStorage.getItem('tara-first-save-toast-shown')
-      if (!shown) {
-        toast.success('Saved', 'Sign in anytime to keep your list.')
-        localStorage.setItem('tara-first-save-toast-shown', '1')
+      if (nextSaved) {
+        await addToBucketList(place)
+        const shown = localStorage.getItem('tara-first-save-toast-shown')
+        if (!shown) {
+          toast.success('Saved', 'Sign in anytime to keep your list.')
+          localStorage.setItem('tara-first-save-toast-shown', '1')
+        }
+      } else {
+        await removeFromBucketByPlace(sourceId, place.source)
       }
     } catch (err) {
-      console.error('Failed to save from search:', err)
-      setSaved(false)
+      console.error('Failed to save/unsave from search:', err)
+      setSaved(!nextSaved) // revert
       toast.error("Couldn't save", 'Try again in a moment.')
     } finally {
       setSaving(false)
