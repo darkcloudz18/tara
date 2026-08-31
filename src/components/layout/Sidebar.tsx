@@ -52,25 +52,36 @@ export default function Sidebar() {
   // source of truth for the current user's trips. activeTrip is the
   // top of the list (most recent updated_at).
   const { activeTrip, tripFetchDone, sdkConfirmed } = useTrips()
-  const [tripPlaceCount, setTripPlaceCount] = useState(0)
+  // null = not-known-yet (rendered as "…"). Distinct from 0, which is a
+  // real "zero places" answer. Without this split, changing activeTrip
+  // showed the previous trip's count against the new trip's name for
+  // ~500ms while the count query flew — a real wrong-data window in
+  // the sidebar hero.
+  const [tripPlaceCount, setTripPlaceCount] = useState<number | null>(null)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   const userId = user?.id ?? null
 
-  // When activeTrip changes, refresh the place count. Cheap side query
-  // driven off the shared context's data.
+  // When activeTrip changes, refresh the place count. Reset to null
+  // first so the widget shows a loading placeholder rather than the
+  // old trip's number under the new trip's title.
   useEffect(() => {
     if (!activeTrip) {
       setTripPlaceCount(0)
       return
     }
+    setTripPlaceCount(null)
     let cancelled = false
     supabase
       .from('itinerary_days')
       .select('id')
       .eq('itinerary_id', activeTrip.id)
       .then(({ data: days }) => {
-        if (cancelled || !days || days.length === 0) return
+        if (cancelled) return
+        if (!days || days.length === 0) {
+          setTripPlaceCount(0)
+          return
+        }
         supabase
           .from('itinerary_activities')
           .select('id', { count: 'exact' })
@@ -215,7 +226,7 @@ export default function Sidebar() {
             <div className="flex items-center gap-3 text-xs text-teal-100">
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3" />
-                {tripPlaceCount} places
+                {tripPlaceCount === null ? '…' : `${tripPlaceCount} places`}
               </span>
               <span className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
@@ -226,7 +237,7 @@ export default function Sidebar() {
             <div className="mt-2 h-1 bg-teal-400/30 rounded-full overflow-hidden">
               <div
                 className="h-full bg-white/80 rounded-full transition-all"
-                style={{ width: `${Math.min(tripPlaceCount * 10, 100)}%` }}
+                style={{ width: `${Math.min((tripPlaceCount ?? 0) * 10, 100)}%` }}
               />
             </div>
           </Link>
