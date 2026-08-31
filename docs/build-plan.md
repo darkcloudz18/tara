@@ -415,6 +415,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | 12 | Investigate Supabase `getSession()` ~7.7s cold-load latency — upstream cause of remaining sidebar workarounds (retry-on-SIGNED_IN, 164px height reservation). See `docs/tasks/12-getsession-latency.md`. |
 | 13 | Vercel edge caching for public routes — add `revalidate` on `/`, `/templates`, `/trip/[id]`, and `Cache-Control` on `/api/health`. See `docs/tasks/13-edge-caching.md`. |
 | — | `itineraries.updated_at` trigger on child-row mutations — adding/removing/editing activities and days doesn't bump the parent itinerary's `updated_at`, so the sidebar's "most recent trip" hero doesn't reflect real activity. Add a Postgres trigger that touches `itineraries.updated_at` when `itinerary_days` or `itinerary_activities` change |
+| — | Live `activeTrip` reorder on mutation — even with the DB trigger above, the sidebar only picks up the change on next mount. Post-mutation the user is often still looking at the trip they just edited, and the sidebar stays a step behind. Wire the trip/[id]/edit mutation paths to call `useTrips().refetch()` (or optimistically move the mutated trip to `trips[0]` and reorder). refetch() is already exposed for this reason |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
 
 ### Content — starts now, runs in parallel
