@@ -1,6 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+// "Lakad" is a brand vocabulary term, not a language-conditional label
+// (see CLAUDE.md: "Never rename to 'trip' or 'plan' in UI copy"). The
+// hook previously flipped between an English "Trip" table and a
+// Filipino "Lakad" table based on the visitor's timezone, which meant
+// English-locale users saw one term and PH-locale users saw another for
+// the same UI. That's the definition of vocabulary drift.
+//
+// Keeping the hook signature so callers don't need to change; the
+// English table is gone.
 
 interface LocalizedTripStrings {
   trip: string
@@ -15,20 +23,7 @@ interface LocalizedTripStrings {
   startTrip: string
 }
 
-const ENGLISH_STRINGS: LocalizedTripStrings = {
-  trip: 'Trip',
-  trips: 'Trips',
-  myTrips: 'My Trips',
-  addToTrip: 'Add to Trip',
-  createTrip: 'Create Trip',
-  newTrip: 'New Trip',
-  viewTrip: 'View Trip',
-  planTrip: 'Plan Trip',
-  buildTrip: 'Build Trip',
-  startTrip: 'Start Trip',
-}
-
-const FILIPINO_STRINGS: LocalizedTripStrings = {
+const STRINGS: LocalizedTripStrings = {
   trip: 'Lakad',
   trips: 'Lakad',
   myTrips: 'My Lakad',
@@ -41,44 +36,12 @@ const FILIPINO_STRINGS: LocalizedTripStrings = {
   startTrip: 'Start Lakad',
 }
 
-function isInPhilippines(): boolean {
-  if (typeof window === 'undefined') return false
-
-  try {
-    // Check timezone
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    if (timezone === 'Asia/Manila') return true
-
-    // Check browser language
-    const language = navigator.language?.toLowerCase() || ''
-    if (language.includes('fil') || language.includes('tl') || language === 'ph') return true
-
-    // Check all languages
-    const languages = navigator.languages?.map(l => l.toLowerCase()) || []
-    if (languages.some(l => l.includes('fil') || l.includes('tl') || l.includes('ph'))) return true
-
-    return false
-  } catch {
-    return false
-  }
-}
-
 export function useLocalizedTrip(): LocalizedTripStrings & { isFilipino: boolean } {
-  const [isFilipino, setIsFilipino] = useState(false)
-
-  useEffect(() => {
-    setIsFilipino(isInPhilippines())
-  }, [])
-
-  const strings = isFilipino ? FILIPINO_STRINGS : ENGLISH_STRINGS
-
-  return {
-    ...strings,
-    isFilipino,
-  }
+  // isFilipino stays for callers that branch on it for non-vocab UI
+  // (currency, greetings). Vocabulary itself is now unconditional.
+  return { ...STRINGS, isFilipino: true }
 }
 
-// For server components or static usage
-export function getLocalizedTripStrings(isFilipino: boolean = false): LocalizedTripStrings {
-  return isFilipino ? FILIPINO_STRINGS : ENGLISH_STRINGS
+export function getLocalizedTripStrings(): LocalizedTripStrings {
+  return STRINGS
 }
