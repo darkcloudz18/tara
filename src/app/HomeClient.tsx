@@ -10,12 +10,10 @@ import CuratedVideoCard from '@/features/discover/components/CuratedVideoCard'
 import PersonalizedStrip from '@/features/discover/components/PersonalizedStrip'
 import { PlaceCardSkeleton } from '@/components/ui/Skeleton'
 import { NoResults } from '@/components/illustrations'
-import { supabase } from '@/lib/supabase'
 import { useUser } from '@/contexts/UserContext'
+import { useTrips } from '@/contexts/TripsContext'
 import { fetchTaraPlaces, DiscoverPlace } from '@/features/planner/services/placeService'
 import { fetchCuratedVideos, FeedVideo } from '@/features/discover/services/videoService'
-import { Itinerary } from '@/types/database'
-import { readCachedTripSummary, writeCachedTripSummary } from '@/lib/tripCache'
 
 export type FeedItem =
   | { type: 'place'; data: DiscoverPlace }
@@ -37,59 +35,15 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 
 export default function HomeClient({ initialItems, initialError }: HomeClientProps) {
   const { user } = useUser()
+  // Single shared trips fetch (see contexts/TripsContext). HomeClient
+  // and Sidebar used to each fire their own — same query, same auth,
+  // same cost, twice per navigation.
+  const { trips: userTrips } = useTrips()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [feedItems, setFeedItems] = useState<FeedItem[]>(initialItems)
   const [loading, setLoading] = useState(false)
   const [hasError, setHasError] = useState(initialError)
   const isFirstFilterRun = useRef(true)
-
-  // Seed userTrips from the last-known summary in localStorage so the
-  // has-trip hero can render on the first client paint instead of
-  // waiting ~7s for Supabase's getSession to resolve. The real fetch
-  // below overwrites this with authoritative data.
-  //
-  // SSR renders `[]` (no localStorage), which matches the anonymous /
-  // no-trips hero variant. Client hydration reads the cache, so if the
-  // visitor is a returning has-trip user their hero appears immediately.
-  // Same cached-vs-server drift trade-off UserContext already accepts.
-  const [userTrips, setUserTrips] = useState<Itinerary[]>(() => {
-    const cached = readCachedTripSummary()
-    return cached ? [cached as Itinerary] : []
-  })
-
-  useEffect(() => {
-    if (!user) {
-      setUserTrips([])
-      writeCachedTripSummary(null)
-      return
-    }
-    supabase
-      .from('itineraries')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(5)
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setUserTrips(data)
-          // Cache only the fields the hero needs to render on next cold
-          // load. Never store anything the server would authorize on.
-          const top = data[0]
-          writeCachedTripSummary({
-            id: top.id,
-            user_id: top.user_id,
-            title: top.title,
-            destinations: top.destinations ?? [],
-            start_date: top.start_date,
-            end_date: top.end_date,
-            updated_at: top.updated_at,
-          })
-        } else {
-          setUserTrips([])
-          writeCachedTripSummary(null)
-        }
-      })
-  }, [user])
 
   useEffect(() => {
     if (isFirstFilterRun.current) {

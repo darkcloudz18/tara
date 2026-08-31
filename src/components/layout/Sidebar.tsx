@@ -20,11 +20,10 @@ import BucketPin from '@/components/icons/BucketPin'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useUser } from '@/contexts/UserContext'
+import { useTrips } from '@/contexts/TripsContext'
 import TaraLogo from '@/components/icons/TaraLogo'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { supabase } from '@/lib/supabase'
-import { Itinerary } from '@/types/database'
-import { readCachedTripSummary, writeCachedTripSummary } from '@/lib/tripCache'
 import { notificationService } from '@/features/notifications/services/notificationService'
 
 interface NavItem {
@@ -49,126 +48,50 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const { resolvedTheme, toggleTheme } = useTheme()
   const t = useLocalizedTrip()
-  // Seed activeTrip from the localStorage summary so BUILDING renders
-  // immediately for returning users. Real fetch overwrites with fresh
-  // data. See src/lib/tripCache.ts for the trade-off.
-  const [activeTrip, setActiveTrip] = useState<Itinerary | null>(() => {
-    const cached = readCachedTripSummary()
-    return cached ? (cached as Itinerary) : null
-  })
-  // Split "resolved" into two independent signals so we never briefly
-  // render the empty-state hero for a user whose trip fetch just hasn't
-  // returned yet. Both must be true before showing "Start your lakad";
-  // "Building lakad" renders as soon as activeTrip is set (data trumps
-  // both flags — no confirmation needed for the affirmative case).
-  const [tripFetchDone, setTripFetchDone] = useState(false)
-  const [sdkConfirmed, setSdkConfirmed] = useState(false)
+  // Shared with HomeClient via TripsContext — single fetch, single
+  // source of truth for the current user's trips. activeTrip is the
+  // top of the list (most recent updated_at).
+  const { activeTrip, tripFetchDone, sdkConfirmed } = useTrips()
   const [tripPlaceCount, setTripPlaceCount] = useState(0)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
-  // Fetch user's most recent trip + notifications.
-  //
-  // Two subtleties keyed to the slow Supabase getSession() path:
-  //
-  // 1. We depend on user?.id, not the full user object. onAuthStateChange
-  //    fires SIGNED_IN with a fresh User reference at ~7s (same id, new
-  //    object identity) after the SDK's initial validation lands. Re-running
-  //    the effect on that fire was flipping tripsResolved false → true and
-  //    causing the hero to blink.
-  //
-  // 2. The first fetch can race the SDK's real auth arriving and come back
-  //    empty for users who genuinely do have trips (RLS sees no JWT yet).
-  //    We only latch tripsResolved when either the fetch returns data OR
-  //    Supabase confirms the session via INITIAL_SESSION / SIGNED_IN. The
-  //    same events also trigger a re-fetch, so a raced-empty gets corrected.
   const userId = user?.id ?? null
+
+  // When activeTrip changes, refresh the place count. Cheap side query
+  // driven off the shared context's data.
   useEffect(() => {
-    if (!userId) {
-      setActiveTrip(null)
+    if (!activeTrip) {
       setTripPlaceCount(0)
-      setUnreadNotifications(0)
-      setTripFetchDone(!authLoading)
-      setSdkConfirmed(!authLoading)
       return
     }
-
     let cancelled = false
-    setTripFetchDone(false)
-    setSdkConfirmed(false)
-
-    // sdkKnown is passed in explicitly (rather than read from
-    // sdkConfirmed state) because the closure captured at effect-run
-    // time would always see false. The retry from onAuthStateChange
-    // passes true.
-    const fetchTrip = (sdkKnown: boolean) => {
-      supabase
-        .from('itineraries')
-        .select('*')
-        .eq('user_id', userId)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .single()
-        .then(({ data }) => {
-          if (cancelled) return
-          setTripFetchDone(true)
-          if (data) {
-            setActiveTrip(data)
-            writeCachedTripSummary({
-              id: data.id,
-              user_id: data.user_id,
-              title: data.title,
-              destinations: data.destinations ?? [],
-              start_date: data.start_date,
-              end_date: data.end_date,
-              updated_at: data.updated_at,
-            })
-          } else if (sdkKnown) {
-            // SDK settled + fetch empty = user really has no trip. Clear
-            // both the state (in case the cached-summary initializer
-            // populated it) and the cache.
-            setActiveTrip(null)
-            writeCachedTripSummary(null)
-          }
-          if (data) {
-            supabase
-              .from('itinerary_days')
-              .select('id')
-              .eq('itinerary_id', data.id)
-              .then(({ data: days }) => {
-                if (cancelled || !days || days.length === 0) return
-                supabase
-                  .from('itinerary_activities')
-                  .select('id', { count: 'exact' })
-                  .in('day_id', days.map((d) => d.id))
-                  .then(({ count }) => {
-                    if (!cancelled) setTripPlaceCount(count || 0)
-                  })
-              })
-          }
-        })
-    }
-
-    fetchTrip(false)
-    notificationService.getUnreadCount(userId).then(setUnreadNotifications)
-
-    // SDK confirmation + retry. We only flip sdkConfirmed once we've
-    // seen an INITIAL_SESSION or SIGNED_IN — that's the earliest point
-    // at which an empty fetch result is trustworthy. Also re-fires
-    // fetchTrip so a raced-empty first attempt gets corrected.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-          setSdkConfirmed(true)
-          if (session?.user.id === userId) fetchTrip(true)
-        }
-      }
-    )
-
+    supabase
+      .from('itinerary_days')
+      .select('id')
+      .eq('itinerary_id', activeTrip.id)
+      .then(({ data: days }) => {
+        if (cancelled || !days || days.length === 0) return
+        supabase
+          .from('itinerary_activities')
+          .select('id', { count: 'exact' })
+          .in('day_id', days.map((d) => d.id))
+          .then(({ count }) => {
+            if (!cancelled) setTripPlaceCount(count || 0)
+          })
+      })
     return () => {
       cancelled = true
-      subscription.unsubscribe()
     }
-  }, [userId, authLoading])
+  }, [activeTrip?.id])
+
+  // Notifications count — separate concern from trips.
+  useEffect(() => {
+    if (!userId) {
+      setUnreadNotifications(0)
+      return
+    }
+    notificationService.getUnreadCount(userId).then(setUnreadNotifications)
+  }, [userId])
 
   // Subscribe to real-time notifications. Keyed on userId (not user
   // object) so the fresh-reference SIGNED_IN fire doesn't tear down and

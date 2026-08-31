@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ToastProvider } from '@/contexts/ToastContext'
 import { UserProvider } from '@/contexts/UserContext'
+import { TripsProvider } from '@/contexts/TripsContext'
 import InstallPrompt from '@/components/pwa/InstallPrompt'
 import { WelcomeModal } from '@/features/onboarding'
 import { getSupabase } from '@/lib/supabase'
@@ -88,9 +89,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider>
       <ToastProvider>
         <UserProvider>
-          {children}
-          <WelcomeModal />
-          <InstallPrompt />
+          <TripsProvider>
+            {children}
+            <WelcomeModal />
+            <InstallPrompt />
+          </TripsProvider>
         </UserProvider>
       </ToastProvider>
     </ThemeProvider>

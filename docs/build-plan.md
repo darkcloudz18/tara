@@ -404,7 +404,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | ~~—~~ | ~~Save affordance on search~~ — **done, bucket-save bookmark on each `/search` result via `SearchResultRow`** |
 | — | ~~Save affordance on templates~~ — **skipped by design; template activities aren't linked to places, and MatchingTemplateCard on /bucket handles the reverse direction. Revisit only if user data shows a real "save this whole trip idea" need** |
 | ~~—~~ | ~~Un-save from PlaceCard~~ — **done via `removeFromBucketByPlace(placeId, source)` which resolves the row via RLS-scoped select + delete. Also applied to `SearchResultRow`.** |
-| — | Sidebar duplicate itineraries fetch |
+| ~~—~~ | ~~Sidebar duplicate itineraries fetch~~ — **done, both Sidebar and HomeClient now consume `useTrips()` from `TripsContext`; one fetch per user change, one localStorage-first seed, one `refetch()` for future mutations** |
 | — | Add `bucket_list_id` fk on `itinerary_activities` — Task 10 currently matches added-state on `(title, location)`; a real fk makes it robust to renames and clarifies attribution for future features |
 | ~~—~~ | ~~Unify template entry points~~ — **done, both `/templates` and `/bucket` now route through `/trip/new?template=<slug>`** |
 | ~~—~~ | ~~Sidebar auth-state flash~~ — **done, sidebar auth-dependent sections gate on `authLoading` + `tripsResolved`; account row shows a same-height skeleton during auth resolve** |
