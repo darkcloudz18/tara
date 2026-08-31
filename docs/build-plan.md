@@ -411,6 +411,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | — | Template photo audit — 8 template cards use Unsplash IDs that don't consistently match their destination (Baguio shows snow-capped alpine, Bohol was Taj Mahal before the placeholder swap). Curate all 8 with real destination-matching photos, host on Supabase Storage so URLs don't rot |
 | — | Wire up Sidebar Dark Mode toggle — currently inert (`useTheme().toggleTheme` bound but not persisting; same shape as the inert gear on `/profile`) |
 | 12 | Investigate Supabase `getSession()` ~7.7s cold-load latency — upstream cause of remaining sidebar workarounds (retry-on-SIGNED_IN, 164px height reservation). See `docs/tasks/12-getsession-latency.md`. |
+| 13 | Vercel edge caching for public routes — add `revalidate` on `/`, `/templates`, `/trip/[id]`, and `Cache-Control` on `/api/health`. See `docs/tasks/13-edge-caching.md`. |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
 
 ### Content — starts now, runs in parallel
