@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { AppShell } from '@/components/layout'
 import { useUser } from '@/contexts/UserContext'
+import { useTrips } from '@/contexts/TripsContext'
 import { Profile, Creator, Supplier } from '@/types/database'
 import {
   MapPin,
@@ -31,23 +32,11 @@ import {
   AlertCircle,
 } from 'lucide-react'
 
-interface Trip {
-  id: string
-  title: string
-  destination: string
-  start_date: string | null
-  end_date: string | null
-  cover_image: string | null
-  is_public: boolean
-  created_at: string
-}
 
 interface DashboardData {
   profile: Profile | null
   creator: Creator | null
   supplier: Supplier | null
-  recentTrips: Trip[]
-  upcomingTrips: Trip[]
   stats: {
     totalTrips: number
     publicTrips: number
@@ -62,66 +51,65 @@ export default function DashboardPage() {
     profile: null,
     creator: null,
     supplier: null,
-    recentTrips: [],
-    upcomingTrips: [],
     stats: { totalTrips: 0, publicTrips: 0, totalLikes: 0, followers: 0 }
   })
   const [loading, setLoading] = useState(true)
   const { user, loading: userLoading } = useUser()
+  const { trips: sharedTrips } = useTrips()
+  const userId = user?.id ?? null
 
+  // Depending on `user` object identity re-runs on every UserContext
+  // state swap — INITIAL_SESSION + SIGNED_IN each swap in a fresh User
+  // reference, so the two itineraries queries were firing 3–4 times on
+  // cold load. Key on user id (a stable primitive) instead.
   useEffect(() => {
     if (userLoading) return
-    if (!user) {
+    if (!userId) {
       router.push('/login')
       return
     }
     loadDashboard()
-  }, [user, userLoading])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, userLoading])
 
   const loadDashboard = async () => {
     if (!user) return
     try {
-
-      // Fetch all data in parallel
+      // Trip list comes from TripsContext — same fetch Sidebar and
+      // HomeClient already consume, so no duplicate select=* here.
+      // Stats query stays separate: it's a count over all trips (no
+      // limit), returning only id + is_public, which is a materially
+      // different shape than TripsContext's top-6 select=*.
       const [
         profileResult,
         creatorResult,
         supplierResult,
-        tripsResult,
         statsResult,
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('creators').select('*').eq('id', user.id).single(),
         supabase.from('suppliers').select('*').eq('id', user.id).single(),
-        supabase.from('itineraries').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(6),
         supabase.from('itineraries').select('id, is_public', { count: 'exact' }).eq('user_id', user.id),
       ])
 
       const profile = profileResult.data
-      const trips = tripsResult.data || []
-      const now = new Date().toISOString()
-
-      // Separate upcoming and recent trips
-      const upcomingTrips = trips.filter(t => t.start_date && t.start_date > now).slice(0, 3)
-      const recentTrips = trips.filter(t => !t.start_date || t.start_date <= now).slice(0, 3)
 
       // Calculate stats
       const totalTrips = statsResult.count || 0
       const publicTrips = (statsResult.data || []).filter(t => t.is_public).length
 
-      setData({
+      setData((prev) => ({
+        ...prev,
         profile,
         creator: creatorResult.data,
         supplier: supplierResult.data,
-        recentTrips,
-        upcomingTrips,
         stats: {
           totalTrips,
           publicTrips,
           totalLikes: 0,
           followers: profile?.followers_count || 0,
         }
-      })
+      }))
     } catch (error) {
       console.error('Error loading dashboard:', error)
     } finally {
@@ -148,7 +136,15 @@ export default function DashboardPage() {
     )
   }
 
-  const { profile, creator, supplier, recentTrips, upcomingTrips, stats } = data
+  const { profile, creator, supplier, stats } = data
+  // Derive at render time from the shared trips list. TripsContext orders
+  // by updated_at desc — that's more meaningful than created_at for
+  // "recent" (a re-edited trip should surface again), and the sort switch
+  // is invisible to any user whose most-recent-created and
+  // most-recently-updated trip are the same.
+  const now = new Date().toISOString()
+  const upcomingTrips = sharedTrips.filter((t) => t.start_date && t.start_date > now).slice(0, 3)
+  const recentTrips = sharedTrips.filter((t) => !t.start_date || t.start_date <= now).slice(0, 3)
 
   return (
     <AppShell>
@@ -324,8 +320,9 @@ export default function DashboardPage() {
                       className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {trip.cover_image ? (
-                          <img src={trip.cover_image} alt="" className="w-full h-full object-cover" />
+                        {trip.cover_image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={trip.cover_image_url} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <MapPin className="w-6 h-6 text-white" />
                         )}
@@ -336,7 +333,7 @@ export default function DashboardPage() {
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
-                          {trip.destination || 'No destination'}
+                          {trip.destinations?.[0] || 'No destination'}
                         </p>
                         {trip.start_date && (
                           <p className="text-xs text-teal-600 mt-1">
@@ -385,8 +382,9 @@ export default function DashboardPage() {
                       className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {trip.cover_image ? (
-                          <img src={trip.cover_image} alt="" className="w-full h-full object-cover" />
+                        {trip.cover_image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={trip.cover_image_url} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <MapPin className="w-6 h-6 text-white" />
                         )}
@@ -397,7 +395,7 @@ export default function DashboardPage() {
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
-                          {trip.destination || 'No destination'}
+                          {trip.destinations?.[0] || 'No destination'}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
                           Created {new Date(trip.created_at).toLocaleDateString()}

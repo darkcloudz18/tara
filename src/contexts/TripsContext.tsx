@@ -42,7 +42,10 @@ const TripsContext = createContext<TripsContextValue>({
   refetch: async () => {},
 })
 
-const LIMIT = 5
+// Serves Sidebar (top 1) and HomeClient (top 1) plus /dashboard (top 6
+// for recent + upcoming filtering). Kept low so the payload stays small
+// for users with many trips.
+const LIMIT = 6
 
 export function TripsProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useUser()
