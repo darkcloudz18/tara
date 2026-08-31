@@ -24,6 +24,7 @@ import TaraLogo from '@/components/icons/TaraLogo'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
 import { supabase } from '@/lib/supabase'
 import { Itinerary } from '@/types/database'
+import { readCachedTripSummary, writeCachedTripSummary } from '@/lib/tripCache'
 import { notificationService } from '@/features/notifications/services/notificationService'
 
 interface NavItem {
@@ -48,7 +49,13 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const { resolvedTheme, toggleTheme } = useTheme()
   const t = useLocalizedTrip()
-  const [activeTrip, setActiveTrip] = useState<Itinerary | null>(null)
+  // Seed activeTrip from the localStorage summary so BUILDING renders
+  // immediately for returning users. Real fetch overwrites with fresh
+  // data. See src/lib/tripCache.ts for the trade-off.
+  const [activeTrip, setActiveTrip] = useState<Itinerary | null>(() => {
+    const cached = readCachedTripSummary()
+    return cached ? (cached as Itinerary) : null
+  })
   // Split "resolved" into two independent signals so we never briefly
   // render the empty-state hero for a user whose trip fetch just hasn't
   // returned yet. Both must be true before showing "Start your lakad";
@@ -89,7 +96,11 @@ export default function Sidebar() {
     setTripFetchDone(false)
     setSdkConfirmed(false)
 
-    const fetchTrip = () => {
+    // sdkKnown is passed in explicitly (rather than read from
+    // sdkConfirmed state) because the closure captured at effect-run
+    // time would always see false. The retry from onAuthStateChange
+    // passes true.
+    const fetchTrip = (sdkKnown: boolean) => {
       supabase
         .from('itineraries')
         .select('*')
@@ -102,6 +113,23 @@ export default function Sidebar() {
           setTripFetchDone(true)
           if (data) {
             setActiveTrip(data)
+            writeCachedTripSummary({
+              id: data.id,
+              user_id: data.user_id,
+              title: data.title,
+              destinations: data.destinations ?? [],
+              start_date: data.start_date,
+              end_date: data.end_date,
+              updated_at: data.updated_at,
+            })
+          } else if (sdkKnown) {
+            // SDK settled + fetch empty = user really has no trip. Clear
+            // both the state (in case the cached-summary initializer
+            // populated it) and the cache.
+            setActiveTrip(null)
+            writeCachedTripSummary(null)
+          }
+          if (data) {
             supabase
               .from('itinerary_days')
               .select('id')
@@ -120,7 +148,7 @@ export default function Sidebar() {
         })
     }
 
-    fetchTrip()
+    fetchTrip(false)
     notificationService.getUnreadCount(userId).then(setUnreadNotifications)
 
     // SDK confirmation + retry. We only flip sdkConfirmed once we've
@@ -131,7 +159,7 @@ export default function Sidebar() {
       (event, session) => {
         if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
           setSdkConfirmed(true)
-          if (session?.user.id === userId) fetchTrip()
+          if (session?.user.id === userId) fetchTrip(true)
         }
       }
     )

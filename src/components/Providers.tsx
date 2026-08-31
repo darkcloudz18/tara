@@ -15,6 +15,7 @@ import {
   readPendingDates,
   clearPendingDates,
 } from '@/features/planner/services/datedLakadService'
+import { writeCachedTripSummary } from '@/lib/tripCache'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -73,6 +74,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           })()
         } else if (event === 'SIGNED_OUT') {
           resetAnalytics()
+          // Clear personalized caches so the next visitor (or the same
+          // user signing back in on a shared machine) doesn't see stale
+          // hero content before the fresh fetch resolves.
+          writeCachedTripSummary(null)
         }
       }
     )
