@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   Compass,
   Map,
@@ -14,6 +14,7 @@ import {
   ChevronRight,
   MapPin,
   Calendar,
+  LogOut,
 } from 'lucide-react'
 import BucketPin from '@/components/icons/BucketPin'
 import { useState, useEffect } from 'react'
@@ -34,66 +35,128 @@ interface NavItem {
 }
 
 export default function Sidebar() {
-  const { user } = useUser()
+  const { user, loading: authLoading } = useUser()
   const pathname = usePathname()
+  const router = useRouter()
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    // Providers' SIGNED_OUT listener resets analytics; UserContext's
+    // subscription drops the user. Push to /login for the immediate visual.
+    router.push('/login')
+  }
   const [collapsed, setCollapsed] = useState(false)
   const { resolvedTheme, toggleTheme } = useTheme()
   const t = useLocalizedTrip()
   const [activeTrip, setActiveTrip] = useState<Itinerary | null>(null)
+  // Split "resolved" into two independent signals so we never briefly
+  // render the empty-state hero for a user whose trip fetch just hasn't
+  // returned yet. Both must be true before showing "Start your lakad";
+  // "Building lakad" renders as soon as activeTrip is set (data trumps
+  // both flags — no confirmation needed for the affirmative case).
+  const [tripFetchDone, setTripFetchDone] = useState(false)
+  const [sdkConfirmed, setSdkConfirmed] = useState(false)
   const [tripPlaceCount, setTripPlaceCount] = useState(0)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
-  // Fetch user's most recent trip
+  // Fetch user's most recent trip + notifications.
+  //
+  // Two subtleties keyed to the slow Supabase getSession() path:
+  //
+  // 1. We depend on user?.id, not the full user object. onAuthStateChange
+  //    fires SIGNED_IN with a fresh User reference at ~7s (same id, new
+  //    object identity) after the SDK's initial validation lands. Re-running
+  //    the effect on that fire was flipping tripsResolved false → true and
+  //    causing the hero to blink.
+  //
+  // 2. The first fetch can race the SDK's real auth arriving and come back
+  //    empty for users who genuinely do have trips (RLS sees no JWT yet).
+  //    We only latch tripsResolved when either the fetch returns data OR
+  //    Supabase confirms the session via INITIAL_SESSION / SIGNED_IN. The
+  //    same events also trigger a re-fetch, so a raced-empty gets corrected.
+  const userId = user?.id ?? null
   useEffect(() => {
-    if (user) {
+    if (!userId) {
+      setActiveTrip(null)
+      setTripPlaceCount(0)
+      setUnreadNotifications(0)
+      setTripFetchDone(!authLoading)
+      setSdkConfirmed(!authLoading)
+      return
+    }
+
+    let cancelled = false
+    setTripFetchDone(false)
+    setSdkConfirmed(false)
+
+    const fetchTrip = () => {
       supabase
         .from('itineraries')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('updated_at', { ascending: false })
         .limit(1)
         .single()
         .then(({ data }) => {
+          if (cancelled) return
+          setTripFetchDone(true)
           if (data) {
             setActiveTrip(data)
-            // Get activity count for this trip
             supabase
               .from('itinerary_days')
               .select('id')
               .eq('itinerary_id', data.id)
               .then(({ data: days }) => {
-                if (days && days.length > 0) {
-                  supabase
-                    .from('itinerary_activities')
-                    .select('id', { count: 'exact' })
-                    .in('day_id', days.map(d => d.id))
-                    .then(({ count }) => {
-                      setTripPlaceCount(count || 0)
-                    })
-                }
+                if (cancelled || !days || days.length === 0) return
+                supabase
+                  .from('itinerary_activities')
+                  .select('id', { count: 'exact' })
+                  .in('day_id', days.map((d) => d.id))
+                  .then(({ count }) => {
+                    if (!cancelled) setTripPlaceCount(count || 0)
+                  })
               })
           }
         })
-
-      // Fetch notification count
-      notificationService.getUnreadCount(user.id).then(setUnreadNotifications)
     }
-  }, [user])
 
-  // Subscribe to real-time notifications
+    fetchTrip()
+    notificationService.getUnreadCount(userId).then(setUnreadNotifications)
+
+    // SDK confirmation + retry. We only flip sdkConfirmed once we've
+    // seen an INITIAL_SESSION or SIGNED_IN — that's the earliest point
+    // at which an empty fetch result is trustworthy. Also re-fires
+    // fetchTrip so a raced-empty first attempt gets corrected.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+          setSdkConfirmed(true)
+          if (session?.user.id === userId) fetchTrip()
+        }
+      }
+    )
+
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
+  }, [userId, authLoading])
+
+  // Subscribe to real-time notifications. Keyed on userId (not user
+  // object) so the fresh-reference SIGNED_IN fire doesn't tear down and
+  // rebuild the subscription for no reason.
   useEffect(() => {
-    if (!user) return
+    if (!userId) return
 
     const unsubscribe = notificationService.subscribeToNotifications(
-      user.id,
+      userId,
       () => {
-        // Update count when new notification arrives
-        notificationService.getUnreadCount(user.id).then(setUnreadNotifications)
+        notificationService.getUnreadCount(userId).then(setUnreadNotifications)
       }
     )
 
     return () => unsubscribe()
-  }, [user])
+  }, [userId])
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -180,8 +243,12 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Active Trip Widget - Only show for logged in users with a trip */}
-      {user && activeTrip && !collapsed && (
+      {/* Hero slot — reserve height so a late-arriving card (SDK auth
+          taking 7s+ on cold loads) can't shift the nav 100+px 8 seconds
+          into the session. Height is set to the max the slot can hold
+          (BUILDING LAKAD ~148px) plus its own mb-4. */}
+      {!collapsed && <div className="min-h-[164px]">
+      {user && activeTrip && (
         <div className="px-3 mb-4">
           <Link
             href={`/trip/${activeTrip.id}/edit`}
@@ -215,8 +282,11 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* Create Trip CTA for users without trips */}
-      {user && !activeTrip && !collapsed && (
+      {/* Create Trip CTA for users without trips. Requires BOTH the
+          fetch to have returned AND the SDK to have confirmed, so we
+          never briefly render "Start your lakad" for a user whose fetch
+          just raced the SDK's slow initial validation. */}
+      {user && !activeTrip && tripFetchDone && sdkConfirmed && (
         <div className="px-3 mb-4">
           <Link
             href="/trip/new"
@@ -232,6 +302,7 @@ export default function Sidebar() {
           </Link>
         </div>
       )}
+      </div>}
 
       {/* Main Navigation */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
@@ -294,24 +365,49 @@ export default function Sidebar() {
           {!collapsed && <span className="text-sm font-medium">Help & Support</span>}
         </Link>
 
-        {/* User Profile / Login */}
-        {user ? (
-          <Link
-            href="/profile"
-            className="flex items-center gap-3 px-4 py-3 mt-2 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        {/* User Profile / Login — during auth-resolve, render a placeholder
+            with the same height as the profile row so we don't flash
+            "Sign in" and then swap to the user card. */}
+        {authLoading ? (
+          <div
+            aria-hidden="true"
+            className="flex items-center gap-3 px-4 py-3 mt-2 bg-gray-50 dark:bg-gray-900 rounded-xl"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center text-white font-bold">
-              {user.email?.charAt(0).toUpperCase()}
-            </div>
+            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse" />
             {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {user.user_metadata?.full_name || user.email?.split('@')[0]}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="h-3 w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                <div className="h-2.5 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
               </div>
             )}
-          </Link>
+          </div>
+        ) : user ? (
+          <>
+            <Link
+              href="/profile"
+              className="flex items-center gap-3 px-4 py-3 mt-2 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center text-white font-bold">
+                {user.email?.charAt(0).toUpperCase()}
+              </div>
+              {!collapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                </div>
+              )}
+            </Link>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="flex items-center gap-3 px-4 py-3 mt-1 w-full rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              {!collapsed && <span className="text-sm font-medium">Sign out</span>}
+            </button>
+          </>
         ) : (
           <Link
             href="/login"
