@@ -407,6 +407,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | — | Add `bucket_list_id` fk on `itinerary_activities` — Task 10 currently matches added-state on `(title, location)`; a real fk makes it robust to renames and clarifies attribution for future features |
 | ~~—~~ | ~~Unify template entry points~~ — **done, both `/templates` and `/bucket` now route through `/trip/new?template=<slug>`** |
 | ~~—~~ | ~~Sidebar auth-state flash~~ — **done, sidebar auth-dependent sections gate on `authLoading` + `tripsResolved`; account row shows a same-height skeleton during auth resolve** |
+| ~~—~~ | ~~Page hero CLS~~ — **done, localStorage-first trip cache renders the correct hero variant on first paint; measured 0.0008–0.0014 total CLS on deployed build across widths. Re-verify after the token ages past a refresh cycle.** |
 | ~~—~~ | ~~Sidebar polish~~ — **done, ACCOUNT label now fades softly at the scroll edge; Bohol image fixed to a valid tropical placeholder** |
 | ~~—~~ | ~~Template photo audit~~ — **done, all 8 templates now use real Wikimedia Commons photos of their actual destinations via `Special:FilePath` (durable URLs, no ID rot)** |
 | — | Wire up Sidebar Dark Mode toggle — currently inert (`useTheme().toggleTheme` bound but not persisting; same shape as the inert gear on `/profile`) |
