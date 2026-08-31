@@ -333,7 +333,10 @@ export default function Sidebar() {
       </div>}
 
       {/* Main Navigation */}
-      <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+      {/* Bottom fade so any content clipped by the scroll edge (e.g. the
+          Account label at ~719px viewport heights) reads as a soft
+          cutoff rather than a broken row. */}
+      <nav className="flex-1 px-3 space-y-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_0,black_calc(100%-20px),transparent_100%)]">
         {/* Discover Section */}
         {!collapsed && (
           <p className="px-4 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">

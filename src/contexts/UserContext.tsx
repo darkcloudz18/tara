@@ -49,19 +49,29 @@ function readCachedSession(): { user: User | null; session: Session | null } {
 }
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<UserContextValue>({
-    user: null,
-    session: null,
-    loading: true,
+  // Resolve the cached session in the useState initializer so `loading`
+  // is already false on the very first client render. Doing it in a
+  // useEffect meant the initial-loading state could linger if the effect
+  // was delayed or short-circuited (a caller reported a permanent
+  // skeleton after we swapped away from getSessionSafe). SSR still runs
+  // with loading=true because `window` isn't defined; React re-renders
+  // on the client with the resolved value.
+  const [state, setState] = useState<UserContextValue>(() => {
+    if (typeof window === 'undefined') {
+      return { user: null, session: null, loading: true }
+    }
+    const cached = readCachedSession()
+    return { user: cached.user, session: cached.session, loading: false }
   })
 
   useEffect(() => {
-    // Sync read from localStorage. Runs on the same tick as the effect, no
-    // network, no lock, no timeout window. Sets the resolved state on the
-    // first client render after hydration, so the sidebar avatar / hero
-    // widgets don't have to fall through a "Sign in" intermediate.
-    const cached = readCachedSession()
-    setState({ user: cached.user, session: cached.session, loading: false })
+    // Belt-and-braces: if some non-SSR path landed on loading=true (e.g.
+    // hydration edge case), flip it once we're on the client.
+    setState((prev) =>
+      prev.loading
+        ? { ...prev, ...readCachedSession(), loading: false }
+        : prev
+    )
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {

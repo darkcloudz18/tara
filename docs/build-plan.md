@@ -407,7 +407,9 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | — | Add `bucket_list_id` fk on `itinerary_activities` — Task 10 currently matches added-state on `(title, location)`; a real fk makes it robust to renames and clarifies attribution for future features |
 | ~~—~~ | ~~Unify template entry points~~ — **done, both `/templates` and `/bucket` now route through `/trip/new?template=<slug>`** |
 | ~~—~~ | ~~Sidebar auth-state flash~~ — **done, sidebar auth-dependent sections gate on `authLoading` + `tripsResolved`; account row shows a same-height skeleton during auth resolve** |
-| — | Sidebar polish — Bohol template card image 404, ACCOUNT label gets clipped mid-text at ~719px viewport height |
+| ~~—~~ | ~~Sidebar polish~~ — **done, ACCOUNT label now fades softly at the scroll edge; Bohol image fixed to a valid tropical placeholder** |
+| — | Template photo audit — 8 template cards use Unsplash IDs that don't consistently match their destination (Baguio shows snow-capped alpine, Bohol was Taj Mahal before the placeholder swap). Curate all 8 with real destination-matching photos, host on Supabase Storage so URLs don't rot |
+| — | Wire up Sidebar Dark Mode toggle — currently inert (`useTheme().toggleTheme` bound but not persisting; same shape as the inert gear on `/profile`) |
 | 12 | Investigate Supabase `getSession()` ~7.7s cold-load latency — upstream cause of remaining sidebar workarounds (retry-on-SIGNED_IN, 164px height reservation). See `docs/tasks/12-getsession-latency.md`. |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
 

@@ -136,7 +136,10 @@ export const TRIP_TEMPLATES: TripTemplate[] = [
     duration: 3,
     description: 'See the iconic Chocolate Hills, meet the tiny tarsiers, and relax on Panglao\'s white sand beaches.',
     highlights: ['Chocolate Hills', 'Tarsier Sanctuary', 'Loboc River Cruise', 'Panglao Beach', 'Hinagdanan Cave'],
-    image: 'https://images.unsplash.com/photo-1570789210967-2cac24ba7f2b?w=800&q=80',
+    // TODO: content — this should be a Chocolate Hills / Bohol shot.
+    // Using the Palawan photo as a placeholder tropical fallback until a
+    // real Bohol photo is sourced. See build-plan Template Photo Audit.
+    image: 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800&q=80',
     startingFrom: 'Manila',
     estimatedBudget: 8000,
     bestFor: ['families', 'nature', 'culture'],
