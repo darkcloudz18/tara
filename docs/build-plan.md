@@ -414,6 +414,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | ~~—~~ | ~~Wire up Sidebar Dark Mode toggle~~ — **not a bug on deployed build; all 5 checkpoints pass (class, localStorage, meta color, label, second click). Local-only regression, consistent with the localhost:3000 staleness pattern in this session.** |
 | 12 | Investigate Supabase `getSession()` ~7.7s cold-load latency — upstream cause of remaining sidebar workarounds (retry-on-SIGNED_IN, 164px height reservation). See `docs/tasks/12-getsession-latency.md`. |
 | 13 | Vercel edge caching for public routes — add `revalidate` on `/`, `/templates`, `/trip/[id]`, and `Cache-Control` on `/api/health`. See `docs/tasks/13-edge-caching.md`. |
+| — | `itineraries.updated_at` trigger on child-row mutations — adding/removing/editing activities and days doesn't bump the parent itinerary's `updated_at`, so the sidebar's "most recent trip" hero doesn't reflect real activity. Add a Postgres trigger that touches `itineraries.updated_at` when `itinerary_days` or `itinerary_activities` change |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
 
 ### Content — starts now, runs in parallel
