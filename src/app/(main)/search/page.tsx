@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, X, Clock, TrendingUp, ArrowLeft, Loader2, MapPin, Star } from 'lucide-react'
+import { Search, X, Clock, TrendingUp, ArrowLeft, Loader2, MapPin } from 'lucide-react'
 import { searchService, SearchFilters } from '@/features/search/services/searchService'
 import SearchFiltersComponent from '@/features/search/components/SearchFilters'
+import SearchResultRow from '@/features/search/components/SearchResultRow'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import AddToTripModal from '@/features/planner/components/AddToTripModal'
 import { useLocalizedTrip } from '@/hooks/useLocalizedTrip'
@@ -203,53 +204,11 @@ function SearchPageContent() {
             ) : (
               <div className="space-y-3">
                 {results.map((place) => (
-                  <div
+                  <SearchResultRow
                     key={place.id}
-                    onClick={() => handlePlaceClick(place)}
-                    className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex gap-4 cursor-pointer hover:shadow-md transition-shadow"
-                  >
-                    {/* Image */}
-                    <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">
-                      {place.photos[0] ? (
-                        <img
-                          src={place.photos[0]}
-                          alt={place.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <MapPin className="w-8 h-8" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                        {place.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3" />
-                        {place.location}
-                      </p>
-                      <div className="flex items-center gap-3 mt-2">
-                        {place.rating > 0 && (
-                          <span className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-                            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                            {place.rating.toFixed(1)}
-                          </span>
-                        )}
-                        {place.estimatedCost && (
-                          <span className="text-sm text-teal-600 dark:text-teal-400 font-medium">
-                            P{place.estimatedCost.toLocaleString()}
-                          </span>
-                        )}
-                        <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400 capitalize">
-                          {place.category}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                    place={place}
+                    onOpen={() => handlePlaceClick(place)}
+                  />
                 ))}
               </div>
             )}

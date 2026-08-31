@@ -401,7 +401,8 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | # | Work |
 |---|---|
 | #29 | AppShell retrofit: trip/new, trip/[id], edit, search, templates, ai-planner |
-| — | Save affordance on search + template views |
+| ~~—~~ | ~~Save affordance on search~~ — **done, bucket-save bookmark on each `/search` result via `SearchResultRow`** |
+| — | ~~Save affordance on templates~~ — **skipped by design; template activities aren't linked to places, and MatchingTemplateCard on /bucket handles the reverse direction. Revisit only if user data shows a real "save this whole trip idea" need** |
 | — | Un-save from PlaceCard (needs bucket-item-id caching) |
 | — | Sidebar duplicate itineraries fetch |
 | — | Add `bucket_list_id` fk on `itinerary_activities` — Task 10 currently matches added-state on `(title, location)`; a real fk makes it robust to renames and clarifies attribution for future features |
