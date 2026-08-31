@@ -17,6 +17,7 @@ import {
   ActivitySuggestion,
 } from '@/features/planner/services/suggestionService'
 import { useItineraries } from '@/features/planner/hooks/useItineraries'
+import { useTrips } from '@/contexts/TripsContext'
 import { getTemplateBySlug } from '@/features/planner/data/tripTemplates'
 import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
 import { BudgetSummary, CategoryBudget } from '@/features/planner/hooks/useBudgetCalculations'
@@ -56,6 +57,7 @@ function NewItineraryContent() {
   const [selectedTemplate, setSelectedTemplate] = useState<ReturnType<typeof getTemplateBySlug>>(undefined)
 
   const { createItinerary } = useItineraries()
+  const { refetch: refetchTrips } = useTrips()
 
 
   // Load template if specified in URL
@@ -181,6 +183,7 @@ function NewItineraryContent() {
           }
         }
 
+        refetchTrips()
         router.push(`/trip/${newItinerary.id}/edit`)
       } else {
         setError('Failed to save itinerary. Please try again.')

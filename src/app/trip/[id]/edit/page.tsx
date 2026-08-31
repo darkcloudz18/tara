@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { useItinerary } from '@/features/planner/hooks/useItinerary'
+import { useTrips } from '@/contexts/TripsContext'
 import { useBudgetCalculations } from '@/features/planner/hooks/useBudgetCalculations'
 import { dayService } from '@/features/planner/services/dayService'
 import { activityService } from '@/features/planner/services/activityService'
@@ -40,6 +41,12 @@ export default function ItineraryDetailPage() {
   } = useItinerary(itineraryId)
 
   const budget = useBudgetCalculations(itinerary, days, activities)
+  // Bump the shared trips list after any mutation on this trip so the
+  // sidebar / homepage hero pick up the reorder (updated_at moved) live,
+  // instead of catching up on the next mount. The DB trigger on
+  // itinerary_days / itinerary_activities keeps updated_at correct;
+  // this closes the UI loop.
+  const { refetch: refetchTrips } = useTrips()
 
   const [activeTab, setActiveTab] = useState<'itinerary' | 'map'>('itinerary')
   const [editingItinerary, setEditingItinerary] = useState(false)
@@ -65,6 +72,7 @@ export default function ItineraryDetailPage() {
         total_budget: data.total_budget ? parseFloat(data.total_budget) : undefined,
       })
       setEditingItinerary(false)
+      refetchTrips()
     } finally {
       setSavingItinerary(false)
     }
@@ -78,6 +86,7 @@ export default function ItineraryDetailPage() {
       estimated_budget: data.estimated_budget ? parseFloat(data.estimated_budget) : undefined,
     })
     await refetch()
+    refetchTrips()
   }
 
   // Handle day delete
@@ -102,6 +111,7 @@ export default function ItineraryDetailPage() {
       notes: data.notes.trim() || undefined,
     })
     await refetch()
+    refetchTrips()
   }
 
   // Handle activity update
@@ -119,6 +129,7 @@ export default function ItineraryDetailPage() {
       notes: data.notes.trim() || undefined,
     })
     await refetch()
+    refetchTrips()
   }
 
   // Handle activity delete
@@ -134,13 +145,16 @@ export default function ItineraryDetailPage() {
     try {
       if (deleteTarget.type === 'itinerary') {
         await deleteItinerary()
+        refetchTrips()
         router.push('/dashboard')
       } else if (deleteTarget.type === 'day') {
         await dayService.delete(deleteTarget.id)
         await refetch()
+        refetchTrips()
       } else if (deleteTarget.type === 'activity') {
         await activityService.delete(deleteTarget.id)
         await refetch()
+        refetchTrips()
       }
     } finally {
       setShowDeleteModal(false)
@@ -330,6 +344,7 @@ export default function ItineraryDetailPage() {
                       estimated_cost: activity.estimated_cost,
                     })
                     await refetch()
+                    refetchTrips()
                   }}
                 />
               )}

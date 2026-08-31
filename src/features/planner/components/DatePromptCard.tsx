@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarDays, Loader2 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
+import { useTrips } from '@/contexts/TripsContext'
 import { useToast } from '@/contexts/ToastContext'
 import { capture } from '@/lib/analytics'
 import {
@@ -23,6 +24,7 @@ interface DatePromptCardProps {
 export default function DatePromptCard({ itemCount }: DatePromptCardProps) {
   const router = useRouter()
   const { user } = useUser()
+  const { refetch: refetchTrips } = useTrips()
   const toast = useToast()
 
   const today = todayInPHT()
@@ -90,6 +92,7 @@ export default function DatePromptCard({ itemCount }: DatePromptCardProps) {
         durationDays: result.durationDays,
         wasAnonymous: false,
       })
+      refetchTrips()
       // /trip/[id] is the public share view (requires is_public=true).
       // Newly created lakads are private, so the owner lands on the
       // /edit route — the builder — which is where Task 10's suggestions
