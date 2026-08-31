@@ -410,7 +410,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | ~~—~~ | ~~Page hero CLS~~ — **done, localStorage-first trip cache renders the correct hero variant on first paint; measured 0.0008–0.0014 total CLS on deployed build across widths. Re-verify after the token ages past a refresh cycle.** |
 | ~~—~~ | ~~Sidebar polish~~ — **done, ACCOUNT label now fades softly at the scroll edge; Bohol image fixed to a valid tropical placeholder** |
 | ~~—~~ | ~~Template photo audit~~ — **done, all 8 templates now use real Wikimedia Commons photos of their actual destinations via `Special:FilePath` (durable URLs, no ID rot)** |
-| — | Wire up Sidebar Dark Mode toggle — currently inert (`useTheme().toggleTheme` bound but not persisting; same shape as the inert gear on `/profile`) |
+| ~~—~~ | ~~Wire up Sidebar Dark Mode toggle~~ — **not a bug on deployed build; all 5 checkpoints pass (class, localStorage, meta color, label, second click). Local-only regression, consistent with the localhost:3000 staleness pattern in this session.** |
 | 12 | Investigate Supabase `getSession()` ~7.7s cold-load latency — upstream cause of remaining sidebar workarounds (retry-on-SIGNED_IN, 164px height reservation). See `docs/tasks/12-getsession-latency.md`. |
 | 13 | Vercel edge caching for public routes — add `revalidate` on `/`, `/templates`, `/trip/[id]`, and `Cache-Control` on `/api/health`. See `docs/tasks/13-edge-caching.md`. |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
