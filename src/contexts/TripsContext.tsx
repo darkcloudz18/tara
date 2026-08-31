@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   ReactNode,
 } from 'react'
@@ -19,16 +20,15 @@ import { readCachedTripSummary, writeCachedTripSummary } from '@/lib/tripCache'
 // mount — duplicate work against the same auth-scoped table, and drift
 // waiting to happen when a mutation only refreshed one of them.
 //
-// Keeps the localStorage-first pattern: activeTrip seeded from the
-// tripCache summary so the has-trip hero renders on first client paint
-// without waiting for Supabase's slow getSession lock. Real fetch runs
-// on user id change and on SIGNED_IN confirmation.
+// Fetch dedup: Supabase's onAuthStateChange fires both INITIAL_SESSION
+// and SIGNED_IN on cold load, and our initial run happens before those.
+// Without dedup we'd issue three identical select=* queries in the
+// same millisecond. Refs guard both the "already have data" fast-path
+// and the "in-flight fetch" case.
 
 interface TripsContextValue {
   trips: Itinerary[]
   activeTrip: Itinerary | null
-  // Split resolution signals so consumers can distinguish "we don't
-  // know yet" from "we know and there really is nothing".
   tripFetchDone: boolean
   sdkConfirmed: boolean
   refetch: () => Promise<void>
@@ -48,9 +48,6 @@ export function TripsProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useUser()
   const userId = user?.id ?? null
 
-  // Seed activeTrip from the localStorage summary. Reused by Sidebar's
-  // hero widget and HomeClient's HeroSection so the correct variant
-  // paints on first render.
   const [trips, setTrips] = useState<Itinerary[]>(() => {
     const cached = readCachedTripSummary()
     return cached ? [cached as Itinerary] : []
@@ -58,8 +55,14 @@ export function TripsProvider({ children }: { children: ReactNode }) {
   const [tripFetchDone, setTripFetchDone] = useState(false)
   const [sdkConfirmed, setSdkConfirmed] = useState(false)
 
+  // Refs the runner reads/writes to dedup across the initial mount fire
+  // and the two onAuthStateChange fires. Reset when userId changes.
+  const hasDataRef = useRef(false)
+  const inFlightRef = useRef<Promise<void> | null>(null)
+  const currentUserIdRef = useRef<string | null>(null)
+
   const doFetch = useCallback(
-    async (targetUserId: string, sdkKnown: boolean) => {
+    async (targetUserId: string, sdkKnown: boolean): Promise<void> => {
       const { data } = await supabase
         .from('itineraries')
         .select('*')
@@ -67,9 +70,14 @@ export function TripsProvider({ children }: { children: ReactNode }) {
         .order('updated_at', { ascending: false })
         .limit(LIMIT)
 
+      // Guard against writes for a stale user after sign-out+sign-in
+      // as different identities.
+      if (currentUserIdRef.current !== targetUserId) return
+
       setTripFetchDone(true)
       if (data && data.length > 0) {
         setTrips(data)
+        hasDataRef.current = true
         const top = data[0]
         writeCachedTripSummary({
           id: top.id,
@@ -81,9 +89,6 @@ export function TripsProvider({ children }: { children: ReactNode }) {
           updated_at: top.updated_at,
         })
       } else if (sdkKnown) {
-        // SDK settled + fetch empty = user really has no trips. Clear
-        // both the in-memory list (the cached-summary initializer may
-        // have populated it) and the cache.
         setTrips([])
         writeCachedTripSummary(null)
       }
@@ -92,6 +97,10 @@ export function TripsProvider({ children }: { children: ReactNode }) {
   )
 
   useEffect(() => {
+    currentUserIdRef.current = userId
+    hasDataRef.current = false
+    inFlightRef.current = null
+
     if (!userId) {
       setTrips([])
       setTripFetchDone(!authLoading)
@@ -99,20 +108,24 @@ export function TripsProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    let cancelled = false
     setTripFetchDone(false)
     setSdkConfirmed(false)
 
-    const run = async (sdkKnown: boolean) => {
-      try {
-        await doFetch(userId, sdkKnown)
-      } catch (err) {
-        if (!cancelled) {
-          console.error('TripsContext fetch failed:', err)
-          setTripFetchDone(true)
-        }
-      }
+    const run = (sdkKnown: boolean): Promise<void> => {
+      // Once we've confirmed data for this user, subsequent fires are
+      // no-ops. The refetch() escape hatch (or a fresh mount after a
+      // sign-in/out cycle) is the only path to a new fetch.
+      if (hasDataRef.current) return Promise.resolve()
+      // Coalesce concurrent calls onto the same promise.
+      if (inFlightRef.current) return inFlightRef.current
+
+      const p = doFetch(userId, sdkKnown).finally(() => {
+        inFlightRef.current = null
+      })
+      inFlightRef.current = p
+      return p
     }
+
     run(false)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -125,13 +138,17 @@ export function TripsProvider({ children }: { children: ReactNode }) {
     )
 
     return () => {
-      cancelled = true
       subscription.unsubscribe()
     }
   }, [userId, authLoading, doFetch])
 
   const refetch = useCallback(async () => {
-    if (userId) await doFetch(userId, true)
+    if (!userId) return
+    // Bypass the hasData short-circuit — this is called explicitly
+    // after a mutation and always wants a fresh read.
+    hasDataRef.current = false
+    inFlightRef.current = null
+    await doFetch(userId, true)
   }, [userId, doFetch])
 
   const value: TripsContextValue = {
