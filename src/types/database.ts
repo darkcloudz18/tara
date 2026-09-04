@@ -148,6 +148,9 @@ export interface ItineraryActivity {
   notes?: string
   order_index: number
   created_at: string
+  // Set by BucketSuggestions when a bucket item is scheduled onto a
+  // day. Nullable — activities entered manually have no bucket origin.
+  bucket_list_id?: string | null
 }
 
 export interface Listing {

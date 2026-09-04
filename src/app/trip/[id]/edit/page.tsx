@@ -342,6 +342,7 @@ export default function ItineraryDetailPage() {
                       location: activity.location,
                       place_type: activity.place_type,
                       estimated_cost: activity.estimated_cost,
+                      bucket_list_id: activity.bucket_list_id,
                     })
                     await refetch()
                     refetchTrips()

@@ -30,6 +30,9 @@ interface BucketSuggestionsProps {
   activities: ItineraryActivity[]
   // Parent handler mirrors the shape used by the rest of the builder so
   // add-from-bucket writes through the same activityService.create path.
+  // bucket_list_id is included so the fk on itinerary_activities can be
+  // populated, letting the "already added" derivation match on identity
+  // rather than a fragile (title, location) tuple.
   onAddToDay: (
     dayId: string,
     activity: {
@@ -37,6 +40,7 @@ interface BucketSuggestionsProps {
       location: string
       place_type?: string
       estimated_cost?: number
+      bucket_list_id: string
     }
   ) => Promise<void>
 }
@@ -64,18 +68,27 @@ export default function BucketSuggestions({
   const capturedRef = useRef(false)
 
   // Derive "added" state from real activities on every render — persists
-  // across reloads, prevents duplicate additions. Matches on
-  // (title, location) since that's what onAddToDay writes.
+  // across reloads, prevents duplicate additions. Matches on the
+  // bucket_list_id fk (see 20260901020000_activity_bucket_list_id.sql)
+  // so renames and location edits inside the builder don't detach an
+  // activity from its bucket source. Falls back to a (title, location)
+  // match for activities inserted before the fk existed.
   const addedByDay = new Map<string, string>()
   for (const item of [...suggestions.matching, ...suggestions.offDestination]) {
+    const fkMatch = activities.find((a) => a.bucket_list_id === item.id)
+    if (fkMatch) {
+      addedByDay.set(item.id, fkMatch.day_id)
+      continue
+    }
     const name = item.place_name.trim().toLowerCase()
     const loc = (item.place_location ?? '').trim().toLowerCase()
-    const match = activities.find(
+    const legacyMatch = activities.find(
       (a) =>
+        !a.bucket_list_id &&
         a.title.trim().toLowerCase() === name &&
         (a.location ?? '').trim().toLowerCase() === loc
     )
-    if (match) addedByDay.set(item.id, match.day_id)
+    if (legacyMatch) addedByDay.set(item.id, legacyMatch.day_id)
   }
 
   async function load() {
@@ -125,6 +138,7 @@ export default function BucketSuggestions({
         location: item.place_location ?? '',
         place_type: item.place_category ?? undefined,
         estimated_cost: item.place_estimated_cost ?? undefined,
+        bucket_list_id: item.id,
       })
       // No local state update needed — activities refetch upstream, and
       // the next render will pick up the new activity via the addedByDay

@@ -14,6 +14,10 @@ export type CreateActivityData = {
   actual_cost?: number
   notes?: string
   order_index?: number
+  // Set when the activity is being scheduled from a bucket save.
+  // BucketSuggestions passes this so the "already added" derivation
+  // survives renames and location edits.
+  bucket_list_id?: string
 }
 
 export type UpdateActivityData = Partial<Omit<CreateActivityData, 'day_id'>> & {
@@ -96,6 +100,7 @@ export const activityService = {
         actual_cost: data.actual_cost,
         notes: data.notes,
         order_index: nextOrderIndex,
+        bucket_list_id: data.bucket_list_id,
       })
       .select()
       .single()
