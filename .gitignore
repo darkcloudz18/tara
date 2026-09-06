@@ -43,3 +43,6 @@ public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
 public/fallback-*.js
+
+# Supabase CLI per-user link state (regenerates on 'supabase link')
+supabase/.temp/
