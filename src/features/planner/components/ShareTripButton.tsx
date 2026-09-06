@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Share2, Copy, Check, Globe, Lock, ExternalLink } from 'lucide-react'
 import { itineraryService } from '../services/itineraryService'
+import { revalidateTripShareView } from '@/app/trip/[id]/actions'
 
 interface ShareTripButtonProps {
   itineraryId: string
@@ -37,6 +38,10 @@ export default function ShareTripButton({
         setIsPublicState(true)
         onVisibilityChange?.(true)
       }
+      // Invalidate the ISR cache so the next visit to the share URL
+      // sees the correct is_public state (public → renders, private →
+      // 404) instead of the stale 5-min-old rendered HTML.
+      await revalidateTripShareView(itineraryId)
     } catch (error) {
       console.error('Failed to toggle visibility:', error)
     } finally {

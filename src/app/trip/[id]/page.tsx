@@ -1,3 +1,9 @@
+// ISR for the public share view. Cached response served for 5 minutes
+// at the edge, then re-generated on the next hit. Owner visibility
+// toggles call revalidatePath from the mutation site to invalidate on
+// demand. Anonymous visitors get near-instant loads from cache.
+export const revalidate = 300
+
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'

@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js'
 
 // Use Node runtime for Supabase compatibility
 export const runtime = 'nodejs'
+// OG images are heavy to render and rarely change. Match a typical
+// share-preview cache expectation (~1 hour) so Slack / Twitter / iMessage
+// unfurls don't hammer origin.
+export const revalidate = 3600
 export const alt = 'Trip Itinerary'
 export const size = {
   width: 1200,

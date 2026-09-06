@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { useItinerary } from '@/features/planner/hooks/useItinerary'
 import { useTrips } from '@/contexts/TripsContext'
+import { revalidateTripShareView } from '@/app/trip/[id]/actions'
 import { useBudgetCalculations } from '@/features/planner/hooks/useBudgetCalculations'
 import { dayService } from '@/features/planner/services/dayService'
 import { activityService } from '@/features/planner/services/activityService'
@@ -73,6 +74,11 @@ export default function ItineraryDetailPage() {
       })
       setEditingItinerary(false)
       refetchTrips()
+      // Title / dates / destinations feed both the public share render
+      // and the OG image — invalidate both so external unfurls and
+      // link visits reflect the edit without waiting on the 300s
+      // revalidate window.
+      await revalidateTripShareView(itineraryId)
     } finally {
       setSavingItinerary(false)
     }
