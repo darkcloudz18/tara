@@ -34,16 +34,24 @@ Share           Barkada books too. Free multiplier.
 
 ```sql
 -- Anonymous-capable saving
-create table bucket_items (
+-- Shipped as `bucket_list` (not `bucket_items`); schema in
+-- supabase/migrations/20251221010000_create_bucket_list.sql, anonymous
+-- support in 20260824010000_bucket_list_anonymous.sql. Actual columns:
+-- place_id | external_place_id (for non-Tara sources), place_name,
+-- place_location, place_category, place_image_url, place_estimated_cost,
+-- notes, is_visited, visited_at, referred_by_creator_id,
+-- referred_from_video_id. No `source` column — the fk pair distinguishes.
+create table bucket_list (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid references auth.users(id),  -- nullable until claimed
   anon_id     text,                             -- localStorage UUID
-  place_id    uuid references places(id) not null,
-  source      text,                             -- 'discover' | 'template' | 'search'
+  place_id    uuid references places(id),
+  external_place_id text,
+  -- ...denormalized place fields for cross-source support...
   created_at  timestamptz default now()
 );
-create index on bucket_items (user_id);
-create index on bucket_items (anon_id);
+create index on bucket_list (user_id);
+create index on bucket_list (anon_id);
 
 -- Dates are the state machine
 alter table lakad
@@ -97,19 +105,31 @@ If this number is low, nothing downstream matters. It's the metric to optimise b
 
 ## 1.3 Template matching (bucket list → recommendation)
 
-Do this in Postgres. It's an overlap count, not a recommender system.
+**Shipped** as Task 11 with a small twist. The SQL sketch below assumes
+`templates` and `template_places` DB tables; we don't have those —
+templates live in `src/features/planner/data/tripTemplates.ts` as a
+static TS constant. So the overlap runs in JS, not SQL:
+
+- Match template.destination against bucket_list.place_location
+  (case-insensitive substring, either direction)
+- Match template.highlights[] against bucket_list.place_name (same rule)
+- Rank by overlap count, tiebreak duration desc, then slug asc
+
+If templates ever move to Supabase, the SQL below is the target shape.
 
 ```sql
 select t.id, t.title, count(*) as overlap
 from templates t
 join template_places tp on tp.template_id = t.id
-where tp.place_id in (select place_id from bucket_items where user_id = $1)
+where tp.place_id in (select place_id from bucket_list where user_id = $1)
 group by t.id, t.title
 order by overlap desc
 limit 3;
 ```
 
-Ship this. Do not build embeddings, do not add a vector column, do not reach for a recommendation service. Revisit only if overlap scoring visibly fails at real volume.
+Do not build embeddings, do not add a vector column, do not reach for a
+recommendation service. Revisit only if overlap scoring visibly fails at
+real volume.
 
 ## 1.4 Trip lifecycle jobs — this is the retention engine
 
@@ -148,20 +168,20 @@ Edge function: log click → resolve current deeplink → append affiliate + sub
 
 Never put raw partner URLs in HTML. Nightly cron HEAD-checks every active deeplink, stamps `verified_at`, deactivates on repeated failure. Dead links are worse than no links.
 
-## 1.6b Region — migrate now, before launch
+## 1.6b Region — Singapore (shipped)
 
-Supabase is in `us-east-1` (N. Virginia); users are in the Philippines. That's ~230ms client→DB round trip versus ~40–60ms from `ap-southeast-1` (Singapore).
+**Done** Aug 30. Supabase moved from `us-east-1` to `ap-southeast-1` via
+fresh project + schema replay + place seed copy. Vercel functions pinned
+to `sin1` via `vercel.json`. Migration ran with only seed data, so no
+real user data was moved.
 
-**Earlier guidance said defer this. That was based on assuming production data. It's reversed:** pre-launch, with only seed data, this is a fresh project and a schema push — not a migration project. The window closes the moment you have real users.
+Old `us-east-1` project (`cpvsxxwqpmbbdckqvbtm`) kept as rollback
+insurance — fully orphaned (all Vercel env vars swapped, CLI link
+cleared), no code paths point at it, no cost on free tier. Delete
+whenever.
 
-Sequence:
-1. New Supabase project in `ap-southeast-1`
-2. Push schema, RLS policies, and seed data
-3. Swap env vars in Vercel
-4. **Then** pin Vercel functions to `sin1` in `vercel.json` to match
-5. Delete the old project once verified
-
-Do this before the domain goes live. Edge caching of anonymous surfaces still matters afterward, but co-locating removes the underlying penalty rather than papering over it.
+Edge caching layered on top — see the Task 13 entry below for `/`,
+`/trip/[id]`, and OG image ISR windows.
 
 ## 1.7 Still not building
 
@@ -171,16 +191,13 @@ No microservices. No queue. No vector DB. No custom admin. No separate booking s
 
 # PART 2 — UI/UX
 
-## Phase 0 — Live defects (ship today)
+## Phase 0 — Live defects (shipped)
 
-**PWA prompt:** currently fires on first load, including on 404, and covers content. Gate behind second visit OR one lakad created. Never on error routes.
+All three shipped. Kept as record:
 
-**Four states everywhere:** loading (skeleton, max 5s), error (cause + retry), empty (invitation to act), loaded. Discover currently has one.
-
-- Error: *"Couldn't load destinations. Check your connection and try again."* + **Try again**
-- Empty filtered: *"No beaches match these filters."* + **Clear filters**
-
-**Discover grid:** currently one narrow centred column with dead space both sides. Make it 1 / 2 / 3–4 responsive with a max-width container.
+- **PWA prompt** — gated behind second visit or one lakad created; never on error routes
+- **Four states everywhere** — loading skeleton, error with cause + Try again, empty with invitation, loaded
+- **Discover grid** — 1 / 2 / 3 / 4 responsive with `max-w-7xl` container
 
 ## Phase 1 — IA and copy
 
@@ -355,16 +372,40 @@ Responsive to 375px · visible keyboard focus · `prefers-reduced-motion` · con
 
 ## Analytics
 
+Actually shipped (via PostHog, Task 08):
+
 ```
-place_saved         { placeId, source, isAnon }
-bucket_dated        { itemCount, daysUntilTrip }   ← the key metric
-template_applied    { templateId, fromBucket }
-booking_cta_shown   { productId, surface, viewerRole }
-booking_cta_clicked { productId, surface, viewerRole }
-outbound_redirect   { productId, partner, lakadId }
+place_saved                       { placeId, category, source, isAnon }
+place_removed                     { itemId }
+date_prompt_shown                 { itemCount }
+date_prompt_started               { itemCount }
+date_prompt_abandoned             { stage }
+bucket_dated                      { itemCount, daysUntilTrip,
+                                    durationDays, wasAnonymous }
+discover_personalized_shown       { destination, source, itemCount }
+discover_personalized_click       { destination, placeId }
+templates_matched_shown           { templateSlug, overlapCount,
+                                    matchedPlaces }
+template_matched_click            { templateSlug, overlapCount }
+builder_bucket_suggestion_shown   { lakadId, destination,
+                                    matchingCount, totalBucketCount }
+builder_bucket_suggestion_added   { lakadId, placeId,
+                                    wasDestinationMatch }
+anon_bucket_claim_ran             { rowsClaimed, hadAnonId }
+anon_bucket_claim_failed          { message }
 ```
 
-`shown` vs `clicked` is what gives you a real conversion rate. Without it the Boracay test produces an uninterpretable number.
+Not shipped (future):
+
+```
+booking_cta_shown     { productId, surface, viewerRole }
+booking_cta_clicked   { productId, surface, viewerRole }
+outbound_redirect     { productId, partner, lakadId }
+template_applied      { templateSlug }   ← distinct from *matched_click*
+                                            (fires on wizard confirm, not link tap)
+```
+
+`shown` vs `clicked` is what gives a real conversion rate. Without it the Boracay booking test produces an uninterpretable number.
 
 ---
 
@@ -386,21 +427,22 @@ outbound_redirect   { productId, partner, lakadId }
 | 10 | Builder suggests bucket list first | `feat/itinerary-suggests-bucket` |
 | 11 | Template matching on /bucket | `feat/template-matching` |
 
-Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts, Supabase migration to `ap-southeast-1` (Singapore) with Vercel functions pinned to `sin1`, custom `BucketPin` icon replacing the generic Bookmark across nav + place cards, PlaceCard UX cleanup (removed dominant "+ Add to Trip" overlay, promoted bucket save to primary affordance), `?redirect=` support on `/register` for the bucket→dated auth handoff, `next/image` remote hosts configured for Unsplash / Wikimedia / Supabase Storage / Google avatars, Suspense wrap on `/register` so `useSearchParams` doesn't bail out of static export.
+Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + keep-alive cron, `.gitignore` cleanup for next-pwa artifacts, Supabase migration to `ap-southeast-1` (Singapore) with Vercel functions pinned to `sin1`, custom `BucketPin` icon replacing the generic Bookmark across nav + place cards, PlaceCard UX cleanup (removed dominant "+ Add to Trip" overlay, promoted bucket save to primary affordance), `?redirect=` support on `/register` for the bucket→dated auth handoff, `next/image` remote hosts configured for Unsplash / Wikimedia / Supabase Storage / Google avatars, Suspense wrap on `/register` so `useSearchParams` doesn't bail out of static export, `TripsContext` consolidating the itineraries fetch across Sidebar / HomeClient / Dashboard (single fetch, localStorage-first seed, refetch on mutation), Postgres AFTER-ROW trigger bumping `itineraries.updated_at` on child-row writes so the sidebar's "most recent" reordering reflects real activity, `bucket_list_id` fk on `itinerary_activities` for durable Task-10 identity matching, service-worker fix for the ~7.7s cold-load auth latency (`next.config.js` runtimeCaching now excludes `/auth/v1/*`), Sidebar sign-out button, vocab drift killed (removed the English/Filipino locale swap on `useLocalizedTrip` — "Lakad" is brand everywhere), ISR + on-mutation invalidation for `/trip/[id]` and its OG image (Task 13).
 
 **Correction on record:** Task 01's root cause was a paused free-tier Supabase project, not the LockManager theory in the original task file. The fixes were still correct — they make any future stall degrade gracefully rather than white-screen — but the diagnosis was wrong.
 
-### Do this week
+### Not-code work you still owe
 
 1. **Supabase Pro (~$25/mo)** — the keep-alive cron is a workaround that makes GitHub Actions load-bearing for uptime. Pay for the tier before a real domain points here.
-2. **Verify the funnel end-to-end in prod PostHog** — with Task 07 shipped, `bucket_dated` should now fire against real traffic. Confirm it lands, confirm `wasAnonymous` splits the two paths correctly, then set up the `place_saved → bucket_dated` funnel view in PostHog.
-3. **Content** — 15–20 destination guides. Starts now, runs in parallel with everything below.
+2. **Custom domain** — currently on `tara-letsgo.vercel.app`. Point a real domain before SEO authority accrues to the Vercel subdomain.
+3. **Set up PostHog funnel view** — `place_saved → bucket_dated → template_matched_click` (or `booking_cta_clicked` once that ships). All events already fire; just needs the view configured in the PostHog dashboard.
+4. **Content** — 15–20 destination guides. See "Content" section below.
 
 ### Then
 
 | # | Work |
 |---|---|
-| #29 | AppShell retrofit: trip/new, trip/[id], edit, search, templates, ai-planner |
+| ~~#29~~ | ~~AppShell retrofit: trip/new, trip/[id], edit, search, templates, ai-planner~~ — **done in `8766db4`** |
 | ~~—~~ | ~~Save affordance on search~~ — **done, bucket-save bookmark on each `/search` result via `SearchResultRow`** |
 | — | ~~Save affordance on templates~~ — **skipped by design; template activities aren't linked to places, and MatchingTemplateCard on /bucket handles the reverse direction. Revisit only if user data shows a real "save this whole trip idea" need** |
 | ~~—~~ | ~~Un-save from PlaceCard~~ — **done via `removeFromBucketByPlace(placeId, source)` which resolves the row via RLS-scoped select + delete. Also applied to `SearchResultRow`.** |
@@ -427,9 +469,9 @@ This is the only work that generates traffic, the slowest to compound, and the o
 
 ### Launch gate
 
-Supabase Pro · AppShell on all routes · no false metrics · Sentry DSN set · domain pointed
+Supabase Pro · no false metrics · Sentry DSN set · domain pointed
 
-(Struck from the launch gate since shipped: migration applied · duplicate Vercel project removed · region migrated · analytics live.)
+(Struck from the launch gate since shipped: migration applied · duplicate Vercel project removed · region migrated · analytics live · AppShell on all routes.)
 
 ### Post-launch
 
@@ -437,4 +479,4 @@ Boracay booking test (`partner_products`, `/go`, two slots) — needs traffic to
 
 ### Why this order
 
-Domain before content, or SEO authority accrues to a URL you're abandoning. Booking test after traffic, or the result is noise. Task 10 (builder suggests bucket) before Task 11 (template matching), so the builder's suggestion surface exists before templates layer on top of it.
+Domain before content, or SEO authority accrues to a URL you're abandoning. Booking test after traffic, or the result is noise.
