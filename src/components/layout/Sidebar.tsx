@@ -205,11 +205,13 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Hero slot — reserve height so a late-arriving card (SDK auth
-          taking 7s+ on cold loads) can't shift the nav 100+px 8 seconds
-          into the session. Height is set to the max the slot can hold
-          (BUILDING LAKAD ~148px) plus its own mb-4. */}
-      {!collapsed && <div className="min-h-[164px]">
+      {/* Hero slot. Previously reserved 164px to cover a ~7s cold-load
+          window where SDK auth was blocked by the service worker (see
+          Task 12 fix, next.config.js). With that gone, returning users
+          get the hero at first paint from localStorage, and first-visit
+          users see it appear within a single paint frame after auth
+          resolves — no reservation needed. */}
+      {!collapsed && <div>
       {user && activeTrip && (
         <div className="px-3 mb-4">
           <Link
