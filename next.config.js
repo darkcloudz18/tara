@@ -20,9 +20,20 @@ const withPWA = require('next-pwa')({
         networkTimeoutSeconds: 10,
       },
     },
-    // Cache Supabase API responses
+    // Cache Supabase REST / Storage / Functions responses.
+    //
+    // Excludes /auth/v1/* deliberately. The previous pattern
+    // `.supabase.co/*` matched auth token refreshes, and NetworkFirst
+    // with networkTimeoutSeconds: 10 was the upstream cause of the
+    // ~7.7s cold-load getSession() latency (Task 12): every cold-load
+    // token refresh had to wait up to 10s for the service worker to
+    // decide network vs cache before Supabase JS's onAuthStateChange
+    // could fire. Auth requests must never be cached — a stale token
+    // response is actively harmful — and shouldn't race a timeout
+    // either. Letting them pass through with no runtimeCaching rule
+    // returns them to the browser's default fetch path.
     {
-      urlPattern: /^https:\/\/.*\.supabase\.co\/.*$/,
+      urlPattern: /^https:\/\/[^/]+\.supabase\.co\/(rest|storage|functions)\/.*$/,
       handler: 'NetworkFirst',
       options: {
         cacheName: 'supabase-cache',
