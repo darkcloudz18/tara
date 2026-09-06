@@ -417,6 +417,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | ~~—~~ | ~~`itineraries.updated_at` trigger on child-row mutations~~ — **done, Postgres AFTER-ROW trigger on `itinerary_days` and `itinerary_activities` (all three verbs) bumps the parent's `updated_at` via `SECURITY DEFINER` functions. Verified end-to-end on the Singapore project.** |
 | ~~—~~ | ~~Live `activeTrip` reorder on mutation~~ — **done, mutation paths (update itinerary/day/activity, delete day/activity/itinerary, add-from-bucket, create-from-wizard, create-from-date-prompt) now call `useTrips().refetch()` after the write. Sidebar and page hero reorder live, no reload needed.** |
 | — | Delete the old `us-east-1` Supabase project (currently held as rollback insurance — remove after ~1 week of Singapore stability) |
+| — | Full cross-device bucket reconciliation (email-anchor link) — MVP shipped instrumentation + info UX + auto-claim-on-sign-in. If `anon_bucket_claim_ran` events show a high rate of `rowsClaimed: 0` on signup, build `anon_email_links(anon_id, email)` populated at first save via a skippable email prompt, then reconcile server-side at signup |
 
 ### Content — starts now, runs in parallel
 

@@ -65,6 +65,17 @@ export default function BucketClient() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Places you&rsquo;ve saved, ready to become a lakad.
           </p>
+          {/* Cross-device orphan escape hatch — the auto-claim on sign-in
+              only sees the anon_id from the browser it runs in. Signed-in
+              users who saved on another device need to sign in there too
+              for those saves to arrive. Anon users see the standard
+              "sign in to keep your list" nudge in the first-save toast
+              instead. */}
+          {user && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+              Saved places from another device? Sign in there to bring them over.
+            </p>
+          )}
         </div>
 
         {/* Matching template + date prompt — only surface when the
