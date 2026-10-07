@@ -434,7 +434,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 ### Not-code work you still owe
 
 1. **Supabase Pro (~$25/mo)** — the keep-alive cron is a workaround that makes GitHub Actions load-bearing for uptime. Pay for the tier before a real domain points here.
-2. **Custom domain** — currently on `tara-letsgo.vercel.app`. Point a real domain before SEO authority accrues to the Vercel subdomain.
+2. ~~**Custom domain**~~ — **done, live on taralakad.com**. Still need to update the Supabase Auth URL Config in the dashboard (Site URL + redirect allow-list) so password reset and OAuth don't break.
 3. **Set up PostHog funnel view** — `place_saved → bucket_dated → template_matched_click` (or `booking_cta_clicked` once that ships). All events already fire; just needs the view configured in the PostHog dashboard.
 4. **Content** — 15–20 destination guides. See "Content" section below.
 

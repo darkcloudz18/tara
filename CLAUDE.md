@@ -5,7 +5,7 @@ Project context for Claude Code. Keep this file short — it loads on every requ
 ## Product
 
 **Tara Let's Go** — trip planning for Filipino travelers, Philippines only.
-Staging: tara-letsgo.vercel.app · Solo founder/dev.
+Live: taralakad.com (aliased from the old Vercel subdomain). Solo founder/dev.
 
 **Status: pre-launch.** No real users. All current itinerary/user counts are seed data. No custom domain yet. Breaking changes are cheap right now — take advantage of that before launch.
 

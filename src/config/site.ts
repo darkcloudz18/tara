@@ -1,7 +1,11 @@
 export const siteConfig = {
   name: 'Tara',
   description: 'All-in-one travel platform for the Philippines. Plan trips, discover content, and book with confidence.',
-  url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  // Default to the production domain, not localhost — a missing env var
+  // shouldn't silently produce broken canonicals / OG images in prod.
+  // Local dev picks this up too; override with NEXT_PUBLIC_APP_URL in
+  // .env.local if you need the canonical pointed somewhere else.
+  url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://taralakad.com',
   ogImage: '/og-image.jpg',
   links: {
     facebook: 'https://facebook.com/taraph',
