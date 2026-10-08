@@ -205,14 +205,17 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Hero slot. Previously reserved 164px to cover a ~7s cold-load
-          window where SDK auth was blocked by the service worker (see
-          Task 12 fix, next.config.js). With that gone, returning users
-          get the hero at first paint from localStorage, and first-visit
-          users see it appear within a single paint frame after auth
-          resolves — no reservation needed. */}
-      {!collapsed && <div>
-      {user && activeTrip && (
+      {/* Hero widgets. Previously wrapped in a reserved-height outer div
+          for the ~7s cold-load SDK auth window; the Task 12 service
+          worker fix removed the reservation, which left the wrapper
+          serving no purpose but still producing a hydration mismatch
+          (SSR saw no cached user → wrapper was `<div></div>`; client
+          hydration populated activeTrip from localStorage → wrapper
+          became `<div><div class="px-3 mb-4">…</div></div>`, and React
+          hard-errored on the mismatched-wrapper shape).
+          Gating each widget directly on `!collapsed` turns the mismatch
+          into a conditional insert, which React 18 recovers from. */}
+      {user && activeTrip && !collapsed && (
         <div className="px-3 mb-4">
           <Link
             href={`/trip/${activeTrip.id}/edit`}
@@ -250,7 +253,7 @@ export default function Sidebar() {
           fetch to have returned AND the SDK to have confirmed, so we
           never briefly render "Start your lakad" for a user whose fetch
           just raced the SDK's slow initial validation. */}
-      {user && !activeTrip && tripFetchDone && sdkConfirmed && (
+      {user && !activeTrip && tripFetchDone && sdkConfirmed && !collapsed && (
         <div className="px-3 mb-4">
           <Link
             href="/trip/new"
@@ -266,7 +269,6 @@ export default function Sidebar() {
           </Link>
         </div>
       )}
-      </div>}
 
       {/* Main Navigation */}
       {/* Bottom fade so any content clipped by the scroll edge (e.g. the
