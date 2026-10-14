@@ -324,6 +324,19 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                     </button>
                   ))}
                 </div>
+                <div className="mt-4 flex items-center gap-3">
+                  <span className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500">or</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Step 2 wires destinationKnown = false and carries it through the wizard
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors"
+                  >
+                    <Sparkles className="w-4 h-4 text-teal-500" aria-hidden="true" />
+                    Not sure yet — help me pick
+                  </button>
+                </div>
               </div>
             )}
           </div>
