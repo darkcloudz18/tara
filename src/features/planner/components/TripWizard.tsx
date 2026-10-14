@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { getPopularDestinations } from '../services/suggestionService'
 import { TripTemplate } from '../data/tripTemplates'
+import { capture } from '@/lib/analytics'
 
 interface TripWizardProps {
   onComplete: (data: TripWizardData) => void
@@ -147,6 +148,15 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
   }
 
   const handleNext = () => {
+    if (step === 1) {
+      capture('wizard_destination_mode_selected', {
+        mode: formData.destinationKnown ? 'known' : 'not_sure',
+      })
+    }
+    capture('wizard_step_completed', {
+      step,
+      destinationKnown: formData.destinationKnown,
+    })
     if (step < 3) {
       setStep(step + 1)
     } else {
