@@ -22,15 +22,29 @@ interface TripWizardProps {
   initialTemplate?: TripTemplate
 }
 
+export type DatesMode = 'exact' | 'month'
+export type BudgetBand = '' | 'low' | 'mid' | 'high' | 'luxe'
+
 export interface TripWizardData {
   origin: string
   destination: string
   destinationKnown: boolean
+  datesMode: DatesMode
   startDate: string
   endDate: string
+  tripMonth: string            // 'YYYY-MM' when datesMode === 'month', else ''
+  durationDays: number         // used when datesMode === 'month'; 0 otherwise
   travelers: number
+  budgetBand: BudgetBand       // per person, per day
   tripType: 'leisure' | 'adventure' | 'budget' | 'luxury'
 }
+
+const BUDGET_BANDS: { id: Exclude<BudgetBand, ''>; label: string; perDay: string; desc: string }[] = [
+  { id: 'low', label: 'Budget', perDay: '~₱3k/day', desc: 'Hostels, local food, public transport' },
+  { id: 'mid', label: 'Comfortable', perDay: '~₱5k/day', desc: 'Mid-range stays, a few paid activities' },
+  { id: 'high', label: 'Premium', perDay: '~₱8k/day', desc: 'Nicer hotels, tours, private transfers' },
+  { id: 'luxe', label: 'Luxury', perDay: '₱12k+/day', desc: 'Resorts, fine dining, no compromises' },
+]
 
 const TRIP_TYPES = [
   { id: 'leisure', label: 'Leisure', icon: '🏖️', desc: 'Relaxing beach & resort vibes' },
@@ -51,9 +65,13 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
     origin: '',
     destination: '',
     destinationKnown: true,
+    datesMode: 'exact',
     startDate: '',
     endDate: '',
+    tripMonth: '',
+    durationDays: 0,
     travelers: 1,
+    budgetBand: '',
     tripType: 'leisure',
   })
 
@@ -79,9 +97,13 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
         origin: initialTemplate.startingFrom,
         destination: initialTemplate.destination,
         destinationKnown: true,
+        datesMode: 'exact',
         startDate: start.toISOString().split('T')[0],
         endDate: end.toISOString().split('T')[0],
+        tripMonth: '',
+        durationDays: 0,
         travelers: 2,
+        budgetBand: '',
         tripType: initialTemplate.bestFor.includes('adventure') ? 'adventure' :
                   initialTemplate.bestFor.includes('budget') ? 'budget' :
                   initialTemplate.bestFor.includes('luxury') ? 'luxury' : 'leisure',
@@ -114,9 +136,11 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
       case 1:
         return formData.origin && (formData.destination || !formData.destinationKnown)
       case 2:
-        return formData.startDate && formData.endDate
+        return formData.datesMode === 'exact'
+          ? Boolean(formData.startDate && formData.endDate)
+          : Boolean(formData.tripMonth && formData.durationDays > 0)
       case 3:
-        return formData.travelers > 0
+        return formData.travelers > 0 && formData.budgetBand !== ''
       default:
         return true
     }
@@ -138,6 +162,7 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
   }
 
   const getTotalDays = () => {
+    if (formData.datesMode === 'month') return formData.durationDays
     if (!formData.startDate || !formData.endDate) return 0
     const start = new Date(formData.startDate)
     const end = new Date(formData.endDate)
@@ -341,7 +366,14 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                   onClick={() => {
                     setDestSearch('')
                     setShowDestDropdown(false)
-                    setFormData({ ...formData, destination: '', destinationKnown: false })
+                    setFormData({
+                      ...formData,
+                      destination: '',
+                      destinationKnown: false,
+                      datesMode: 'month',
+                      startDate: '',
+                      endDate: '',
+                    })
                   }}
                   className="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors"
                 >
@@ -361,7 +393,13 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                     <button
                       type="button"
                       onClick={() =>
-                        setFormData({ ...formData, destinationKnown: true })
+                        setFormData({
+                          ...formData,
+                          destinationKnown: true,
+                          datesMode: 'exact',
+                          tripMonth: '',
+                          durationDays: 0,
+                        })
                       }
                       className="mt-2 text-sm font-medium text-teal-700 dark:text-teal-300 underline underline-offset-2 hover:no-underline"
                     >
@@ -391,32 +429,79 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Dates mode toggle — only offered on the 'help me pick' path */}
+            {!formData.destinationKnown && (
+              <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, datesMode: 'month' })
+                  }
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    formData.datesMode === 'month'
+                      ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Just the month
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, datesMode: 'exact' })
+                  }
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    formData.datesMode === 'exact'
+                      ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Exact dates
+                </button>
+              </div>
+            )}
+
+            {formData.datesMode === 'exact' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    min={formData.startDate || new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            ) : (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Start Date
+                  Travel month
                 </label>
                 <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
+                  type="month"
+                  value={formData.tripMonth}
+                  onChange={(e) => setFormData({ ...formData, tripMonth: e.target.value })}
+                  min={new Date().toISOString().slice(0, 7)}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  min={formData.startDate || new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+            )}
 
             {getTotalDays() > 0 && (
               <div className="bg-teal-50 dark:bg-teal-900/30 rounded-xl p-4 text-center">
@@ -428,27 +513,43 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
 
             {/* Quick Duration Selection */}
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Quick select duration:</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                {formData.datesMode === 'exact'
+                  ? 'Quick select duration:'
+                  : 'How long?'}
+              </p>
               <div className="flex flex-wrap gap-2">
-                {[3, 5, 7, 10, 14].map((days) => (
-                  <button
-                    key={days}
-                    onClick={() => {
-                      const start = new Date()
-                      start.setDate(start.getDate() + 7) // Start a week from now
-                      const end = new Date(start)
-                      end.setDate(end.getDate() + days - 1)
-                      setFormData({
-                        ...formData,
-                        startDate: start.toISOString().split('T')[0],
-                        endDate: end.toISOString().split('T')[0],
-                      })
-                    }}
-                    className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
-                  >
-                    {days} days
-                  </button>
-                ))}
+                {[3, 5, 7, 10, 14].map((days) => {
+                  const isSelected =
+                    formData.datesMode === 'month' && formData.durationDays === days
+                  return (
+                    <button
+                      key={days}
+                      onClick={() => {
+                        if (formData.datesMode === 'month') {
+                          setFormData({ ...formData, durationDays: days })
+                          return
+                        }
+                        const start = new Date()
+                        start.setDate(start.getDate() + 7)
+                        const end = new Date(start)
+                        end.setDate(end.getDate() + days - 1)
+                        setFormData({
+                          ...formData,
+                          startDate: start.toISOString().split('T')[0],
+                          endDate: end.toISOString().split('T')[0],
+                        })
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm transition-colors ${
+                        isSelected
+                          ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300'
+                      }`}
+                    >
+                      {days} days
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -492,6 +593,41 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                 >
                   +
                 </button>
+              </div>
+            </div>
+
+            {/* Budget per person, per day */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Budget per person, per day
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {BUDGET_BANDS.map((band) => (
+                  <button
+                    key={band.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, budgetBand: band.id })}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      formData.budgetBand === band.id
+                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h3 className={`font-semibold ${
+                        formData.budgetBand === band.id
+                          ? 'text-teal-700 dark:text-teal-300'
+                          : 'text-gray-900 dark:text-white'
+                      }`}>
+                        {band.label}
+                      </h3>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {band.perDay}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{band.desc}</p>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -549,6 +685,17 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                     {formData.travelers} {formData.travelers === 1 ? 'person' : 'people'}
                   </span>
                 </div>
+                {formData.budgetBand && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Budget</span>
+                    <span className="text-gray-900 dark:text-white font-medium">
+                      {BUDGET_BANDS.find(b => b.id === formData.budgetBand)?.label}
+                      <span className="text-gray-500 dark:text-gray-400 ml-1">
+                        · {BUDGET_BANDS.find(b => b.id === formData.budgetBand)?.perDay}
+                      </span>
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">Type</span>
                   <span className="text-gray-900 dark:text-white font-medium">
