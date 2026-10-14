@@ -7,7 +7,7 @@ Project context for Claude Code. Keep this file short — it loads on every requ
 **Tara Let's Go** — trip planning for Filipino travelers, Philippines only.
 Live: taralakad.com (aliased from the old Vercel subdomain). Solo founder/dev.
 
-**Status: pre-launch.** No real users. All current itinerary/user counts are seed data. No custom domain yet. Breaking changes are cheap right now — take advantage of that before launch.
+**Status: pre-launch.** No real users. All current itinerary/user counts are seed data. Breaking changes are cheap right now — take advantage of that before launch.
 
 **Seed data policy:** seeded *templates* are real curated content and stay. Seeded *social proof* (user counts, avatars, "500+ created") is false and must not ship. Never display a metric that isn't true.
 
@@ -65,6 +65,30 @@ Booking CTAs belong where a trip is real: day view, shared lakad, pre-departure 
 
 **Analytics** — user-facing features ship with their events wired in the same PR. A feature merged without instrumentation is a feature you can't evaluate.
 
+## Priority order
+
+**1. Useful** — does it help someone plan a trip they actually take?
+**2. Inspiring** — does it make someone want to go?
+**3. Earning** — does it pay for itself?
+
+The bar for any feature: *would someone planning a real trip to El Nido next month be glad this exists?* If not, it waits.
+
+Revenue is last in sequence, not absent. Booking links ship only after the tool is demonstrably useful.
+
+## Content strategy
+
+SEO comes from **curated place and destination pages**, not hand-written guides. Positioning is *accurate, current, sourced* — the site never claims first-hand travel experience.
+
+**Provenance is mandatory.** Every substantive fact needs a `source_urls` entry and a `verified_at` date, displayed on the page. If a fact can't be sourced, it doesn't ship — no inferred fees, no guessed durations.
+
+**Thin pages are the main risk.** A place cannot be `published` without 3+ tips, fee information, and `getting_there`. Drafts are excluded from the sitemap and internal links.
+
+**Sequencing is the differentiator** — `part_of_tour`, `pairs_with`, `not_same_day_as`. That's what Google Maps and Klook don't provide.
+
+**A partner is never a source for a fact about a place.** Klook's price is a packaged tour price, not the gate fee. `entrance_fee` comes from official sources only; partner pricing lives in `partner_products`. Never let commercial availability shape which places get pages or how they're described.
+
+Spec: `docs/places-spec.md`
+
 ## Visual rules
 
 **Light mode is the default.** Dark is the option. Travel is sold on photography and users are outdoors in daylight.
@@ -86,9 +110,11 @@ Affiliate disclosure is plain and visible: *"We earn a commission on some bookin
 
 ## Do not build
 
-Microservices · queues · vector DB / embeddings · custom admin UI · notification service · separate booking service · paid-placement ranking.
+Microservices · queues · vector DB / embeddings · notification service · separate booking service · paid-placement ranking.
 
 Solo founder. Every service is a 2am page. Template matching is a SQL overlap count, not a recommender.
+
+**Exception, deliberate:** a narrow `/admin` for place data entry *is* in scope. Data entry is now the core content work and will be delegated to an editor without database access. It is a data-entry tool, not a CMS — no rich text, no media library, no approval workflow.
 
 ## Before finishing any task
 
@@ -110,4 +136,7 @@ Solo founder. Every service is a 2am page. Template matching is a SQL overlap co
 ## Reference
 
 Full plan: `docs/build-plan.md`
+Launch plan: `docs/launch-plan.md`
+Places/destinations spec: `docs/places-spec.md`
+Smart build spec: `docs/smart-build-spec.md`
 Active tasks: `docs/tasks/`

@@ -183,9 +183,27 @@ whenever.
 Edge caching layered on top — see the Task 13 entry below for `/`,
 `/trip/[id]`, and OG image ISR windows.
 
-## 1.7 Still not building
+## 1.7 Smart build — the front door onto the builder
 
-No microservices. No queue. No vector DB. No custom admin. No separate booking service. Solo founder — every service is a 2am page.
+Spec: `docs/smart-build-spec.md`.
+
+For users who want to travel but can't name a destination. Four questions — days, budget per person, origin, when — ranked destinations (plain SQL, no ML), honest refusals when nothing fits, draft lakad opened in the existing builder.
+
+Writes into the existing lakad structure. The builder itself does not change. Tasks 14 (wizard "Not sure yet"), 16 (`min_viable_days` + `travel_times`), 17 (ranking + refusal), 18 (draft generation).
+
+## 1.8 Places and destinations — content strategy
+
+Spec: `docs/places-spec.md`.
+
+SEO shifts from hand-written guides to curated place and destination data with mandatory provenance (`source_urls`, `verified_at`). Thin-page guard: no publish without 3+ tips, fee info, `getting_there`. Partner products attach where they exist and are never a source for facts about the place.
+
+Introduces a narrow `/admin/places` for data entry, delegated to a VA via the `editor` role on `profiles`. Tasks 15 (schema + admin), 20 (public pages), 21 (sitemap + housekeeping).
+
+## 1.9 Still not building
+
+No microservices. No queue. No vector DB. No separate booking service. Solo founder — every service is a 2am page.
+
+**Exception:** the `/admin/places` data-entry tool above. Narrow by design — no rich text, no media library, no approval workflow.
 
 ---
 
@@ -436,7 +454,7 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 1. **Supabase Pro (~$25/mo)** — the keep-alive cron is a workaround that makes GitHub Actions load-bearing for uptime. Pay for the tier before a real domain points here.
 2. ~~**Custom domain**~~ — **done, live on taralakad.com**. Still need to update the Supabase Auth URL Config in the dashboard (Site URL + redirect allow-list) so password reset and OAuth don't break.
 3. **Set up PostHog funnel view** — `place_saved → bucket_dated → template_matched_click` (or `booking_cta_clicked` once that ships). All events already fire; just needs the view configured in the PostHog dashboard.
-4. **Content** — 15–20 destination guides. See "Content" section below.
+4. **Content** — curated places + destinations, with provenance. See "Content" section below. **Do El Nido by hand first** (Track B1 in `docs/launch-plan.md`) before briefing a VA.
 
 ### Then
 
@@ -461,17 +479,38 @@ Also shipped: Sentry (client/server/edge), PWA prompt gating, `/api/health` + ke
 | — | Delete the old `us-east-1` Supabase project — decided to keep for now. Stale references cleaned up (13 Vercel env vars, `supabase/.temp/` link), so the project is fully orphaned in prod and safe to delete whenever. No cost on free tier, no code path points at it. |
 | — | Full cross-device bucket reconciliation (email-anchor link) — MVP shipped instrumentation + info UX + auto-claim-on-sign-in. If `anon_bucket_claim_ran` events show a high rate of `rowsClaimed: 0` on signup, build `anon_email_links(anon_id, email)` populated at first save via a skippable email prompt, then reconcile server-side at signup |
 
+### Next — launch-plan Track A (in order)
+
+| # | Work | Spec |
+|---|---|---|
+| 14 | Destination becomes optional in `/trip/new` — "Not sure yet — help me pick" alongside the destination pills; audit steps 2–3 for days/budget/dates/origin | `docs/launch-plan.md` A1 |
+| 15 | Places + destinations schema; `/admin/places` queue + form + role gate | `docs/places-spec.md` |
+| 16 | `min_viable_days` + `travel_times` on destinations; admin fields; populate the four from Track B2 | `docs/smart-build-spec.md` |
+| 17 | Smart build suggestion engine — SQL ranking, honest refusals, bucket-list priority | `docs/smart-build-spec.md` |
+| 18 | Draft generation into the existing lakad structure; running cost estimate | `docs/smart-build-spec.md` |
+| 19 | Discover → action: "Plan a trip here" on place cards; remove likes/comments; audit remaining invented numbers | `docs/launch-plan.md` A5 |
+| 20 | `/places/[slug]` and `/destinations/[slug]`; thin-page guard; trust block | `docs/places-spec.md` |
+| 21 | Sitemap (static + published places), Supabase auth redirect URLs → taralakad.com, analytics events for the new flow | `docs/launch-plan.md` A8 |
+
 ### Content — starts now, runs in parallel
 
-15–20 destination guides, written by you. No code dependency. One per day alongside whatever is being built.
+Curated places and destinations with provenance (`source_urls` + `verified_at`), not hand-written guides. Spec: `docs/places-spec.md`. Sequence: `docs/launch-plan.md` Track B.
 
-This is the only work that generates traffic, the slowest to compound, and the only piece that cannot be delegated. Two weeks of engineering with zero content written is the drift pattern — engineering always supplies more legitimate-looking urgent work.
+**Phase 1 (you, this week):** El Nido ~15 places to standard, by hand. Time it, note which fields were hard to source. B2's one hour of `min_viable_days` + `travel_times` + budget bands for the four destinations unblocks Task 17 (Smart Build ranking).
+
+**Phase 2 (VA, after El Nido):** Boracay → Bohol → Siargao, briefed with your El Nido work as the worked example. Pay per completed place, not hourly. Review the first ten yourself.
+
+**Phase 3 (later):** land trips — Baguio, La Union, Zambales, Batangas, Bataan, Rizal, Tagaytay. Working-people-with-kids trips, no flight. Unserved by every Philippine travel site.
+
+Guides come later, built on operator/traveller interviews, sitting on top of the data. The site never claims first-hand travel.
+
+Two weeks of engineering with zero content work is the drift pattern — engineering always supplies more legitimate-looking urgent work.
 
 ### Launch gate
 
-Supabase Pro · no false metrics · Sentry DSN set · domain pointed
+Supabase Pro · no false metrics · Sentry DSN set · wizard works without a destination · Smart Build returns real numbers · El Nido fully populated to spec · Supabase auth redirect URLs → taralakad.com
 
-(Struck from the launch gate since shipped: migration applied · duplicate Vercel project removed · region migrated · analytics live · AppShell on all routes.)
+(Struck from the launch gate since shipped: migration applied · duplicate Vercel project removed · region migrated · analytics live · AppShell on all routes · domain pointed.)
 
 ### Post-launch
 
