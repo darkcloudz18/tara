@@ -28,6 +28,61 @@ export interface ContentReport {
   }
 }
 
+export interface AdminPlaceQueueRow {
+  id: string
+  name: string
+  slug: string | null
+  status: 'draft' | 'published' | 'needs_review'
+  verified_at: string | null
+  destination_id: string | null
+  destination_name: string | null
+  completeness: number        // 0–100
+  stale: boolean              // verified_at > 6 months OR null
+}
+
+/**
+ * Share the same shape used by the queue + the form completeness meter.
+ * Each field is weighted equally. Three "mandatory for publish" fields
+ * (3 tips, fee info, getting_there) are tracked separately and gate the
+ * thin-page check — step 5 wires that in. For now this is a progress
+ * indicator the VA uses to pick the worst place next.
+ */
+export const PLACE_COMPLETENESS_FIELDS = [
+  'slug',
+  'destination_id',
+  'summary',
+  'getting_there',
+  'nearest_hub',
+  'duration_minutes',
+  'best_months',
+  'part_of_tour',
+  'fee_or_free',          // entrance_fee IS NOT NULL OR fee_notes mentions 'free'
+  'tips_three_plus',      // tips.length >= 3
+  'source_urls_present',  // source_urls.length > 0
+  'verified_at',
+] as const
+
+export function placeCompletenessPercent(row: any): number {
+  const points = PLACE_COMPLETENESS_FIELDS.reduce((n, field) => {
+    switch (field) {
+      case 'fee_or_free': {
+        if (row.entrance_fee !== null && row.entrance_fee !== undefined) return n + 1
+        if (typeof row.fee_notes === 'string' && /free/i.test(row.fee_notes)) return n + 1
+        return n
+      }
+      case 'tips_three_plus':
+        return n + (Array.isArray(row.tips) && row.tips.length >= 3 ? 1 : 0)
+      case 'source_urls_present':
+        return n + (Array.isArray(row.source_urls) && row.source_urls.length > 0 ? 1 : 0)
+      case 'best_months':
+        return n + (Array.isArray(row.best_months) && row.best_months.length > 0 ? 1 : 0)
+      default:
+        return n + (row[field] ? 1 : 0)
+    }
+  }, 0)
+  return Math.round((points / PLACE_COMPLETENESS_FIELDS.length) * 100)
+}
+
 export interface AdminUser {
   id: string
   email: string
@@ -316,6 +371,82 @@ export const adminService = {
     }
 
     return { places: data || [], total: count || 0 }
+  },
+
+  /**
+   * Queue for /admin/places — returns places with destination name,
+   * completeness %, and a staleness flag. Supports the spec filters.
+   */
+  async getPlaceQueue(opts: {
+    destinationId?: string
+    status?: 'draft' | 'published' | 'needs_review'
+    incomplete?: boolean       // < 100%
+    stale?: boolean            // verified_at older than 6 months OR never verified
+  } = {}): Promise<AdminPlaceQueueRow[]> {
+    let query = supabase
+      .from('places')
+      .select(`
+        id, name, slug, status, verified_at, is_active,
+        destination_id, summary, entrance_fee, fee_notes, duration_minutes,
+        getting_there, nearest_hub, best_months, part_of_tour,
+        tips, source_urls,
+        destination:destinations(id, name)
+      `)
+      .order('id', { ascending: true })
+
+    if (opts.destinationId) query = query.eq('destination_id', opts.destinationId)
+    if (opts.status) query = query.eq('status', opts.status)
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching place queue:', error)
+      return []
+    }
+
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+
+    let rows: AdminPlaceQueueRow[] = (data || []).map((p: any) => {
+      const completeness = placeCompletenessPercent(p)
+      const stale = !p.verified_at || new Date(p.verified_at) < sixMonthsAgo
+      const dest = Array.isArray(p.destination) ? p.destination[0] : p.destination
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        status: p.status,
+        verified_at: p.verified_at,
+        destination_id: p.destination_id,
+        destination_name: dest?.name ?? null,
+        completeness,
+        stale,
+      }
+    })
+
+    if (opts.incomplete) rows = rows.filter((r) => r.completeness < 100)
+    if (opts.stale) rows = rows.filter((r) => r.stale)
+
+    // Default sort: completeness ascending — worst first.
+    rows.sort((a, b) => a.completeness - b.completeness)
+
+    return rows
+  },
+
+  /**
+   * Minimal destination list for the queue + form filter dropdowns.
+   */
+  async getDestinationsForFilter(): Promise<{ id: string; name: string; slug: string }[]> {
+    const { data, error } = await supabase
+      .from('destinations')
+      .select('id, name, slug')
+      .order('name', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching destinations:', error)
+      return []
+    }
+    return data || []
   },
 
   /**
