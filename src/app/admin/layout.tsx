@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase'
 import { useUser } from '@/contexts/UserContext'
 import { adminService } from '@/features/admin/services/adminService'
 
-const NAV_ITEMS = [
+const ADMIN_NAV_ITEMS = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/admin/users', icon: Users, label: 'Users' },
   { href: '/admin/trips', icon: Map, label: 'Trips' },
@@ -30,11 +30,19 @@ const NAV_ITEMS = [
   { href: '/admin/settings', icon: Settings, label: 'Settings' },
 ]
 
+// Editor-only accounts see the content tools, nothing else. Backed by RLS —
+// if they manually navigate to /admin/users the API still refuses them, this
+// just avoids showing dead links.
+const EDITOR_NAV_ITEMS = [
+  { href: '/admin/places', icon: FileText, label: 'Places' },
+]
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [allowed, setAllowed] = useState(false)
+  const [editorOnly, setEditorOnly] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user, loading: userLoading } = useUser()
 
@@ -44,17 +52,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.push('/login?redirect=/admin')
       return
     }
-    const checkAdmin = async () => {
-      const admin = await adminService.isAdmin()
-      if (!admin) {
+    const checkAccess = async () => {
+      const canEdit = await adminService.canEditPlaces()
+      if (!canEdit) {
         router.push('/')
         return
       }
-      setIsAdmin(true)
+      const editor = await adminService.isEditorOnly()
+      setEditorOnly(editor)
+      setAllowed(true)
       setLoading(false)
     }
-    checkAdmin()
+    checkAccess()
   }, [user, userLoading, router])
+
+  const navItems = editorOnly ? EDITOR_NAV_ITEMS : ADMIN_NAV_ITEMS
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -72,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
-  if (!isAdmin) {
+  if (!allowed) {
     return null
   }
 
@@ -109,7 +121,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Navigation */}
         <nav className="px-4 py-6 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
             const Icon = item.icon
 
@@ -141,7 +153,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                 {user?.email?.split('@')[0]}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{editorOnly ? 'Editor' : 'Administrator'}</p>
             </div>
             <button
               onClick={handleLogout}

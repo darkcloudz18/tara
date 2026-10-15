@@ -11,6 +11,7 @@ import {
   GripVertical,
 } from 'lucide-react'
 import { adminService } from '@/features/admin/services/adminService'
+import { useAdminOnly } from '@/features/admin/hooks/useAdminOnly'
 import { useToast } from '@/contexts/ToastContext'
 
 interface Place {
@@ -24,6 +25,7 @@ interface Place {
 }
 
 export default function AdminFeaturedPage() {
+  const { ready: adminReady } = useAdminOnly()
   const { success, error } = useToast()
   const [places, setPlaces] = useState<Place[]>([])
   const [featuredPlaces, setFeaturedPlaces] = useState<Place[]>([])
@@ -57,6 +59,8 @@ export default function AdminFeaturedPage() {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.location?.toLowerCase().includes(search.toLowerCase())
   )
+
+  if (!adminReady) return null
 
   return (
     <div className="p-6 lg:p-8">

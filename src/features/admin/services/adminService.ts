@@ -61,6 +61,43 @@ export const adminService = {
   },
 
   /**
+   * Can the current user edit curated content (places, destinations,
+   * partner_products)? True for admins/moderators OR dedicated editors.
+   * Editors are RLS-scoped to the content tables only — the admin layout
+   * also hides admin-only routes from them.
+   */
+  async canEditPlaces(): Promise<boolean> {
+    const user = await getUserSafe()
+    if (!user) return false
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('is_admin, is_moderator, is_editor')
+      .eq('id', user.id)
+      .single()
+
+    return data?.is_admin || data?.is_moderator || data?.is_editor || false
+  },
+
+  /**
+   * True for users with ONLY the editor bit (not admin, not moderator).
+   * Used in the admin layout to filter nav items.
+   */
+  async isEditorOnly(): Promise<boolean> {
+    const user = await getUserSafe()
+    if (!user) return false
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('is_admin, is_moderator, is_editor')
+      .eq('id', user.id)
+      .single()
+
+    if (!data) return false
+    return !!data.is_editor && !data.is_admin && !data.is_moderator
+  },
+
+  /**
    * Get dashboard stats
    */
   async getStats(): Promise<AdminStats> {

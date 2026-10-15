@@ -12,9 +12,11 @@ import {
   Loader2,
 } from 'lucide-react'
 import { adminService, AdminStats } from '@/features/admin/services/adminService'
+import { useAdminOnly } from '@/features/admin/hooks/useAdminOnly'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function AdminDashboard() {
+  const { ready: adminReady } = useAdminOnly()
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [activityLog, setActivityLog] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +52,8 @@ export default function AdminDashboard() {
     { label: 'Pending Reports', value: stats?.pendingReports || 0, icon: Flag, color: 'bg-red-500' },
     { label: 'New Users (7d)', value: stats?.newUsersThisWeek || 0, icon: TrendingUp, color: 'bg-orange-500' },
   ]
+
+  if (!adminReady) return null
 
   return (
     <div className="p-6 lg:p-8">

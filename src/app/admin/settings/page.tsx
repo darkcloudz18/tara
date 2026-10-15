@@ -12,8 +12,10 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
+import { useAdminOnly } from '@/features/admin/hooks/useAdminOnly'
 
 export default function AdminSettingsPage() {
+  const { ready: adminReady } = useAdminOnly()
   const { success } = useToast()
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState({
@@ -37,6 +39,8 @@ export default function AdminSettingsPage() {
     setSaving(false)
     success('Settings saved')
   }
+
+  if (!adminReady) return null
 
   return (
     <div className="p-6 lg:p-8">
