@@ -57,6 +57,99 @@ export interface AdminPlaceQueueRow {
   stale: boolean              // verified_at > 6 months OR null
 }
 
+export interface AdminDestinationQueueRow {
+  id: string
+  name: string
+  slug: string
+  region: string | null
+  status: 'draft' | 'published' | 'needs_review'
+  verified_at: string | null
+  min_viable_days: number | null
+  travel_times: Record<string, number> | null
+  completeness: number
+  stale: boolean
+}
+
+export const DESTINATION_COMPLETENESS_FIELDS = [
+  'summary',
+  'description',
+  'getting_there',
+  'best_months',
+  'typical_days',
+  'budget_low',
+  'budget_mid',
+  'budget_high',
+  'min_viable_days',
+  'travel_times',
+  'tips_three_plus',
+  'source_urls_present',
+  'verified_at',
+] as const
+
+const DESTINATION_FIELD_LABEL: Record<typeof DESTINATION_COMPLETENESS_FIELDS[number], string> = {
+  summary: 'summary',
+  description: 'description',
+  getting_there: 'getting there',
+  best_months: 'best months',
+  typical_days: 'typical days',
+  budget_low: 'budget low',
+  budget_mid: 'budget mid',
+  budget_high: 'budget high',
+  min_viable_days: 'min viable days',
+  travel_times: 'travel times (Manila or Cebu)',
+  tips_three_plus: '3+ tips',
+  source_urls_present: 'source URLs',
+  verified_at: 'verification stamp',
+}
+
+function destinationFieldSatisfied(field: typeof DESTINATION_COMPLETENESS_FIELDS[number], row: any): boolean {
+  switch (field) {
+    case 'tips_three_plus':
+      return Array.isArray(row.tips) && row.tips.length >= 3
+    case 'source_urls_present':
+      return Array.isArray(row.source_urls) && row.source_urls.length > 0
+    case 'best_months':
+      return Array.isArray(row.best_months) && row.best_months.length > 0
+    case 'travel_times':
+      return (
+        row.travel_times &&
+        typeof row.travel_times === 'object' &&
+        Object.keys(row.travel_times).length > 0
+      )
+    default:
+      return row[field] !== null && row[field] !== undefined && row[field] !== ''
+  }
+}
+
+export function destinationCompletenessPercent(row: any): number {
+  const points = DESTINATION_COMPLETENESS_FIELDS.reduce(
+    (n, f) => n + (destinationFieldSatisfied(f, row) ? 1 : 0),
+    0,
+  )
+  return Math.round((points / DESTINATION_COMPLETENESS_FIELDS.length) * 100)
+}
+
+export function destinationMissingFields(row: any): string[] {
+  return DESTINATION_COMPLETENESS_FIELDS.filter((f) => !destinationFieldSatisfied(f, row)).map(
+    (f) => DESTINATION_FIELD_LABEL[f],
+  )
+}
+
+/**
+ * Destinations' thin-page bar centres on Smart Build's needs: without
+ * min_viable_days and at least one travel_times hub, the suggestion
+ * engine has nothing to rank on. Plus the shared trust floor (getting
+ * there + 3 tips) so the public page isn't paper-thin.
+ */
+export function destinationPublishBlockers(row: any): string[] {
+  const blockers: string[] = []
+  if (!destinationFieldSatisfied('getting_there', row)) blockers.push('getting there')
+  if (!destinationFieldSatisfied('min_viable_days', row)) blockers.push('min viable days')
+  if (!destinationFieldSatisfied('travel_times', row)) blockers.push('at least one travel time entry')
+  if (!destinationFieldSatisfied('tips_three_plus', row)) blockers.push('3 or more tips')
+  return blockers
+}
+
 /**
  * Share the same shape used by the queue + the form completeness meter.
  * Each field is weighted equally. Three "mandatory for publish" fields
@@ -759,6 +852,108 @@ export const adminService = {
       .eq('id', id)
     if (error) return false
     await this.logActivity('verify_destination', 'destination', id, { verifiedBy })
+    return true
+  },
+
+  // --- Destinations CRUD -----------------------------------------------
+
+  async getDestinationQueue(opts: {
+    status?: 'draft' | 'published' | 'needs_review'
+    incomplete?: boolean
+    stale?: boolean
+  } = {}): Promise<AdminDestinationQueueRow[]> {
+    let query = supabase.from('destinations').select('*').order('name', { ascending: true })
+    if (opts.status) query = query.eq('status', opts.status)
+    const { data, error } = await query
+    if (error) {
+      console.error('Error fetching destination queue:', error)
+      return []
+    }
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    let rows: AdminDestinationQueueRow[] = (data || []).map((d: any) => {
+      const completeness = destinationCompletenessPercent(d)
+      const stale = !d.verified_at || new Date(d.verified_at) < sixMonthsAgo
+      return {
+        id: d.id,
+        name: d.name,
+        slug: d.slug,
+        region: d.region,
+        status: d.status,
+        verified_at: d.verified_at,
+        min_viable_days: d.min_viable_days,
+        travel_times: d.travel_times,
+        completeness,
+        stale,
+      }
+    })
+    if (opts.incomplete) rows = rows.filter((r) => r.completeness < 100)
+    if (opts.stale) rows = rows.filter((r) => r.stale)
+    rows.sort((a, b) => a.completeness - b.completeness)
+    return rows
+  },
+
+  async getDestinationById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('destinations')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) {
+      console.error('Error fetching destination:', error)
+      return null
+    }
+    return data
+  },
+
+  async createDraftDestination(fields: { name: string; slug: string }): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('destinations')
+      .insert({ name: fields.name, slug: fields.slug, status: 'draft' })
+      .select('id')
+      .single()
+    if (error || !data) {
+      console.error('Error creating destination:', error)
+      return null
+    }
+    await this.logActivity('create_destination', 'destination', data.id, { name: fields.name })
+    return data.id
+  },
+
+  async saveDestinationDraft(id: string, fields: Record<string, any>): Promise<boolean> {
+    const { error } = await supabase
+      .from('destinations')
+      .update(fields)
+      .eq('id', id)
+    if (error) {
+      console.error('Error saving destination:', error)
+      return false
+    }
+    await this.logActivity('update_destination', 'destination', id, { fields: Object.keys(fields) })
+    return true
+  },
+
+  async publishDestination(id: string): Promise<{ ok: boolean; blockers: string[] }> {
+    const dest = await this.getDestinationById(id)
+    if (!dest) return { ok: false, blockers: ['destination not found'] }
+    const blockers = destinationPublishBlockers(dest)
+    if (blockers.length > 0) return { ok: false, blockers }
+    const { error } = await supabase
+      .from('destinations')
+      .update({ status: 'published' })
+      .eq('id', id)
+    if (error) return { ok: false, blockers: ['database error'] }
+    await this.logActivity('publish_destination', 'destination', id, {})
+    return { ok: true, blockers: [] }
+  },
+
+  async unpublishDestination(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('destinations')
+      .update({ status: 'draft' })
+      .eq('id', id)
+    if (error) return false
+    await this.logActivity('unpublish_destination', 'destination', id, {})
     return true
   },
 
