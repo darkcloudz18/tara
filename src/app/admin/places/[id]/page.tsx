@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Save, Globe, Lock, Plus, Trash2, Check } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Globe, Lock, Plus, Trash2, Check, ShieldCheck, X } from 'lucide-react'
 import {
   adminService,
   placeCompletenessPercent,
@@ -13,6 +13,7 @@ import {
   PartnerProductType,
 } from '@/features/admin/services/adminService'
 import { useToast } from '@/contexts/ToastContext'
+import { useUser } from '@/contexts/UserContext'
 
 // Full-page editor for a single place. Grouped per spec:
 // Basics · Practical · Getting there · Sequencing · Sources.
@@ -28,16 +29,25 @@ interface Destination {
   slug: string
 }
 
+interface PickerPlace {
+  id: string
+  name: string
+  destination_name: string | null
+}
+
 export default function AdminPlaceEditPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const { success, error } = useToast()
+  const { user } = useUser()
 
   const [place, setPlace] = useState<any | null>(null)
   const [destinations, setDestinations] = useState<Destination[]>([])
+  const [pickerPlaces, setPickerPlaces] = useState<PickerPlace[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [verifying, setVerifying] = useState(false)
   const [partnerProducts, setPartnerProducts] = useState<PartnerProduct[]>([])
 
   useEffect(() => {
@@ -46,11 +56,13 @@ export default function AdminPlaceEditPage() {
       adminService.getPlaceById(params.id),
       adminService.getDestinationsForFilter(),
       adminService.getPartnerProductsForPlace(params.id),
+      adminService.getPlacesForPicker(),
     ])
-      .then(([p, dests, products]) => {
+      .then(([p, dests, products, pickers]) => {
         setPlace(p)
         setDestinations(dests)
         setPartnerProducts(products)
+        setPickerPlaces(pickers)
       })
       .finally(() => setLoading(false))
   }, [params.id])
@@ -76,6 +88,8 @@ export default function AdminPlaceEditPage() {
       getting_there: emptyToNull(place.getting_there),
       nearest_hub: emptyToNull(place.nearest_hub),
       part_of_tour: emptyToNull(place.part_of_tour),
+      pairs_with: Array.isArray(place.pairs_with) ? place.pairs_with : null,
+      not_same_day_as: Array.isArray(place.not_same_day_as) ? place.not_same_day_as : null,
       tips: Array.isArray(place.tips) ? place.tips.filter((t: string) => t && t.trim()) : null,
       source_urls: parseSourceUrls(place.source_urls_raw ?? arrayToTextarea(place.source_urls)),
     }
@@ -125,6 +139,30 @@ export default function AdminPlaceEditPage() {
       return
     }
     success('Reverted to draft')
+    const fresh = await adminService.getPlaceById(place.id)
+    if (fresh) setPlace({ ...fresh, source_urls_raw: arrayToTextarea(fresh.source_urls) })
+  }
+
+  const handleMarkVerified = async () => {
+    if (!place || !user?.email) {
+      error('Need to be signed in to verify')
+      return
+    }
+    setVerifying(true)
+    // Save first so the stamp reflects the current form state.
+    const saved = await persistCurrentDraft()
+    if (!saved) {
+      setVerifying(false)
+      error('Failed to save before verifying')
+      return
+    }
+    const ok = await adminService.markPlaceVerified(place.id, user.email)
+    setVerifying(false)
+    if (!ok) {
+      error('Failed to mark verified')
+      return
+    }
+    success('Marked verified')
     const fresh = await adminService.getPlaceById(place.id)
     if (fresh) setPlace({ ...fresh, source_urls_raw: arrayToTextarea(fresh.source_urls) })
   }
@@ -188,6 +226,15 @@ export default function AdminPlaceEditPage() {
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save draft
+          </button>
+          <button
+            onClick={handleMarkVerified}
+            disabled={saving || publishing || verifying}
+            title="Stamp verified_at and verified_by"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+          >
+            {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+            Mark verified
           </button>
           {isPublished ? (
             <button
@@ -350,9 +397,25 @@ export default function AdminPlaceEditPage() {
         </Group>
 
         {/* Sequencing */}
-        <Group title="Sequencing" hint="Searchable pickers for pairs_with and not_same_day_as land in step 7.">
+        <Group title="Sequencing" hint="This is what Google Maps and Klook don't give travellers.">
           <Field label="Part of tour" hint='Groups stops into one trip, e.g. "El Nido Tour A"'>
             <input className={inputClass} value={place.part_of_tour ?? ''} onChange={(e) => update({ part_of_tour: e.target.value })} />
+          </Field>
+          <Field label="Pairs well with" hint="Sensible same-day combinations.">
+            <PlacePicker
+              currentPlaceId={place.id}
+              places={pickerPlaces}
+              selectedIds={Array.isArray(place.pairs_with) ? place.pairs_with : []}
+              onChange={(next) => update({ pairs_with: next })}
+            />
+          </Field>
+          <Field label="Not same day as" hint="Too far apart, opposite ends — the field that stops ruined trips.">
+            <PlacePicker
+              currentPlaceId={place.id}
+              places={pickerPlaces}
+              selectedIds={Array.isArray(place.not_same_day_as) ? place.not_same_day_as : []}
+              onChange={(next) => update({ not_same_day_as: next })}
+            />
           </Field>
         </Group>
 
@@ -392,11 +455,99 @@ export default function AdminPlaceEditPage() {
             toast={{ success, error }}
           />
         </Group>
+      </div>
+    </div>
+  )
+}
 
-        <div className="pt-2 pb-10 text-sm text-gray-500 dark:text-gray-400">
-          Searchable pickers for pairs_with / not_same_day_as and the Mark
-          verified stamp land in step 7 of Task 15.
-        </div>
+// --- Sequencing picker --------------------------------------------------
+
+function PlacePicker({
+  currentPlaceId,
+  places,
+  selectedIds,
+  onChange,
+}: {
+  currentPlaceId: string
+  places: PickerPlace[]
+  selectedIds: string[]
+  onChange: (next: string[]) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+
+  const selected = selectedIds
+    .map((id) => places.find((p) => p.id === id))
+    .filter((p): p is PickerPlace => Boolean(p))
+
+  const q = query.trim().toLowerCase()
+  const filtered = places
+    .filter((p) => p.id !== currentPlaceId && !selectedIds.includes(p.id))
+    .filter((p) => (q ? p.name.toLowerCase().includes(q) : true))
+    .slice(0, 8)
+
+  const add = (id: string) => {
+    onChange([...selectedIds, id])
+    setQuery('')
+  }
+
+  const remove = (id: string) => {
+    onChange(selectedIds.filter((x) => x !== id))
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {selected.map((p) => (
+          <span
+            key={p.id}
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-full"
+          >
+            {p.name}
+            {p.destination_name && (
+              <span className="text-teal-500 dark:text-teal-400">· {p.destination_name}</span>
+            )}
+            <button
+              type="button"
+              onClick={() => remove(p.id)}
+              aria-label={`Remove ${p.name}`}
+              className="ml-1 text-teal-600 hover:text-teal-800"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="relative">
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Search places..."
+          className={inputClass}
+        />
+        {open && filtered.length > 0 && (
+          <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-56 overflow-auto">
+            {filtered.map((p) => (
+              <button
+                type="button"
+                key={p.id}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => add(p.id)}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-between gap-2"
+              >
+                <span className="text-gray-900 dark:text-white">{p.name}</span>
+                {p.destination_name && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{p.destination_name}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -719,6 +870,19 @@ function PartnerProductRow({
             <Trash2 className="w-4 h-4" />
             {existing ? 'Delete' : 'Discard'}
           </button>
+          {existing && 'id' in row && row.id && (
+            <button
+              type="button"
+              onClick={async () => {
+                const ok = await adminService.markPartnerProductVerified(row.id as string)
+                if (ok) onChange({ verified_at: new Date().toISOString() })
+              }}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Mark verified
+            </button>
+          )}
           <button
             type="button"
             onClick={onSave}

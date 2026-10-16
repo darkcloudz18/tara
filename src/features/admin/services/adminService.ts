@@ -688,6 +688,52 @@ export const adminService = {
   },
 
   /**
+   * Stamp verified_at = now, verified_by = user email. The /admin/review
+   * staleness queue (step 8) drops this row once verified_at is fresh.
+   */
+  async markPlaceVerified(id: string, verifiedBy: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('places')
+      .update({ verified_at: new Date().toISOString(), verified_by: verifiedBy })
+      .eq('id', id)
+    if (error) {
+      console.error('Error marking place verified:', error)
+      return false
+    }
+    await this.logActivity('verify_place', 'place', id, { verifiedBy })
+    return true
+  },
+
+  async markPartnerProductVerified(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('partner_products')
+      .update({ verified_at: new Date().toISOString() })
+      .eq('id', id)
+    return !error
+  },
+
+  /**
+   * Minimal place list for the sequencing pickers (pairs_with /
+   * not_same_day_as). Includes destination name so the editor can
+   * disambiguate same-named places across destinations.
+   */
+  async getPlacesForPicker(): Promise<{ id: string; name: string; destination_name: string | null }[]> {
+    const { data, error } = await supabase
+      .from('places')
+      .select('id, name, destination:destinations(name)')
+      .order('name', { ascending: true })
+    if (error) {
+      console.error('Error fetching places for picker:', error)
+      return []
+    }
+    return (data || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      destination_name: Array.isArray(p.destination) ? p.destination[0]?.name ?? null : p.destination?.name ?? null,
+    }))
+  },
+
+  /**
    * Delete place
    */
   async deletePlace(placeId: string): Promise<boolean> {
