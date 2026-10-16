@@ -23,6 +23,7 @@ import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
 import { BudgetSummary, CategoryBudget } from '@/features/planner/hooks/useBudgetCalculations'
 import { WeatherWidget } from '@/components/weather'
 import { rankSmartBuild, MatchResult, SmartBuildResults } from '@/features/smart-build/services/smartBuildService'
+import { createLakadFromSmartBuild } from '@/features/smart-build/services/draftGenerationService'
 import SmartBuildResultsView from '@/features/smart-build/components/SmartBuildResults'
 import { useToast } from '@/contexts/ToastContext'
 import { capture } from '@/lib/analytics'
@@ -52,7 +53,7 @@ function NewItineraryContent() {
   const templateSlug = searchParams.get('template')
 
   const { user } = useUser()
-  const { info } = useToast()
+  const { info, error: toastError } = useToast()
   const [viewMode, setViewMode] = useState<ViewMode>('wizard')
   const [tripData, setTripData] = useState<TripWizardData | null>(null)
   const [itinerary, setItinerary] = useState<DaySuggestion[]>([])
@@ -151,21 +152,57 @@ function NewItineraryContent() {
     }
   }
 
-  const handlePickDestination = (match: MatchResult) => {
+  const handlePickDestination = async (match: MatchResult) => {
     if (!tripData) return
     capture('smart_build_result_clicked', {
       destinationSlug: match.destination.slug,
       rank: match.rank,
       hadOverlap: match.overlapCount > 0,
     })
+
+    if (!user) {
+      // Anonymous Smart Build pick: Task 18 scope requires signed-in to
+      // write the draft. A full anon → pending → signup → create handoff
+      // reuses datedLakadService's pending plumbing — follow-up.
+      info(
+        'Sign in to open your draft',
+        'We need an account to save your Smart Build pick as a lakad.',
+      )
+      router.push(`/login?redirect=/trip/new`)
+      return
+    }
+
     setPickingDestinationId(match.destination.id)
-    // Draft generation lands in Task 18. For now, confirm the pick so the
-    // user doesn't think it was lost.
-    info(
-      `${match.destination.name} picked — draft generation lands in Task 18.`,
-      'The ranking logic ran and your choice was recorded.',
-    )
-    setTimeout(() => setPickingDestinationId(null), 1500)
+    try {
+      const result = await createLakadFromSmartBuild({
+        destinationId: match.destination.id,
+        destinationSlug: match.destination.slug,
+        destinationName: match.destination.name,
+        days: resolveTripDays(tripData),
+        startDate:
+          tripData.datesMode === 'exact' && tripData.startDate ? tripData.startDate : undefined,
+        tripMonth:
+          tripData.datesMode === 'month' && tripData.tripMonth ? tripData.tripMonth : undefined,
+        budgetBand: (tripData.budgetBand || 'mid') as Exclude<typeof tripData.budgetBand, ''>,
+        originKey: tripData.origin,
+        travelers: tripData.travelers,
+      })
+
+      capture('smart_build_draft_created', {
+        lakadId: result.itineraryId,
+        destinationSlug: match.destination.slug,
+        isDated: result.isDated,
+        placeCount: result.placeCount,
+        hadBucketOverlap: result.hadBucketOverlap,
+      })
+
+      refetchTrips()
+      router.push(`/trip/${result.itineraryId}/edit`)
+    } catch (err: any) {
+      console.error('Smart Build draft creation failed:', err)
+      setPickingDestinationId(null)
+      toastError('Failed to create draft', err?.message || 'Please try again.')
+    }
   }
 
   const handleSelectSuggestion = (
