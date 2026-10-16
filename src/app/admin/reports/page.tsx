@@ -14,10 +14,12 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { adminService, ContentReport } from '@/features/admin/services/adminService'
+import { useAdminOnly } from '@/features/admin/hooks/useAdminOnly'
 import { formatDistanceToNow } from 'date-fns'
 import { useToast } from '@/contexts/ToastContext'
 
 export default function AdminReportsPage() {
+  const { ready: adminReady } = useAdminOnly()
   const { success, error } = useToast()
   const [reports, setReports] = useState<ContentReport[]>([])
   const [loading, setLoading] = useState(true)
@@ -109,6 +111,8 @@ export default function AdminReportsPage() {
         return null
     }
   }
+
+  if (!adminReady) return null
 
   return (
     <div className="p-6 lg:p-8">

@@ -14,10 +14,12 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { adminService, AdminUser } from '@/features/admin/services/adminService'
+import { useAdminOnly } from '@/features/admin/hooks/useAdminOnly'
 import { formatDistanceToNow } from 'date-fns'
 import { useToast } from '@/contexts/ToastContext'
 
 export default function AdminUsersPage() {
+  const { ready: adminReady } = useAdminOnly()
   const { success, error } = useToast()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [total, setTotal] = useState(0)
@@ -85,6 +87,8 @@ export default function AdminUsersPage() {
   }
 
   const totalPages = Math.ceil(total / limit)
+
+  if (!adminReady) return null
 
   return (
     <div className="p-6 lg:p-8">
