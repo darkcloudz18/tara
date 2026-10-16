@@ -713,6 +713,56 @@ export const adminService = {
   },
 
   /**
+   * Staleness queue for /admin/review. Returns places + destinations
+   * whose verified_at is older than 6 months OR has never been stamped.
+   * Oldest first — the editor re-verifies top down.
+   */
+  async getStaleContent(): Promise<{
+    places: { id: string; name: string; verified_at: string | null; destination_name: string | null }[]
+    destinations: { id: string; name: string; verified_at: string | null }[]
+  }> {
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    const cutoff = sixMonthsAgo.toISOString()
+
+    const [placesResult, destinationsResult] = await Promise.all([
+      supabase
+        .from('places')
+        .select('id, name, verified_at, destination:destinations(name)')
+        .or(`verified_at.is.null,verified_at.lt.${cutoff}`)
+        .order('verified_at', { ascending: true, nullsFirst: true }),
+      supabase
+        .from('destinations')
+        .select('id, name, verified_at')
+        .or(`verified_at.is.null,verified_at.lt.${cutoff}`)
+        .order('verified_at', { ascending: true, nullsFirst: true }),
+    ])
+
+    const places = (placesResult.data || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      verified_at: p.verified_at,
+      destination_name: Array.isArray(p.destination) ? p.destination[0]?.name ?? null : p.destination?.name ?? null,
+    }))
+    const destinations = (destinationsResult.data || []).map((d: any) => ({
+      id: d.id,
+      name: d.name,
+      verified_at: d.verified_at,
+    }))
+    return { places, destinations }
+  },
+
+  async markDestinationVerified(id: string, verifiedBy: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('destinations')
+      .update({ verified_at: new Date().toISOString(), verified_by: verifiedBy })
+      .eq('id', id)
+    if (error) return false
+    await this.logActivity('verify_destination', 'destination', id, { verifiedBy })
+    return true
+  },
+
+  /**
    * Minimal place list for the sequencing pickers (pairs_with /
    * not_same_day_as). Includes destination name so the editor can
    * disambiguate same-named places across destinations.

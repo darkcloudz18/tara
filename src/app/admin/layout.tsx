@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Shield,
+  ShieldCheck,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUser } from '@/contexts/UserContext'
@@ -25,6 +26,7 @@ const ADMIN_NAV_ITEMS = [
   { href: '/admin/users', icon: Users, label: 'Users' },
   { href: '/admin/trips', icon: Map, label: 'Trips' },
   { href: '/admin/places', icon: FileText, label: 'Places' },
+  { href: '/admin/review', icon: ShieldCheck, label: 'Review' },
   { href: '/admin/reports', icon: Flag, label: 'Reports' },
   { href: '/admin/featured', icon: Sparkles, label: 'Featured' },
   { href: '/admin/settings', icon: Settings, label: 'Settings' },
@@ -35,6 +37,7 @@ const ADMIN_NAV_ITEMS = [
 // just avoids showing dead links.
 const EDITOR_NAV_ITEMS = [
   { href: '/admin/places', icon: FileText, label: 'Places' },
+  { href: '/admin/review', icon: ShieldCheck, label: 'Review' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
