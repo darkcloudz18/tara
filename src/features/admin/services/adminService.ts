@@ -476,6 +476,62 @@ export const adminService = {
   },
 
   /**
+   * Fetch a single place by id — used by the /admin/places/[id] form.
+   */
+  async getPlaceById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('places')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) {
+      console.error('Error fetching place:', error)
+      return null
+    }
+    return data
+  },
+
+  /**
+   * Create a new draft place. Returns the new id, or null on error.
+   */
+  async createDraftPlace(fields: { name: string; location: string }): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('places')
+      .insert({
+        name: fields.name,
+        location: fields.location,
+        status: 'draft',
+        is_active: false,       // not visible on Discover until the editor flips it
+      })
+      .select('id')
+      .single()
+    if (error) {
+      console.error('Error creating draft place:', error)
+      return null
+    }
+    await this.logActivity('create_place', 'place', data.id, { name: fields.name })
+    return data.id
+  },
+
+  /**
+   * Save an in-progress place — writes the spec columns + leaves is_active
+   * alone. Publish flipping (status='published') is routed through
+   * publishPlace() which runs the thin-page guard in step 5.
+   */
+  async savePlaceDraft(id: string, fields: Record<string, any>): Promise<boolean> {
+    const { error } = await supabase
+      .from('places')
+      .update(fields)
+      .eq('id', id)
+    if (error) {
+      console.error('Error saving place:', error)
+      return false
+    }
+    await this.logActivity('update_place', 'place', id, { fields: Object.keys(fields) })
+    return true
+  },
+
+  /**
    * Delete place
    */
   async deletePlace(placeId: string): Promise<boolean> {
