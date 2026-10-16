@@ -46,6 +46,7 @@ function NewItineraryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const templateSlug = searchParams.get('template')
+  const destinationParam = searchParams.get('destination')
 
   const { user } = useUser()
   const [viewMode, setViewMode] = useState<ViewMode>('wizard')
@@ -360,6 +361,7 @@ function NewItineraryContent() {
             <TripWizard
               onComplete={handleWizardComplete}
               initialTemplate={selectedTemplate}
+              initialDestination={destinationParam || undefined}
             />
           )}
 
