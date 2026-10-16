@@ -3,8 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Save } from 'lucide-react'
-import { adminService } from '@/features/admin/services/adminService'
+import { ArrowLeft, Loader2, Save, Globe, Lock } from 'lucide-react'
+import {
+  adminService,
+  placeCompletenessPercent,
+  placeMissingFields,
+  placePublishBlockers,
+} from '@/features/admin/services/adminService'
 import { useToast } from '@/contexts/ToastContext'
 
 // Full-page editor for a single place. Grouped per spec:
@@ -30,6 +35,7 @@ export default function AdminPlaceEditPage() {
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
 
   useEffect(() => {
     if (!params.id) return
@@ -46,9 +52,8 @@ export default function AdminPlaceEditPage() {
 
   const update = (patch: Record<string, any>) => setPlace((p: any) => ({ ...p, ...patch }))
 
-  const handleSave = async () => {
-    if (!place) return
-    setSaving(true)
+  const persistCurrentDraft = async (): Promise<boolean> => {
+    if (!place) return false
     const fields = {
       name: place.name,
       slug: emptyToNull(place.slug),
@@ -69,15 +74,53 @@ export default function AdminPlaceEditPage() {
       source_urls: parseSourceUrls(place.source_urls_raw ?? arrayToTextarea(place.source_urls)),
     }
     const ok = await adminService.savePlaceDraft(place.id, fields)
+    if (!ok) return false
+    const fresh = await adminService.getPlaceById(place.id)
+    if (fresh) setPlace({ ...fresh, source_urls_raw: arrayToTextarea(fresh.source_urls) })
+    return true
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    const ok = await persistCurrentDraft()
     setSaving(false)
-    if (ok) {
-      success('Place saved')
-      // Refetch so derived fields stay in sync.
-      const fresh = await adminService.getPlaceById(place.id)
-      if (fresh) setPlace({ ...fresh, source_urls_raw: arrayToTextarea(fresh.source_urls) })
-    } else {
-      error('Failed to save place')
+    if (ok) success('Place saved')
+    else error('Failed to save place')
+  }
+
+  const handlePublish = async () => {
+    if (!place) return
+    setPublishing(true)
+    // Save first so the server sees the latest fields before gate-checking.
+    const saved = await persistCurrentDraft()
+    if (!saved) {
+      setPublishing(false)
+      error('Failed to save before publishing')
+      return
     }
+    const result = await adminService.publishPlace(place.id)
+    setPublishing(false)
+    if (!result.ok) {
+      error(`Can't publish: needs ${result.blockers.join(', ')}`)
+      return
+    }
+    success('Place published')
+    const fresh = await adminService.getPlaceById(place.id)
+    if (fresh) setPlace({ ...fresh, source_urls_raw: arrayToTextarea(fresh.source_urls) })
+  }
+
+  const handleUnpublish = async () => {
+    if (!place) return
+    setPublishing(true)
+    const ok = await adminService.unpublishPlace(place.id)
+    setPublishing(false)
+    if (!ok) {
+      error('Failed to unpublish')
+      return
+    }
+    success('Reverted to draft')
+    const fresh = await adminService.getPlaceById(place.id)
+    if (fresh) setPlace({ ...fresh, source_urls_raw: arrayToTextarea(fresh.source_urls) })
   }
 
   if (loading) {
@@ -99,6 +142,19 @@ export default function AdminPlaceEditPage() {
 
   const sourceUrlsRaw = place.source_urls_raw ?? arrayToTextarea(place.source_urls)
 
+  // Live-recompute: reflect in-progress Sources textarea even before save.
+  const effectivePlace = {
+    ...place,
+    source_urls: parseSourceUrls(sourceUrlsRaw) ?? [],
+  }
+  const completeness = placeCompletenessPercent(effectivePlace)
+  const missing = placeMissingFields(effectivePlace)
+  const blockers = placePublishBlockers(effectivePlace)
+  const canPublish = blockers.length === 0
+  const isPublished = place.status === 'published'
+  const meterColor =
+    completeness >= 80 ? 'bg-emerald-500' : completeness >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
@@ -118,14 +174,62 @@ export default function AdminPlaceEditPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save draft
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSave}
+            disabled={saving || publishing}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Save draft
+          </button>
+          {isPublished ? (
+            <button
+              onClick={handleUnpublish}
+              disabled={saving || publishing}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+            >
+              {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+              Unpublish
+            </button>
+          ) : (
+            <button
+              onClick={handlePublish}
+              disabled={saving || publishing || !canPublish}
+              title={canPublish ? 'Publish this place' : `Needs ${blockers.join(', ')}`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+              Publish
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Completeness meter */}
+      <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Completeness</h2>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{completeness}%</span>
+        </div>
+        <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div className={`h-full ${meterColor} transition-all`} style={{ width: `${completeness}%` }} />
+        </div>
+        {missing.length > 0 && (
+          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+            <span className="font-medium text-gray-600 dark:text-gray-300">Needs:</span> {missing.join(', ')}
+          </p>
+        )}
+        {!isPublished && blockers.length > 0 && (
+          <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">
+            <span className="font-medium">Can't publish yet:</span> {blockers.join(', ')}
+          </p>
+        )}
+        {isPublished && (
+          <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+            Live on <span className="font-mono">/places/{place.slug ?? '—'}</span>
+          </p>
+        )}
       </div>
 
       <div className="max-w-3xl space-y-6">

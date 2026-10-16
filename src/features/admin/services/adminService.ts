@@ -62,25 +62,67 @@ export const PLACE_COMPLETENESS_FIELDS = [
   'verified_at',
 ] as const
 
+const COMPLETENESS_FIELD_LABEL: Record<typeof PLACE_COMPLETENESS_FIELDS[number], string> = {
+  slug: 'slug',
+  destination_id: 'destination',
+  summary: 'summary',
+  getting_there: 'getting there',
+  nearest_hub: 'nearest hub',
+  duration_minutes: 'duration',
+  best_months: 'best months',
+  part_of_tour: 'part of tour',
+  fee_or_free: 'fee info',
+  tips_three_plus: '3+ tips',
+  source_urls_present: 'source URLs',
+  verified_at: 'verification stamp',
+}
+
+function fieldSatisfied(field: typeof PLACE_COMPLETENESS_FIELDS[number], row: any): boolean {
+  switch (field) {
+    case 'fee_or_free':
+      if (row.entrance_fee !== null && row.entrance_fee !== undefined) return true
+      if (typeof row.fee_notes === 'string' && /free/i.test(row.fee_notes)) return true
+      return false
+    case 'tips_three_plus':
+      return Array.isArray(row.tips) && row.tips.length >= 3
+    case 'source_urls_present':
+      return Array.isArray(row.source_urls) && row.source_urls.length > 0
+    case 'best_months':
+      return Array.isArray(row.best_months) && row.best_months.length > 0
+    default:
+      return !!row[field]
+  }
+}
+
 export function placeCompletenessPercent(row: any): number {
-  const points = PLACE_COMPLETENESS_FIELDS.reduce((n, field) => {
-    switch (field) {
-      case 'fee_or_free': {
-        if (row.entrance_fee !== null && row.entrance_fee !== undefined) return n + 1
-        if (typeof row.fee_notes === 'string' && /free/i.test(row.fee_notes)) return n + 1
-        return n
-      }
-      case 'tips_three_plus':
-        return n + (Array.isArray(row.tips) && row.tips.length >= 3 ? 1 : 0)
-      case 'source_urls_present':
-        return n + (Array.isArray(row.source_urls) && row.source_urls.length > 0 ? 1 : 0)
-      case 'best_months':
-        return n + (Array.isArray(row.best_months) && row.best_months.length > 0 ? 1 : 0)
-      default:
-        return n + (row[field] ? 1 : 0)
-    }
-  }, 0)
+  const points = PLACE_COMPLETENESS_FIELDS.reduce(
+    (n, field) => n + (fieldSatisfied(field, row) ? 1 : 0),
+    0,
+  )
   return Math.round((points / PLACE_COMPLETENESS_FIELDS.length) * 100)
+}
+
+/**
+ * Human-readable labels for every spec field that isn't yet filled.
+ * Powers the completeness meter + helps the VA see what's left.
+ */
+export function placeMissingFields(row: any): string[] {
+  return PLACE_COMPLETENESS_FIELDS.filter((f) => !fieldSatisfied(f, row)).map(
+    (f) => COMPLETENESS_FIELD_LABEL[f],
+  )
+}
+
+/**
+ * Thin-page bar from docs/places-spec.md §1 / §3. A place can't be
+ * flipped to 'published' until all three are satisfied — hundreds of
+ * thin pages would drag the whole domain down.
+ */
+export function placePublishBlockers(row: any): string[] {
+  const blockers: string[] = []
+  if (!fieldSatisfied('tips_three_plus', row)) blockers.push('3 or more tips')
+  if (!fieldSatisfied('fee_or_free', row)) blockers.push('fee info (set entrance_fee, or write "free" in fee notes)')
+  if (!fieldSatisfied('getting_there', row)) blockers.push('getting there')
+  return blockers
 }
 
 export interface AdminUser {
@@ -516,7 +558,7 @@ export const adminService = {
   /**
    * Save an in-progress place — writes the spec columns + leaves is_active
    * alone. Publish flipping (status='published') is routed through
-   * publishPlace() which runs the thin-page guard in step 5.
+   * publishPlace() which runs the thin-page guard.
    */
   async savePlaceDraft(id: string, fields: Record<string, any>): Promise<boolean> {
     const { error } = await supabase
@@ -528,6 +570,47 @@ export const adminService = {
       return false
     }
     await this.logActivity('update_place', 'place', id, { fields: Object.keys(fields) })
+    return true
+  },
+
+  /**
+   * Flip a place to 'published' once the thin-page bar is cleared. Also
+   * sets is_active = true so the row appears on Discover.
+   * Returns { ok, blockers } — the blockers list is only non-empty when
+   * the bar fails, letting the UI render the exact miss.
+   */
+  async publishPlace(id: string): Promise<{ ok: boolean; blockers: string[] }> {
+    const place = await this.getPlaceById(id)
+    if (!place) return { ok: false, blockers: ['place not found'] }
+    const blockers = placePublishBlockers(place)
+    if (blockers.length > 0) return { ok: false, blockers }
+
+    const { error } = await supabase
+      .from('places')
+      .update({ status: 'published', is_active: true })
+      .eq('id', id)
+    if (error) {
+      console.error('Error publishing place:', error)
+      return { ok: false, blockers: ['database error'] }
+    }
+    await this.logActivity('publish_place', 'place', id, {})
+    return { ok: true, blockers: [] }
+  },
+
+  /**
+   * Back to draft. Leaves is_active alone — the admin may still want
+   * the row visible on Discover as an unpublished listing.
+   */
+  async unpublishPlace(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('places')
+      .update({ status: 'draft' })
+      .eq('id', id)
+    if (error) {
+      console.error('Error unpublishing place:', error)
+      return false
+    }
+    await this.logActivity('unpublish_place', 'place', id, {})
     return true
   },
 
