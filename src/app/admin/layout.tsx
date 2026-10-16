@@ -16,6 +16,7 @@ import {
   X,
   Shield,
   ShieldCheck,
+  Globe2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUser } from '@/contexts/UserContext'
@@ -26,6 +27,7 @@ const ADMIN_NAV_ITEMS = [
   { href: '/admin/users', icon: Users, label: 'Users' },
   { href: '/admin/trips', icon: Map, label: 'Trips' },
   { href: '/admin/places', icon: FileText, label: 'Places' },
+  { href: '/admin/destinations', icon: Globe2, label: 'Destinations' },
   { href: '/admin/review', icon: ShieldCheck, label: 'Review' },
   { href: '/admin/reports', icon: Flag, label: 'Reports' },
   { href: '/admin/featured', icon: Sparkles, label: 'Featured' },
@@ -37,6 +39,7 @@ const ADMIN_NAV_ITEMS = [
 // just avoids showing dead links.
 const EDITOR_NAV_ITEMS = [
   { href: '/admin/places', icon: FileText, label: 'Places' },
+  { href: '/admin/destinations', icon: Globe2, label: 'Destinations' },
   { href: '/admin/review', icon: ShieldCheck, label: 'Review' },
 ]
 
