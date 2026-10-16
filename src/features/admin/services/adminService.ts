@@ -28,6 +28,23 @@ export interface ContentReport {
   }
 }
 
+export type PartnerProductType = 'activity' | 'stay' | 'transfer' | 'addon'
+
+export interface PartnerProduct {
+  id: string
+  place_id: string | null
+  destination_id: string | null
+  partner: string
+  product_name: string | null
+  product_type: PartnerProductType
+  price_from: number | null
+  includes: string | null
+  deeplink: string
+  priority: number
+  active: boolean
+  verified_at: string | null
+}
+
 export interface AdminPlaceQueueRow {
   id: string
   name: string
@@ -612,6 +629,62 @@ export const adminService = {
     }
     await this.logActivity('unpublish_place', 'place', id, {})
     return true
+  },
+
+  /**
+   * Partner products repeater backing. Each row is its own INSERT /
+   * UPDATE / DELETE because partner_products is a separate table.
+   */
+  async getPartnerProductsForPlace(placeId: string): Promise<PartnerProduct[]> {
+    const { data, error } = await supabase
+      .from('partner_products')
+      .select('*')
+      .eq('place_id', placeId)
+      .order('priority', { ascending: false })
+      .order('id', { ascending: true })
+    if (error) {
+      console.error('Error fetching partner products:', error)
+      return []
+    }
+    return (data as PartnerProduct[]) || []
+  },
+
+  async savePartnerProduct(product: Partial<PartnerProduct> & { place_id: string }): Promise<string | null> {
+    const payload = {
+      place_id: product.place_id,
+      destination_id: product.destination_id ?? null,
+      partner: product.partner,
+      product_name: product.product_name ?? null,
+      product_type: product.product_type,
+      price_from: product.price_from ?? null,
+      includes: product.includes ?? null,
+      deeplink: product.deeplink,
+      priority: product.priority ?? 0,
+      active: product.active ?? true,
+    }
+    if (product.id) {
+      const { error } = await supabase.from('partner_products').update(payload).eq('id', product.id)
+      if (error) {
+        console.error('Error updating partner product:', error)
+        return null
+      }
+      return product.id
+    }
+    const { data, error } = await supabase
+      .from('partner_products')
+      .insert(payload)
+      .select('id')
+      .single()
+    if (error || !data) {
+      console.error('Error creating partner product:', error)
+      return null
+    }
+    return data.id
+  },
+
+  async deletePartnerProduct(id: string): Promise<boolean> {
+    const { error } = await supabase.from('partner_products').delete().eq('id', id)
+    return !error
   },
 
   /**

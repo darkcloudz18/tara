@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Save, Globe, Lock } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Globe, Lock, Plus, Trash2, Check } from 'lucide-react'
 import {
   adminService,
   placeCompletenessPercent,
   placeMissingFields,
   placePublishBlockers,
+  PartnerProduct,
+  PartnerProductType,
 } from '@/features/admin/services/adminService'
 import { useToast } from '@/contexts/ToastContext'
 
@@ -36,16 +38,19 @@ export default function AdminPlaceEditPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [partnerProducts, setPartnerProducts] = useState<PartnerProduct[]>([])
 
   useEffect(() => {
     if (!params.id) return
     Promise.all([
       adminService.getPlaceById(params.id),
       adminService.getDestinationsForFilter(),
+      adminService.getPartnerProductsForPlace(params.id),
     ])
-      .then(([p, dests]) => {
+      .then(([p, dests, products]) => {
         setPlace(p)
         setDestinations(dests)
+        setPartnerProducts(products)
       })
       .finally(() => setLoading(false))
   }, [params.id])
@@ -71,6 +76,7 @@ export default function AdminPlaceEditPage() {
       getting_there: emptyToNull(place.getting_there),
       nearest_hub: emptyToNull(place.nearest_hub),
       part_of_tour: emptyToNull(place.part_of_tour),
+      tips: Array.isArray(place.tips) ? place.tips.filter((t: string) => t && t.trim()) : null,
       source_urls: parseSourceUrls(place.source_urls_raw ?? arrayToTextarea(place.source_urls)),
     }
     const ok = await adminService.savePlaceDraft(place.id, fields)
@@ -350,6 +356,17 @@ export default function AdminPlaceEditPage() {
           </Field>
         </Group>
 
+        {/* Tips */}
+        <Group
+          title="Tips"
+          hint="Non-obvious things that save money, time, or regret. Three minimum before publish."
+        >
+          <TipsRepeater
+            tips={Array.isArray(place.tips) ? place.tips : []}
+            onChange={(next) => update({ tips: next })}
+          />
+        </Group>
+
         {/* Sources */}
         <Group title="Sources" hint="One URL per line. Every substantive fact needs a source — the trust block on /places/[slug] renders these.">
           <Field label="Source URLs">
@@ -363,9 +380,354 @@ export default function AdminPlaceEditPage() {
           </Field>
         </Group>
 
+        {/* Partner products */}
+        <Group
+          title="Partner products"
+          hint="Attach here while you research. A partner is authoritative for its own product — never a source for place facts."
+        >
+          <PartnerProductsRepeater
+            placeId={place.id}
+            products={partnerProducts}
+            onChange={setPartnerProducts}
+            toast={{ success, error }}
+          />
+        </Group>
+
         <div className="pt-2 pb-10 text-sm text-gray-500 dark:text-gray-400">
-          Tips repeater, partner products, searchable sequencing pickers,
-          and the publish button arrive in the next steps of Task 15.
+          Searchable pickers for pairs_with / not_same_day_as and the Mark
+          verified stamp land in step 7 of Task 15.
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Tips repeater -------------------------------------------------------
+
+function TipsRepeater({
+  tips,
+  onChange,
+}: {
+  tips: string[]
+  onChange: (next: string[]) => void
+}) {
+  const [draft, setDraft] = useState('')
+
+  const addTip = () => {
+    const trimmed = draft.trim()
+    if (!trimmed) return
+    onChange([...tips, trimmed])
+    setDraft('')
+  }
+
+  const updateTip = (index: number, value: string) => {
+    const next = [...tips]
+    next[index] = value
+    onChange(next)
+  }
+
+  const removeTip = (index: number) => {
+    onChange(tips.filter((_, i) => i !== index))
+  }
+
+  return (
+    <div className="space-y-3">
+      {tips.length === 0 ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No tips yet. 3-star reviews on Klook / Agoda / TripAdvisor and recurring questions in Facebook groups are the usual source.
+        </p>
+      ) : (
+        <ol className="space-y-2 list-decimal pl-6">
+          {tips.map((tip, i) => (
+            <li key={i}>
+              <div className="flex items-start gap-2">
+                <input
+                  value={tip}
+                  onChange={(e) => updateTip(i, e.target.value)}
+                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeTip(i)}
+                  className="p-2 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  aria-label="Remove tip"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              addTip()
+            }
+          }}
+          placeholder="e.g. Big Lagoon needs a separate paddleboat permit — capped daily."
+          className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
+        />
+        <button
+          type="button"
+          onClick={addTip}
+          disabled={!draft.trim()}
+          className="inline-flex items-center gap-1 px-3 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50"
+        >
+          <Plus className="w-4 h-4" />
+          Add tip
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">{tips.length} / 3 minimum for publish</p>
+    </div>
+  )
+}
+
+// --- Partner products repeater ------------------------------------------
+
+type PartnerDraft = Partial<PartnerProduct> & { place_id: string; _localKey?: string }
+
+function PartnerProductsRepeater({
+  placeId,
+  products,
+  onChange,
+  toast,
+}: {
+  placeId: string
+  products: PartnerProduct[]
+  onChange: (next: PartnerProduct[]) => void
+  toast: { success: (m: string) => void; error: (m: string) => void }
+}) {
+  const [drafts, setDrafts] = useState<PartnerDraft[]>([])
+  const [savingKey, setSavingKey] = useState<string | null>(null)
+
+  const existingSaved = new Set(products.map((p) => p.id))
+
+  const addRow = () => {
+    const key = `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    setDrafts((d) => [
+      ...d,
+      {
+        _localKey: key,
+        place_id: placeId,
+        partner: 'klook',
+        product_type: 'activity',
+        active: true,
+      },
+    ])
+  }
+
+  const updateDraft = (key: string, patch: Partial<PartnerDraft>) => {
+    setDrafts((d) => d.map((row) => (row._localKey === key ? { ...row, ...patch } : row)))
+  }
+
+  const updateExisting = (id: string, patch: Partial<PartnerProduct>) => {
+    onChange(products.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+  }
+
+  const saveDraft = async (key: string) => {
+    const draft = drafts.find((d) => d._localKey === key)
+    if (!draft) return
+    if (!draft.partner || !draft.product_type || !draft.deeplink) {
+      toast.error('partner, type, and deeplink are required')
+      return
+    }
+    setSavingKey(key)
+    const id = await adminService.savePartnerProduct(draft)
+    setSavingKey(null)
+    if (!id) {
+      toast.error('Failed to save product')
+      return
+    }
+    const fresh = await adminService.getPartnerProductsForPlace(placeId)
+    onChange(fresh)
+    setDrafts((d) => d.filter((row) => row._localKey !== key))
+    toast.success('Partner product saved')
+  }
+
+  const saveExisting = async (product: PartnerProduct) => {
+    setSavingKey(product.id)
+    // place_id is nullable in the DB (a product can attach to a destination
+    // instead) but on this form we're always attaching to the current place.
+    const id = await adminService.savePartnerProduct({ ...product, place_id: placeId })
+    setSavingKey(null)
+    if (!id) {
+      toast.error('Failed to save product')
+      return
+    }
+    toast.success('Partner product updated')
+  }
+
+  const deleteExisting = async (product: PartnerProduct) => {
+    if (!confirm(`Delete this ${product.partner} product?`)) return
+    const ok = await adminService.deletePartnerProduct(product.id)
+    if (!ok) {
+      toast.error('Failed to delete')
+      return
+    }
+    onChange(products.filter((p) => p.id !== product.id))
+    toast.success('Partner product deleted')
+  }
+
+  const removeDraft = (key: string) => {
+    setDrafts((d) => d.filter((row) => row._localKey !== key))
+  }
+
+  return (
+    <div className="space-y-3">
+      {products.length === 0 && drafts.length === 0 && (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No partner products yet. Attach a Klook / Agoda / 12Go listing if there's one for this place.
+        </p>
+      )}
+
+      {products.map((p) => (
+        <PartnerProductRow
+          key={p.id}
+          row={p}
+          existing
+          saving={savingKey === p.id}
+          onChange={(patch) => updateExisting(p.id, patch)}
+          onSave={() => saveExisting(p)}
+          onDelete={() => deleteExisting(p)}
+        />
+      ))}
+
+      {drafts.map((d) => (
+        <PartnerProductRow
+          key={d._localKey!}
+          row={d as any}
+          existing={false}
+          saving={savingKey === d._localKey}
+          onChange={(patch) => updateDraft(d._localKey!, patch as any)}
+          onSave={() => saveDraft(d._localKey!)}
+          onDelete={() => removeDraft(d._localKey!)}
+        />
+      ))}
+
+      <button
+        type="button"
+        onClick={addRow}
+        className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+      >
+        <Plus className="w-4 h-4" />
+        Add partner product
+      </button>
+    </div>
+  )
+}
+
+function PartnerProductRow({
+  row,
+  existing,
+  saving,
+  onChange,
+  onSave,
+  onDelete,
+}: {
+  row: PartnerProduct | PartnerDraft
+  existing: boolean
+  saving: boolean
+  onChange: (patch: Partial<PartnerProduct>) => void
+  onSave: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 p-4 space-y-3">
+      <div className="grid sm:grid-cols-3 gap-3">
+        <select
+          value={row.partner ?? 'klook'}
+          onChange={(e) => onChange({ partner: e.target.value })}
+          className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+        >
+          <option value="klook">Klook</option>
+          <option value="agoda">Agoda</option>
+          <option value="12go">12Go</option>
+          <option value="airalo">Airalo</option>
+        </select>
+        <select
+          value={row.product_type ?? 'activity'}
+          onChange={(e) => onChange({ product_type: e.target.value as PartnerProductType })}
+          className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+        >
+          <option value="activity">Activity</option>
+          <option value="stay">Stay</option>
+          <option value="transfer">Transfer</option>
+          <option value="addon">Add-on</option>
+        </select>
+        <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <input
+            type="checkbox"
+            checked={row.active ?? true}
+            onChange={(e) => onChange({ active: e.target.checked })}
+          />
+          Active
+        </label>
+      </div>
+
+      <input
+        value={row.product_name ?? ''}
+        onChange={(e) => onChange({ product_name: e.target.value })}
+        placeholder="Product name as listed by the partner"
+        className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+      />
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <input
+          type="number"
+          step="any"
+          value={row.price_from ?? ''}
+          onChange={(e) =>
+            onChange({ price_from: e.target.value === '' ? null : Number(e.target.value) })
+          }
+          placeholder="Price from (₱)"
+          className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+        />
+        <input
+          value={row.includes ?? ''}
+          onChange={(e) => onChange({ includes: e.target.value })}
+          placeholder='Includes — e.g. "transport + lunch + guide"'
+          className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+        />
+      </div>
+
+      <input
+        value={row.deeplink ?? ''}
+        onChange={(e) => onChange({ deeplink: e.target.value })}
+        placeholder="https://www.klook.com/en-PH/activity/... (clean URL, no affiliate ID)"
+        className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-mono"
+      />
+
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {existing && 'verified_at' in row && row.verified_at
+            ? `Last verified ${new Date(row.verified_at).toLocaleDateString()}`
+            : existing
+            ? 'Not verified yet'
+            : 'New — not saved'}
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"
+          >
+            <Trash2 className="w-4 h-4" />
+            {existing ? 'Delete' : 'Discard'}
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            Save
+          </button>
         </div>
       </div>
     </div>
