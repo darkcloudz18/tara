@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MapPin, Star } from 'lucide-react'
+import Link from 'next/link'
+import { MapPin, Sparkles } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import {
   addToBucketList,
@@ -9,6 +10,7 @@ import {
   isInBucketList,
 } from '@/features/planner/services/bucketListService'
 import { useToast } from '@/contexts/ToastContext'
+import { capture } from '@/lib/analytics'
 import BucketPin from '@/components/icons/BucketPin'
 
 interface SearchResultRowProps {
@@ -93,13 +95,9 @@ export default function SearchResultRow({ place, onOpen }: SearchResultRowProps)
           <MapPin className="w-3 h-3" />
           {place.location}
         </p>
+        {/* Price + category — rating star removed per Task 19 (seeded
+            avg 4.5 across all 253 places, not real reviews). */}
         <div className="flex items-center gap-3 mt-2">
-          {place.rating > 0 && (
-            <span className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-              {place.rating.toFixed(1)}
-            </span>
-          )}
           {place.estimatedCost !== undefined && place.estimatedCost !== null && (
             <span className="text-sm text-teal-600 dark:text-teal-400 font-medium">
               ₱{place.estimatedCost.toLocaleString()}
@@ -109,6 +107,23 @@ export default function SearchResultRow({ place, onOpen }: SearchResultRowProps)
             {place.category}
           </span>
         </div>
+
+        {/* Plan a trip here — secondary action next to Save. */}
+        <Link
+          href={`/trip/new?destination=${encodeURIComponent(place.location)}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            capture('plan_from_card_clicked', {
+              placeId: place.source === 'tara' ? place.sourceId : place.id,
+              destinationSlug: place.location,
+              surface: 'search',
+            })
+          }}
+          className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300"
+        >
+          <Sparkles className="w-4 h-4" />
+          Plan a trip here
+        </Link>
       </div>
 
       {/* Save */}
