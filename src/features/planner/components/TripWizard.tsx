@@ -16,20 +16,37 @@ import {
 } from 'lucide-react'
 import { getPopularDestinations } from '../services/suggestionService'
 import { TripTemplate } from '../data/tripTemplates'
+import { capture } from '@/lib/analytics'
 
 interface TripWizardProps {
   onComplete: (data: TripWizardData) => void
   initialTemplate?: TripTemplate
+  initialDestination?: string
 }
+
+export type DatesMode = 'exact' | 'month'
+export type BudgetBand = '' | 'low' | 'mid' | 'high' | 'luxe'
 
 export interface TripWizardData {
   origin: string
   destination: string
+  destinationKnown: boolean
+  datesMode: DatesMode
   startDate: string
   endDate: string
+  tripMonth: string            // 'YYYY-MM' when datesMode === 'month', else ''
+  durationDays: number         // used when datesMode === 'month'; 0 otherwise
   travelers: number
+  budgetBand: BudgetBand       // per person, per day
   tripType: 'leisure' | 'adventure' | 'budget' | 'luxury'
 }
+
+const BUDGET_BANDS: { id: Exclude<BudgetBand, ''>; label: string; perDay: string; desc: string }[] = [
+  { id: 'low', label: 'Budget', perDay: '~₱3k/day', desc: 'Hostels, local food, public transport' },
+  { id: 'mid', label: 'Comfortable', perDay: '~₱5k/day', desc: 'Mid-range stays, a few paid activities' },
+  { id: 'high', label: 'Premium', perDay: '~₱8k/day', desc: 'Nicer hotels, tours, private transfers' },
+  { id: 'luxe', label: 'Luxury', perDay: '₱12k+/day', desc: 'Resorts, fine dining, no compromises' },
+]
 
 const TRIP_TYPES = [
   { id: 'leisure', label: 'Leisure', icon: '🏖️', desc: 'Relaxing beach & resort vibes' },
@@ -40,7 +57,7 @@ const TRIP_TYPES = [
 
 const POPULAR_ORIGINS = ['Manila', 'Cebu', 'Davao', 'Clark', 'Iloilo']
 
-export default function TripWizard({ onComplete, initialTemplate }: TripWizardProps) {
+export default function TripWizard({ onComplete, initialTemplate, initialDestination }: TripWizardProps) {
   const [step, setStep] = useState(1)
   const [destinations, setDestinations] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -49,9 +66,14 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
   const [formData, setFormData] = useState<TripWizardData>({
     origin: '',
     destination: '',
+    destinationKnown: true,
+    datesMode: 'exact',
     startDate: '',
     endDate: '',
+    tripMonth: '',
+    durationDays: 0,
     travelers: 1,
+    budgetBand: '',
     tripType: 'leisure',
   })
 
@@ -63,6 +85,20 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
   useEffect(() => {
     loadDestinations()
   }, [])
+
+  // Pre-fill the destination from ?destination=<name> when the user came
+  // from a 'Plan a trip here' card (Task 19). destinationKnown stays true
+  // (the default) — the 'Not sure yet' toggle is still available if they
+  // change their mind.
+  useEffect(() => {
+    if (initialDestination) {
+      setFormData((prev) => ({
+        ...prev,
+        destination: initialDestination,
+        destinationKnown: true,
+      }))
+    }
+  }, [initialDestination])
 
   // Pre-fill form with template data
   useEffect(() => {
@@ -76,9 +112,14 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
       setFormData({
         origin: initialTemplate.startingFrom,
         destination: initialTemplate.destination,
+        destinationKnown: true,
+        datesMode: 'exact',
         startDate: start.toISOString().split('T')[0],
         endDate: end.toISOString().split('T')[0],
+        tripMonth: '',
+        durationDays: 0,
         travelers: 2,
+        budgetBand: '',
         tripType: initialTemplate.bestFor.includes('adventure') ? 'adventure' :
                   initialTemplate.bestFor.includes('budget') ? 'budget' :
                   initialTemplate.bestFor.includes('luxury') ? 'luxury' : 'leisure',
@@ -109,17 +150,28 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
   const canProceed = () => {
     switch (step) {
       case 1:
-        return formData.origin && formData.destination
+        return formData.origin && (formData.destination || !formData.destinationKnown)
       case 2:
-        return formData.startDate && formData.endDate
+        return formData.datesMode === 'exact'
+          ? Boolean(formData.startDate && formData.endDate)
+          : Boolean(formData.tripMonth && formData.durationDays > 0)
       case 3:
-        return formData.travelers > 0
+        return formData.travelers > 0 && formData.budgetBand !== ''
       default:
         return true
     }
   }
 
   const handleNext = () => {
+    if (step === 1) {
+      capture('wizard_destination_mode_selected', {
+        mode: formData.destinationKnown ? 'known' : 'not_sure',
+      })
+    }
+    capture('wizard_step_completed', {
+      step,
+      destinationKnown: formData.destinationKnown,
+    })
     if (step < 3) {
       setStep(step + 1)
     } else {
@@ -135,6 +187,7 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
   }
 
   const getTotalDays = () => {
+    if (formData.datesMode === 'month') return formData.durationDays
     if (!formData.startDate || !formData.endDate) return 0
     const start = new Date(formData.startDate)
     const end = new Date(formData.endDate)
@@ -258,59 +311,61 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
               </div>
             </div>
 
-            {/* Destination */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                To (Destination)
-              </label>
+            {/* Destination — hidden when the user takes the 'help me pick' path */}
+            {formData.destinationKnown && (
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-500" />
-                <input
-                  type="text"
-                  value={formData.destination || destSearch}
-                  onChange={(e) => {
-                    setDestSearch(e.target.value)
-                    setFormData({ ...formData, destination: '' })
-                    setShowDestDropdown(true)
-                  }}
-                  onFocus={() => setShowDestDropdown(true)}
-                  placeholder="e.g., Palawan, El Nido, Boracay"
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-              {showDestDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-48 overflow-auto">
-                  {searchingDestinations ? (
-                    <div className="px-4 py-3 text-gray-500 flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading destinations...
-                    </div>
-                  ) : filteredDestinations.length > 0 ? (
-                    filteredDestinations.map((dest) => (
-                      <button
-                        key={dest}
-                        onClick={() => {
-                          setFormData({ ...formData, destination: dest })
-                          setDestSearch('')
-                          setShowDestDropdown(false)
-                        }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white flex items-center gap-3"
-                      >
-                        <MapPin className="w-4 h-4 text-teal-500" />
-                        {dest}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-4 py-3 text-gray-500">
-                      {destSearch ? 'No destinations found' : 'Type to search destinations'}
-                    </div>
-                  )}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  To (Destination)
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-500" />
+                  <input
+                    type="text"
+                    value={formData.destination || destSearch}
+                    onChange={(e) => {
+                      setDestSearch(e.target.value)
+                      setFormData({ ...formData, destination: '' })
+                      setShowDestDropdown(true)
+                    }}
+                    onFocus={() => setShowDestDropdown(true)}
+                    placeholder="e.g., Palawan, El Nido, Boracay"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
                 </div>
-              )}
-            </div>
+                {showDestDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-48 overflow-auto">
+                    {searchingDestinations ? (
+                      <div className="px-4 py-3 text-gray-500 flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading destinations...
+                      </div>
+                    ) : filteredDestinations.length > 0 ? (
+                      filteredDestinations.map((dest) => (
+                        <button
+                          key={dest}
+                          onClick={() => {
+                            setFormData({ ...formData, destination: dest })
+                            setDestSearch('')
+                            setShowDestDropdown(false)
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white flex items-center gap-3"
+                        >
+                          <MapPin className="w-4 h-4 text-teal-500" />
+                          {dest}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-gray-500">
+                        {destSearch ? 'No destinations found' : 'Type to search destinations'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Quick Selection */}
-            {!formData.destination && (
+            {/* Quick Selection — pills visible only on the destination-known path */}
+            {formData.destinationKnown && !formData.destination && (
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Popular destinations:</p>
                 <div className="flex flex-wrap gap-2">
@@ -323,6 +378,59 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                       {dest}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Smart Build entry point */}
+            {formData.destinationKnown ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500">or</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDestSearch('')
+                    setShowDestDropdown(false)
+                    setFormData({
+                      ...formData,
+                      destination: '',
+                      destinationKnown: false,
+                      datesMode: 'month',
+                      startDate: '',
+                      endDate: '',
+                    })
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-teal-500" aria-hidden="true" />
+                  Not sure yet — help me pick
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/30 p-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-teal-600 dark:text-teal-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-teal-900 dark:text-teal-100">We'll help you pick</p>
+                    <p className="text-sm text-teal-800 dark:text-teal-200 mt-1">
+                      Answer the next few questions and we'll suggest destinations that fit your days, budget, and timing.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          destinationKnown: true,
+                          datesMode: 'exact',
+                          tripMonth: '',
+                          durationDays: 0,
+                        })
+                      }
+                      className="mt-2 text-sm font-medium text-teal-700 dark:text-teal-300 underline underline-offset-2 hover:no-underline"
+                    >
+                      I know where I'm going
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -340,36 +448,85 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                 When are you traveling?
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mt-2">
-                {formData.origin} to {formData.destination}
+                {formData.destinationKnown
+                  ? `${formData.origin} to ${formData.destination}`
+                  : `From ${formData.origin} — destination to be picked`}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Dates mode toggle — only offered on the 'help me pick' path */}
+            {!formData.destinationKnown && (
+              <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, datesMode: 'month' })
+                  }
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    formData.datesMode === 'month'
+                      ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Just the month
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, datesMode: 'exact' })
+                  }
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    formData.datesMode === 'exact'
+                      ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Exact dates
+                </button>
+              </div>
+            )}
+
+            {formData.datesMode === 'exact' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    min={formData.startDate || new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            ) : (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Start Date
+                  Travel month
                 </label>
                 <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
+                  type="month"
+                  value={formData.tripMonth}
+                  onChange={(e) => setFormData({ ...formData, tripMonth: e.target.value })}
+                  min={new Date().toISOString().slice(0, 7)}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  min={formData.startDate || new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+            )}
 
             {getTotalDays() > 0 && (
               <div className="bg-teal-50 dark:bg-teal-900/30 rounded-xl p-4 text-center">
@@ -381,27 +538,43 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
 
             {/* Quick Duration Selection */}
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Quick select duration:</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                {formData.datesMode === 'exact'
+                  ? 'Quick select duration:'
+                  : 'How long?'}
+              </p>
               <div className="flex flex-wrap gap-2">
-                {[3, 5, 7, 10, 14].map((days) => (
-                  <button
-                    key={days}
-                    onClick={() => {
-                      const start = new Date()
-                      start.setDate(start.getDate() + 7) // Start a week from now
-                      const end = new Date(start)
-                      end.setDate(end.getDate() + days - 1)
-                      setFormData({
-                        ...formData,
-                        startDate: start.toISOString().split('T')[0],
-                        endDate: end.toISOString().split('T')[0],
-                      })
-                    }}
-                    className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
-                  >
-                    {days} days
-                  </button>
-                ))}
+                {[3, 5, 7, 10, 14].map((days) => {
+                  const isSelected =
+                    formData.datesMode === 'month' && formData.durationDays === days
+                  return (
+                    <button
+                      key={days}
+                      onClick={() => {
+                        if (formData.datesMode === 'month') {
+                          setFormData({ ...formData, durationDays: days })
+                          return
+                        }
+                        const start = new Date()
+                        start.setDate(start.getDate() + 7)
+                        const end = new Date(start)
+                        end.setDate(end.getDate() + days - 1)
+                        setFormData({
+                          ...formData,
+                          startDate: start.toISOString().split('T')[0],
+                          endDate: end.toISOString().split('T')[0],
+                        })
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm transition-colors ${
+                        isSelected
+                          ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300'
+                      }`}
+                    >
+                      {days} days
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -418,7 +591,9 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                 Trip Details
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mt-2">
-                {getTotalDays()} days in {formData.destination}
+                {formData.destinationKnown
+                  ? `${getTotalDays()} days in ${formData.destination}`
+                  : `${getTotalDays()} days from ${formData.origin}`}
               </p>
             </div>
 
@@ -443,6 +618,41 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                 >
                   +
                 </button>
+              </div>
+            </div>
+
+            {/* Budget per person, per day */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Budget per person, per day
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {BUDGET_BANDS.map((band) => (
+                  <button
+                    key={band.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, budgetBand: band.id })}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      formData.budgetBand === band.id
+                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h3 className={`font-semibold ${
+                        formData.budgetBand === band.id
+                          ? 'text-teal-700 dark:text-teal-300'
+                          : 'text-gray-900 dark:text-white'
+                      }`}>
+                        {band.label}
+                      </h3>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {band.perDay}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{band.desc}</p>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -483,7 +693,9 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">Route</span>
                   <span className="text-gray-900 dark:text-white font-medium">
-                    {formData.origin} → {formData.destination}
+                    {formData.destinationKnown
+                      ? `${formData.origin} → ${formData.destination}`
+                      : `${formData.origin} → we'll help you pick`}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -498,6 +710,17 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
                     {formData.travelers} {formData.travelers === 1 ? 'person' : 'people'}
                   </span>
                 </div>
+                {formData.budgetBand && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Budget</span>
+                    <span className="text-gray-900 dark:text-white font-medium">
+                      {BUDGET_BANDS.find(b => b.id === formData.budgetBand)?.label}
+                      <span className="text-gray-500 dark:text-gray-400 ml-1">
+                        · {BUDGET_BANDS.find(b => b.id === formData.budgetBand)?.perDay}
+                      </span>
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">Type</span>
                   <span className="text-gray-900 dark:text-white font-medium">

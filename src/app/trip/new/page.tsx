@@ -23,7 +23,7 @@ import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
 import { BudgetSummary, CategoryBudget } from '@/features/planner/hooks/useBudgetCalculations'
 import { WeatherWidget } from '@/components/weather'
 
-type ViewMode = 'wizard' | 'itinerary'
+type ViewMode = 'wizard' | 'itinerary' | 'smart-build-pending'
 
 // Wrapper component to handle Suspense for useSearchParams
 export default function NewItineraryPage() {
@@ -46,6 +46,7 @@ function NewItineraryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const templateSlug = searchParams.get('template')
+  const destinationParam = searchParams.get('destination')
 
   const { user } = useUser()
   const [viewMode, setViewMode] = useState<ViewMode>('wizard')
@@ -72,11 +73,16 @@ function NewItineraryContent() {
 
   const handleWizardComplete = async (data: TripWizardData) => {
     setTripData(data)
-    setLoading(true)
     setError(null)
 
+    if (!data.destinationKnown) {
+      // Smart Build suggestion engine lands here (Task 17). Placeholder for now.
+      setViewMode('smart-build-pending')
+      return
+    }
+
+    setLoading(true)
     try {
-      // Generate itinerary suggestions
       const suggestions = await generateItinerarySuggestion(
         data.origin,
         data.destination,
@@ -355,7 +361,30 @@ function NewItineraryContent() {
             <TripWizard
               onComplete={handleWizardComplete}
               initialTemplate={selectedTemplate}
+              initialDestination={destinationParam || undefined}
             />
+          )}
+
+          {viewMode === 'smart-build-pending' && tripData && (
+            <div className="max-w-2xl mx-auto">
+              <div className="rounded-2xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/30 p-6 md:p-8 text-center">
+                <h2 className="text-2xl font-bold text-teal-900 dark:text-teal-100">
+                  Finding destinations that fit
+                </h2>
+                <p className="mt-3 text-teal-800 dark:text-teal-200">
+                  We'll match {tripData.startDate && tripData.endDate ? `${getTotalDays()} days` : 'your trip'} from {tripData.origin} against destinations we have real numbers for.
+                </p>
+                <p className="mt-4 text-sm text-teal-700 dark:text-teal-300">
+                  The suggestion engine is being wired in next. For now, pick a destination manually to continue.
+                </p>
+                <button
+                  onClick={() => setViewMode('wizard')}
+                  className="mt-6 inline-flex items-center justify-center px-5 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors"
+                >
+                  Back to the wizard
+                </button>
+              </div>
+            </div>
           )}
 
           {viewMode === 'itinerary' && tripData && (
