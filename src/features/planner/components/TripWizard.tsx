@@ -21,6 +21,7 @@ import { capture } from '@/lib/analytics'
 interface TripWizardProps {
   onComplete: (data: TripWizardData) => void
   initialTemplate?: TripTemplate
+  initialDestination?: string
 }
 
 export type DatesMode = 'exact' | 'month'
@@ -56,7 +57,7 @@ const TRIP_TYPES = [
 
 const POPULAR_ORIGINS = ['Manila', 'Cebu', 'Davao', 'Clark', 'Iloilo']
 
-export default function TripWizard({ onComplete, initialTemplate }: TripWizardProps) {
+export default function TripWizard({ onComplete, initialTemplate, initialDestination }: TripWizardProps) {
   const [step, setStep] = useState(1)
   const [destinations, setDestinations] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -84,6 +85,20 @@ export default function TripWizard({ onComplete, initialTemplate }: TripWizardPr
   useEffect(() => {
     loadDestinations()
   }, [])
+
+  // Pre-fill the destination from ?destination=<name> when the user came
+  // from a 'Plan a trip here' card (Task 19). destinationKnown stays true
+  // (the default) — the 'Not sure yet' toggle is still available if they
+  // change their mind.
+  useEffect(() => {
+    if (initialDestination) {
+      setFormData((prev) => ({
+        ...prev,
+        destination: initialDestination,
+        destinationKnown: true,
+      }))
+    }
+  }, [initialDestination])
 
   // Pre-fill form with template data
   useEffect(() => {
