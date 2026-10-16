@@ -14,6 +14,7 @@ import DayCard from '@/features/planner/components/DayCard'
 import BucketSuggestions from '@/features/planner/components/BucketSuggestions'
 import { AppShell } from '@/components/layout'
 import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
+import RunningCostChip from '@/features/planner/components/RunningCostChip'
 import ItineraryMap from '@/features/planner/components/ItineraryMap'
 import ItineraryForm, { ItineraryFormData } from '@/features/planner/components/ItineraryForm'
 import DeleteConfirmModal from '@/features/planner/components/DeleteConfirmModal'
@@ -251,7 +252,7 @@ export default function ItineraryDetailPage() {
                 {itinerary.description && (
                   <p className="text-gray-600 mt-2">{itinerary.description}</p>
                 )}
-                <div className="flex flex-wrap gap-1 mt-3">
+                <div className="flex flex-wrap items-center gap-2 mt-3">
                   {itinerary.destinations.map((dest, i) => (
                     <span
                       key={i}
@@ -260,6 +261,7 @@ export default function ItineraryDetailPage() {
                       {dest}
                     </span>
                   ))}
+                  <RunningCostChip budget={budget} />
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
