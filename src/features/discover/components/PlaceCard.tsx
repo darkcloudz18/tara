@@ -1,21 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MapPin, Star, Heart, MessageCircle, Send, MoreHorizontal, Hotel, UtensilsCrossed, Camera, Compass } from 'lucide-react'
+import Link from 'next/link'
+import { MapPin, Hotel, UtensilsCrossed, Camera, Compass, Sparkles } from 'lucide-react'
 import { DiscoverPlace } from '@/features/planner/services/placeService'
 import { addToBucketList, removeFromBucketByPlace, isInBucketList } from '@/features/planner/services/bucketListService'
 import { useToast } from '@/contexts/ToastContext'
-import { seededInt } from '@/lib/seed'
+import { capture } from '@/lib/analytics'
 import BucketPin from '@/components/icons/BucketPin'
 
 interface PlaceCardProps {
   place: DiscoverPlace
+  surface?: 'discover' | 'feed' | 'destination' | 'search'
 }
 
-export default function PlaceCard({ place }: PlaceCardProps) {
+export default function PlaceCard({ place, surface = 'discover' }: PlaceCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(() => seededInt(place.id, 50, 550))
   const [saved, setSaved] = useState(false)
   const [savingBucket, setSavingBucket] = useState(false)
   const toast = useToast()
@@ -61,12 +61,15 @@ export default function PlaceCard({ place }: PlaceCardProps) {
     }
   }
 
-  const mainPhoto = place.photos?.[0] || 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800'
-
-  const handleLike = () => {
-    setLiked(!liked)
-    setLikeCount(prev => liked ? prev - 1 : prev + 1)
+  const handlePlanClick = () => {
+    capture('plan_from_card_clicked', {
+      placeId: place.source === 'tara' ? place.sourceId : place.id,
+      destinationSlug: place.location,
+      surface,
+    })
   }
+
+  const mainPhoto = place.photos?.[0] || 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800'
 
   const getCategoryStyle = (category: string) => {
     switch (category) {
@@ -85,6 +88,7 @@ export default function PlaceCard({ place }: PlaceCardProps) {
 
   const categoryStyle = getCategoryStyle(place.category)
   const CategoryIcon = categoryStyle.icon
+  const planHref = `/trip/new?destination=${encodeURIComponent(place.location)}`
 
   return (
     <article className="bg-white dark:bg-black">
@@ -108,10 +112,6 @@ export default function PlaceCard({ place }: PlaceCardProps) {
             <span className="text-xs text-gray-500 dark:text-gray-400">{categoryStyle.label}</span>
           </div>
         </div>
-        {/* More Options */}
-        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-          <MoreHorizontal className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        </button>
       </div>
 
       {/* Square Image */}
@@ -126,7 +126,6 @@ export default function PlaceCard({ place }: PlaceCardProps) {
             imageLoaded ? 'opacity-100' : 'opacity-0'
           }`}
           onLoad={() => setImageLoaded(true)}
-          onDoubleClick={handleLike}
         />
 
         {/* Partner Badge */}
@@ -156,35 +155,10 @@ export default function PlaceCard({ place }: PlaceCardProps) {
         )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="px-4 pt-3">
-        <div className="flex items-center gap-4">
-          {/* Like */}
-          <button onClick={handleLike} className="hover:opacity-60 transition-opacity">
-            <Heart
-              className={`w-7 h-7 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-900 dark:text-white'}`}
-            />
-          </button>
-          {/* Comment */}
-          <button className="hover:opacity-60 transition-opacity">
-            <MessageCircle className="w-7 h-7 text-gray-900 dark:text-white" />
-          </button>
-          {/* Share */}
-          <button className="hover:opacity-60 transition-opacity">
-            <Send className="w-7 h-7 text-gray-900 dark:text-white" />
-          </button>
-        </div>
-
-        {/* Likes Count */}
-        <p className="font-semibold text-sm text-gray-900 dark:text-white mt-3">
-          {likeCount.toLocaleString()} likes
-        </p>
-      </div>
-
       {/* Content */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pt-3 pb-4">
         {/* Place Name & Description */}
-        <p className="text-sm mt-1">
+        <p className="text-sm">
           <span className="font-semibold text-gray-900 dark:text-white">{place.name}</span>
           {place.description && (
             <>
@@ -194,18 +168,11 @@ export default function PlaceCard({ place }: PlaceCardProps) {
           )}
         </p>
 
-        {/* Rating & Location */}
-        <div className="flex items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
-          <span className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-            <span className="font-medium text-gray-900 dark:text-white">{place.rating.toFixed(1)}</span>
-            <span>({place.reviewCount})</span>
-          </span>
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5" />
-            {place.location}
-          </span>
+        {/* Location only — rating and review counts removed per Task 19
+            audit; the DB values are seeded, not real reviews. */}
+        <div className="flex items-center gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <MapPin className="w-3.5 h-3.5" />
+          {place.location}
         </div>
 
         {/* Tags */}
@@ -218,6 +185,19 @@ export default function PlaceCard({ place }: PlaceCardProps) {
             ))}
           </div>
         )}
+
+        {/* Plan a trip here — secondary action beside Save (which lives
+            on the image above). Routes into the wizard with destination
+            pre-filled; Task 14's destinationKnown branch handles the
+            rest. */}
+        <Link
+          href={planHref}
+          onClick={handlePlanClick}
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300"
+        >
+          <Sparkles className="w-4 h-4" />
+          Plan a trip here
+        </Link>
       </div>
     </article>
   )
