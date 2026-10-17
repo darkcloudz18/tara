@@ -22,8 +22,13 @@ import { getTemplateBySlug } from '@/features/planner/data/tripTemplates'
 import BudgetBreakdown from '@/features/planner/components/BudgetBreakdown'
 import { BudgetSummary, CategoryBudget } from '@/features/planner/hooks/useBudgetCalculations'
 import { WeatherWidget } from '@/components/weather'
+import { rankSmartBuild, MatchResult, SmartBuildResults } from '@/features/smart-build/services/smartBuildService'
+import { createLakadFromSmartBuild } from '@/features/smart-build/services/draftGenerationService'
+import SmartBuildResultsView from '@/features/smart-build/components/SmartBuildResults'
+import { useToast } from '@/contexts/ToastContext'
+import { capture } from '@/lib/analytics'
 
-type ViewMode = 'wizard' | 'itinerary' | 'smart-build-pending'
+type ViewMode = 'wizard' | 'itinerary' | 'smart-build-results'
 
 // Wrapper component to handle Suspense for useSearchParams
 export default function NewItineraryPage() {
@@ -46,9 +51,9 @@ function NewItineraryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const templateSlug = searchParams.get('template')
-  const destinationParam = searchParams.get('destination')
 
   const { user } = useUser()
+  const { info, error: toastError } = useToast()
   const [viewMode, setViewMode] = useState<ViewMode>('wizard')
   const [tripData, setTripData] = useState<TripWizardData | null>(null)
   const [itinerary, setItinerary] = useState<DaySuggestion[]>([])
@@ -56,6 +61,9 @@ function NewItineraryContent() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<ReturnType<typeof getTemplateBySlug>>(undefined)
+  const [smartResults, setSmartResults] = useState<SmartBuildResults | null>(null)
+  const [smartLoading, setSmartLoading] = useState(false)
+  const [pickingDestinationId, setPickingDestinationId] = useState<string | null>(null)
 
   const { createItinerary } = useItineraries()
   const { refetch: refetchTrips } = useTrips()
@@ -76,8 +84,7 @@ function NewItineraryContent() {
     setError(null)
 
     if (!data.destinationKnown) {
-      // Smart Build suggestion engine lands here (Task 17). Placeholder for now.
-      setViewMode('smart-build-pending')
+      await runSmartBuild(data)
       return
     }
 
@@ -97,6 +104,104 @@ function NewItineraryContent() {
       setError('Failed to generate itinerary. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const runSmartBuild = async (data: TripWizardData) => {
+    const days = resolveTripDays(data)
+    const month = resolveTripMonth(data)
+    const budgetBand = data.budgetBand || 'mid'
+
+    capture('smart_build_submitted', {
+      days,
+      budget: budgetBand,
+      origin: data.origin,
+      month,
+    })
+
+    setSmartResults(null)
+    setSmartLoading(true)
+    setViewMode('smart-build-results')
+
+    try {
+      const results = await rankSmartBuild({
+        originKey: data.origin,
+        days,
+        budgetBand: budgetBand as Exclude<typeof budgetBand, ''>,
+        month,
+        travelers: data.travelers,
+      })
+      setSmartResults(results)
+
+      capture('smart_build_results_shown', {
+        resultCount: results.matches.length,
+        hasOverlap: results.hasOverlap,
+        refusedCount: results.refusals.length,
+      })
+      for (const refusal of results.refusals) {
+        capture('smart_build_refusal_shown', {
+          reason: refusal.reason,
+          destinationSlug: refusal.destination.slug,
+        })
+      }
+    } catch (err) {
+      console.error('Smart Build ranking failed:', err)
+      setError('Failed to find destinations. Please try again.')
+    } finally {
+      setSmartLoading(false)
+    }
+  }
+
+  const handlePickDestination = async (match: MatchResult) => {
+    if (!tripData) return
+    capture('smart_build_result_clicked', {
+      destinationSlug: match.destination.slug,
+      rank: match.rank,
+      hadOverlap: match.overlapCount > 0,
+    })
+
+    if (!user) {
+      // Anonymous Smart Build pick: Task 18 scope requires signed-in to
+      // write the draft. A full anon → pending → signup → create handoff
+      // reuses datedLakadService's pending plumbing — follow-up.
+      info(
+        'Sign in to open your draft',
+        'We need an account to save your Smart Build pick as a lakad.',
+      )
+      router.push(`/login?redirect=/trip/new`)
+      return
+    }
+
+    setPickingDestinationId(match.destination.id)
+    try {
+      const result = await createLakadFromSmartBuild({
+        destinationId: match.destination.id,
+        destinationSlug: match.destination.slug,
+        destinationName: match.destination.name,
+        days: resolveTripDays(tripData),
+        startDate:
+          tripData.datesMode === 'exact' && tripData.startDate ? tripData.startDate : undefined,
+        tripMonth:
+          tripData.datesMode === 'month' && tripData.tripMonth ? tripData.tripMonth : undefined,
+        budgetBand: (tripData.budgetBand || 'mid') as Exclude<typeof tripData.budgetBand, ''>,
+        originKey: tripData.origin,
+        travelers: tripData.travelers,
+      })
+
+      capture('smart_build_draft_created', {
+        lakadId: result.itineraryId,
+        destinationSlug: match.destination.slug,
+        isDated: result.isDated,
+        placeCount: result.placeCount,
+        hadBucketOverlap: result.hadBucketOverlap,
+      })
+
+      refetchTrips()
+      router.push(`/trip/${result.itineraryId}/edit`)
+    } catch (err: any) {
+      console.error('Smart Build draft creation failed:', err)
+      setPickingDestinationId(null)
+      toastError('Failed to create draft', err?.message || 'Please try again.')
     }
   }
 
@@ -207,6 +312,27 @@ function NewItineraryContent() {
     const start = new Date(tripData.startDate)
     const end = new Date(tripData.endDate)
     return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  }
+
+  // The wizard supports either exact dates OR a 'just the month' mode
+  // from Task 14. Normalise both for the Smart Build ranker.
+  function resolveTripDays(data: TripWizardData): number {
+    if (data.datesMode === 'month') return data.durationDays || 0
+    if (!data.startDate || !data.endDate) return 0
+    const start = new Date(data.startDate)
+    const end = new Date(data.endDate)
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  }
+
+  function resolveTripMonth(data: TripWizardData): number {
+    if (data.datesMode === 'month' && data.tripMonth) {
+      const [, mm] = data.tripMonth.split('-')
+      return Number(mm) || new Date().getMonth() + 1
+    }
+    if (data.startDate) {
+      return new Date(data.startDate).getMonth() + 1
+    }
+    return new Date().getMonth() + 1
   }
 
   const calculateTotalCost = () => {
@@ -361,29 +487,28 @@ function NewItineraryContent() {
             <TripWizard
               onComplete={handleWizardComplete}
               initialTemplate={selectedTemplate}
-              initialDestination={destinationParam || undefined}
             />
           )}
 
-          {viewMode === 'smart-build-pending' && tripData && (
-            <div className="max-w-2xl mx-auto">
-              <div className="rounded-2xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/30 p-6 md:p-8 text-center">
-                <h2 className="text-2xl font-bold text-teal-900 dark:text-teal-100">
-                  Finding destinations that fit
-                </h2>
-                <p className="mt-3 text-teal-800 dark:text-teal-200">
-                  We'll match {tripData.startDate && tripData.endDate ? `${getTotalDays()} days` : 'your trip'} from {tripData.origin} against destinations we have real numbers for.
-                </p>
-                <p className="mt-4 text-sm text-teal-700 dark:text-teal-300">
-                  The suggestion engine is being wired in next. For now, pick a destination manually to continue.
-                </p>
-                <button
-                  onClick={() => setViewMode('wizard')}
-                  className="mt-6 inline-flex items-center justify-center px-5 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-colors"
-                >
-                  Back to the wizard
-                </button>
-              </div>
+          {viewMode === 'smart-build-results' && tripData && (
+            <div className="space-y-5">
+              <SmartBuildResultsView
+                loading={smartLoading}
+                results={smartResults}
+                travelers={tripData.travelers}
+                onPick={handlePickDestination}
+                pickingId={pickingDestinationId}
+              />
+              {!smartLoading && (
+                <div className="max-w-3xl mx-auto text-center">
+                  <button
+                    onClick={() => setViewMode('wizard')}
+                    className="text-sm text-gray-500 dark:text-gray-400 underline underline-offset-2 hover:no-underline"
+                  >
+                    Change my answers
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
