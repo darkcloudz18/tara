@@ -1,14 +1,27 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2, MapPin } from 'lucide-react'
+import { Plus, Loader2, MapPin, Search, X } from 'lucide-react'
 import {
   adminService,
   AdminPlaceQueueRow,
+  PLACE_CATEGORY_OPTIONS,
+  type PlaceQueueSort,
 } from '@/features/admin/services/adminService'
 
 type StatusFilter = '' | 'draft' | 'published' | 'needs_review'
+
+// Debounce the search box so we don't re-query on every keystroke. 300ms
+// is the standard typing pause; faster feels jittery, slower feels dead.
+function useDebounced<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
+}
 
 const STATUS_LABEL: Record<AdminPlaceQueueRow['status'], string> = {
   draft: 'Draft',
@@ -26,14 +39,23 @@ export default function AdminPlacesPage() {
   const [rows, setRows] = useState<AdminPlaceQueueRow[]>([])
   const [destinations, setDestinations] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
+  const [totalInDb, setTotalInDb] = useState<number | null>(null)
 
   const [destinationFilter, setDestinationFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [incompleteOnly, setIncompleteOnly] = useState(false)
   const [staleOnly, setStaleOnly] = useState(false)
+  const [sort, setSort] = useState<PlaceQueueSort>('completeness')
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounced(search, 300)
+  const searchRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     adminService.getDestinationsForFilter().then(setDestinations)
+    // Unfiltered row count once at mount so 'Showing X of Y' has a stable
+    // total. Pulled via the queue too so it bakes in RLS.
+    adminService.getPlaceQueue({}).then((all) => setTotalInDb(all.length))
   }, [])
 
   useEffect(() => {
@@ -42,12 +64,29 @@ export default function AdminPlacesPage() {
       .getPlaceQueue({
         destinationId: destinationFilter || undefined,
         status: statusFilter || undefined,
+        category: categoryFilter || undefined,
+        search: debouncedSearch || undefined,
         incomplete: incompleteOnly,
         stale: staleOnly,
+        sort,
       })
       .then((data) => setRows(data))
       .finally(() => setLoading(false))
-  }, [destinationFilter, statusFilter, incompleteOnly, staleOnly])
+  }, [destinationFilter, statusFilter, categoryFilter, debouncedSearch, incompleteOnly, staleOnly, sort])
+
+  // '/' focuses search unless the user is already typing in another input.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey) return
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
+      e.preventDefault()
+      searchRef.current?.focus()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const summary = useMemo(() => {
     if (rows.length === 0) return { avg: 0, publishable: 0 }
@@ -58,6 +97,25 @@ export default function AdminPlacesPage() {
     }
   }, [rows])
 
+  const hasAnyFilter = Boolean(
+    destinationFilter || statusFilter || categoryFilter || debouncedSearch || incompleteOnly || staleOnly,
+  )
+
+  const clearFilters = () => {
+    setDestinationFilter('')
+    setStatusFilter('')
+    setCategoryFilter('')
+    setSearch('')
+    setIncompleteOnly(false)
+    setStaleOnly(false)
+  }
+
+  const showing = rows.length
+  const total = totalInDb ?? showing
+  const countLabel = hasAnyFilter
+    ? `Showing ${showing} of ${total}`
+    : `${total} total`
+
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
@@ -65,7 +123,7 @@ export default function AdminPlacesPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Places</h1>
           <p className="text-gray-500 dark:text-gray-400">
-            {rows.length} total · {summary.publishable} published · avg completeness {summary.avg}%
+            {countLabel} · {summary.publishable} published · avg completeness {summary.avg}%
           </p>
         </div>
         <Link
@@ -77,12 +135,40 @@ export default function AdminPlacesPage() {
         </Link>
       </div>
 
+      {/* Search */}
+      <div className="mb-3 relative max-w-xl">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+        <input
+          ref={searchRef}
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search name or location… (press / to focus)"
+          className="w-full pl-9 pr-9 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          aria-label="Search places"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('')
+              searchRef.current?.focus()
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            aria-label="Clear search"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <select
           value={destinationFilter}
           onChange={(e) => setDestinationFilter(e.target.value)}
           className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm"
+          aria-label="Filter by destination"
         >
           <option value="">All destinations</option>
           {destinations.map((d) => (
@@ -94,11 +180,24 @@ export default function AdminPlacesPage() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
           className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm"
+          aria-label="Filter by status"
         >
           <option value="">All statuses</option>
           <option value="draft">Draft</option>
           <option value="published">Published</option>
           <option value="needs_review">Needs review</option>
+        </select>
+
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm"
+          aria-label="Filter by category"
+        >
+          <option value="">All categories</option>
+          {PLACE_CATEGORY_OPTIONS.map((c) => (
+            <option key={c} value={c} className="capitalize">{c}</option>
+          ))}
         </select>
 
         <label className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm cursor-pointer">
@@ -118,6 +217,30 @@ export default function AdminPlacesPage() {
           />
           Stale only
         </label>
+
+        <div className="ml-auto flex items-center gap-2">
+          <label className="text-xs text-gray-500 dark:text-gray-400" htmlFor="sort">Sort</label>
+          <select
+            id="sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as PlaceQueueSort)}
+            className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm"
+          >
+            <option value="completeness">Worst first</option>
+            <option value="name">Name A→Z</option>
+            <option value="verified_at">Recently verified</option>
+          </select>
+        </div>
+
+        {hasAnyFilter && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-xs text-gray-500 dark:text-gray-400 underline underline-offset-2 hover:no-underline"
+          >
+            Clear all filters
+          </button>
+        )}
       </div>
 
       {/* Queue */}
