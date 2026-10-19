@@ -5,6 +5,10 @@ Task 21 shipped (sitemap, published-only filter).
 
 ## Supabase auth URL config
 
+**Done** (verified 2026-10-19 against prod). Site URL set to `https://taralakad.com`, redirect allow-list includes `https://taralakad.com/**` and `https://taralakad.com/auth/callback`. End-to-end verified: `/forgot-password` → reset email → link routes through `supabase.co/auth/v1/verify?...&redirect_to=https://taralakad.com/reset-password` and lands on taralakad.com.
+
+Previously:
+
 In the Singapore prod project (`zgbidqgvnvjoinlgrbvh`):
 
 1. **Project settings → Authentication → URL configuration**
@@ -15,10 +19,6 @@ In the Singapore prod project (`zgbidqgvnvjoinlgrbvh`):
    - `https://*.vercel.app/**` *(preview branches — remove once launched if you don't want preview auth)*
 
 Without this, password reset + magic links land on the Vercel subdomain and 404 the user.
-
-Test end-to-end:
-- [ ] Request a password reset at `/forgot-password`. The reset link in the email points to `https://taralakad.com/reset-password?...`
-- [ ] Reset flow completes without a redirect error.
 
 ## PostHog event audit
 
