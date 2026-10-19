@@ -57,6 +57,47 @@ export interface AdminPlaceQueueRow {
   stale: boolean              // verified_at > 6 months OR null
 }
 
+export type PlaceQueueSort = 'completeness' | 'name' | 'verified_at'
+
+export const PLACE_CATEGORY_OPTIONS = [
+  'beach',
+  'lagoon',
+  'waterfall',
+  'viewpoint',
+  'heritage',
+  'food',
+  'activity',
+  'stay',
+] as const
+export type PlaceCategory = typeof PLACE_CATEGORY_OPTIONS[number]
+
+/**
+ * Shared comparator so the UI, the queue sort control, and any future
+ * caller all tie-break the same way. Primary key varies by sort choice;
+ * name asc is the tiebreak everywhere so order is deterministic when
+ * 253 rows all sit at 0% completeness (the state right now).
+ */
+export function placeQueueComparator(sort: PlaceQueueSort) {
+  return (a: AdminPlaceQueueRow, b: AdminPlaceQueueRow): number => {
+    switch (sort) {
+      case 'name':
+        return a.name.localeCompare(b.name)
+      case 'verified_at': {
+        // Nulls (never verified) go last so freshly-verified places
+        // float to the top of the newest list.
+        const av = a.verified_at ? new Date(a.verified_at).getTime() : -Infinity
+        const bv = b.verified_at ? new Date(b.verified_at).getTime() : -Infinity
+        if (av !== bv) return bv - av
+        return a.name.localeCompare(b.name)
+      }
+      case 'completeness':
+      default:
+        if (a.completeness !== b.completeness) return a.completeness - b.completeness
+        return a.name.localeCompare(b.name)
+    }
+  }
+}
+
 export interface AdminDestinationQueueRow {
   id: string
   name: string
@@ -534,20 +575,30 @@ export const adminService = {
     status?: 'draft' | 'published' | 'needs_review'
     incomplete?: boolean       // < 100%
     stale?: boolean            // verified_at older than 6 months OR never verified
+    search?: string            // name OR location ilike '%<q>%'
+    category?: string          // places.category exact match
+    sort?: PlaceQueueSort      // default 'completeness'
   } = {}): Promise<AdminPlaceQueueRow[]> {
     let query = supabase
       .from('places')
       .select(`
         id, name, slug, status, verified_at, is_active,
-        destination_id, summary, entrance_fee, fee_notes, duration_minutes,
+        destination_id, category, location, summary, entrance_fee, fee_notes, duration_minutes,
         getting_there, nearest_hub, best_months, part_of_tour,
         tips, source_urls,
         destination:destinations(id, name)
       `)
-      .order('id', { ascending: true })
 
     if (opts.destinationId) query = query.eq('destination_id', opts.destinationId)
     if (opts.status) query = query.eq('status', opts.status)
+    if (opts.category) query = query.eq('category', opts.category)
+    if (opts.search) {
+      // ilike match on name OR location, URL-safe via supabase's or()
+      const q = opts.search.replace(/[%,()]/g, '').trim()
+      if (q) {
+        query = query.or(`name.ilike.%${q}%,location.ilike.%${q}%`)
+      }
+    }
 
     const { data, error } = await query
 
@@ -579,8 +630,7 @@ export const adminService = {
     if (opts.incomplete) rows = rows.filter((r) => r.completeness < 100)
     if (opts.stale) rows = rows.filter((r) => r.stale)
 
-    // Default sort: completeness ascending — worst first.
-    rows.sort((a, b) => a.completeness - b.completeness)
+    rows.sort(placeQueueComparator(opts.sort ?? 'completeness'))
 
     return rows
   },
