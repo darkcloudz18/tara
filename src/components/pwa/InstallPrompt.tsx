@@ -14,9 +14,14 @@ const MIN_VISITS = 2
 // Prompt fires only when the visitor has some intent signal: they've been
 // here before, or they've created a lakad. First-time landings on 404 or
 // error routes never see it.
+// Reviewer / testing kill-switch: localStorage.setItem('tara-pwa-off', '1')
+// (or NEXT_PUBLIC_DISABLE_PWA_PROMPT=1 for a build-time off switch) hides
+// the prompt everywhere without touching code.
 function isEligible(): boolean {
   if (typeof window === 'undefined') return false
   if (document.body.dataset.errorRoute === '1') return false
+  if (process.env.NEXT_PUBLIC_DISABLE_PWA_PROMPT === '1') return false
+  if (localStorage.getItem('tara-pwa-off') === '1') return false
 
   const dismissedAt = localStorage.getItem('pwa-install-dismissed')
   if (dismissedAt) {
@@ -32,6 +37,7 @@ function isEligible(): boolean {
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
   const [hasInstallableSignal, setHasInstallableSignal] = useState(false)
@@ -115,8 +121,49 @@ export default function InstallPrompt() {
   // Don't show if already installed or prompt shouldn't show
   if (isStandalone || !showPrompt) return null
 
+  // Positioning: anchor to the dynamic bottom edge rather than a magic
+  // bottom-20. MobileNav on main is min-h-[56px] + env(safe-area-inset-
+  // bottom), so we add a buffer (72px desktop, 76px mobile) that covers
+  // the nav + a small gap. Prevents the prompt landing on top of CTAs on
+  // iPhones with a home-bar — the main-mobile regression the reviewer
+  // flagged.
+  //
+  // The default is now a slim pill that doesn't block anything. Expand
+  // on tap when the user actually wants to install.
+  const bottomOffset = 'bottom-[calc(env(safe-area-inset-bottom)+76px)] lg:bottom-6'
+
+  if (!expanded) {
+    return (
+      <div
+        className={`fixed ${bottomOffset} left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 z-40 animate-slide-up`}
+      >
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full shadow-lg">
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="flex items-center gap-2 pl-3 pr-2 py-2 text-sm font-medium text-gray-900 dark:text-white rounded-full hover:bg-gray-50 dark:hover:bg-gray-800"
+            aria-label="Install Tara to your home screen"
+          >
+            <Smartphone className="w-4 h-4 text-teal-500" aria-hidden="true" />
+            Install Tara
+          </button>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full"
+            aria-label="Dismiss install prompt"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50 animate-slide-up">
+    <div
+      className={`fixed ${bottomOffset} left-4 right-4 md:left-auto md:right-6 md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-40 animate-slide-up`}
+    >
       <button
         onClick={handleDismiss}
         className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -126,8 +173,8 @@ export default function InstallPrompt() {
       </button>
 
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-12 h-12 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center">
-          <Smartphone className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+        <div className="flex-shrink-0 w-10 h-10 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center">
+          <Smartphone className="w-5 h-5 text-teal-600 dark:text-teal-400" />
         </div>
 
         <div className="flex-1 min-w-0">
